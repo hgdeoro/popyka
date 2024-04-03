@@ -42,10 +42,19 @@ def test_start_without_replication_slots(conn: Connection):
 
 
 def test_start_replication_2(conn: Connection):
-    cur = conn.cursor()
-    try:
-        # test_decoding produces textual output
-        cur.start_replication(slot_name='pytest_logical', decode=True)
-    except psycopg2.ProgrammingError:
-        cur.create_replication_slot('pytest_logical', output_plugin='test_decoding')
-        cur.start_replication(slot_name='pytest_logical', decode=True)
+    with conn.cursor() as cur:
+        try:
+            # test_decoding produces textual output
+            cur.start_replication(slot_name='pytest_logical', decode=True)
+        except psycopg2.ProgrammingError:
+            cur.create_replication_slot('pytest_logical', output_plugin='test_decoding')
+            cur.start_replication(slot_name='pytest_logical', decode=True)
+
+        class DemoConsumer(object):
+            def __call__(self, msg):
+                print(msg.payload)
+                msg.cursor.send_feedback(flush_lsn=msg.data_start)
+
+        consumer = DemoConsumer()
+
+        cur.consume_stream(consumer)
