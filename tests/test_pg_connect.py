@@ -64,8 +64,12 @@ def test_start_without_replication_slots(conn: Connection, drop_slot):
         assert cur.fetchall() == []
 
 
-def _db_activity_simulator(cn: Connection, table_name: str, repl_starting_soon_event: threading.Event,
-                           db_activity_simulator_done: threading.Event):
+def _db_activity_simulator(
+    cn: Connection,
+    table_name: str,
+    repl_starting_soon_event: threading.Event,
+    db_activity_simulator_done: threading.Event,
+):
     with cn.cursor() as cur:
         cur: ReplicationCursor
         cur.execute(f"DROP TABLE IF EXISTS {table_name}")
@@ -92,8 +96,11 @@ def test__db_activity_simulator(conn: Connection, conn2: Connection):
     db_activity_simulator_done = threading.Event()
 
     table_name = f"TEST_TABLE_{uuid.uuid4().hex}"
-    db_activity_simulator = threading.Thread(target=_db_activity_simulator, daemon=True,
-                                             args=[conn, table_name, repl_starting_soon_event, db_activity_simulator_done])
+    db_activity_simulator = threading.Thread(
+        target=_db_activity_simulator,
+        daemon=True,
+        args=[conn, table_name, repl_starting_soon_event, db_activity_simulator_done],
+    )
     db_activity_simulator.start()
     repl_starting_soon_event.set()
     db_activity_simulator.join()
@@ -102,7 +109,7 @@ def test__db_activity_simulator(conn: Connection, conn2: Connection):
 
     with conn2.cursor() as cur:
         cur.execute(f"SELECT count(*) FROM {table_name}")
-        assert cur.fetchall() == [(5, )]
+        assert cur.fetchall() == [(5,)]
 
 
 @pytest.mark.skip
@@ -110,8 +117,11 @@ def test_start_replication_2(conn: Connection, conn2: Connection, drop_slot):
     repl_starting_soon_event = threading.Event()
     db_activity_simulator_done = threading.Event()
 
-    db_activity_simulator = threading.Thread(target=_db_activity_simulator, daemon=True,
-                                             args=[conn, repl_starting_soon_event, db_activity_simulator_done])
+    db_activity_simulator = threading.Thread(
+        target=_db_activity_simulator,
+        daemon=True,
+        args=[conn, repl_starting_soon_event, db_activity_simulator_done],
+    )
     db_activity_simulator.start()
     db_activity_simulator.join()
 
