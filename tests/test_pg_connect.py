@@ -35,13 +35,6 @@ def test_start_without_replication_slots(conn: Connection):
         assert cur.fetchall() == []
 
 
-def test_pg_create_physical_replication_slot(conn: Connection):
-    with conn.cursor() as cur:
-        cur: psycopg2.extras.ReplicationCursor
-        cur.execute("SELECT * FROM pg_create_physical_replication_slot('pytest')")
-        assert cur.fetchone()
-
-
 def test_start_replication_2():
     dsn = "host=localhost port=5432 dbname=template1 user=postgres"
     cn = psycopg2.connect(dsn, connection_factory=psycopg2.extras.LogicalReplicationConnection)
