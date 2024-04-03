@@ -2,3 +2,4 @@ pytest
 psycopg2-binary
 black
 isort
+ipdb
