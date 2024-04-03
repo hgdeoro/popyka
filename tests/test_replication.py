@@ -86,13 +86,13 @@ def test_db_activity_simulator(conn: Connection, conn2: Connection):
         assert cur.fetchall() == [(3,)]
 
 
-def test_start_replication(conn: Connection, conn2: Connection, drop_slot):
+def test_insert_are_replicated(conn: Connection, conn2: Connection, drop_slot):
     table_name = f"TEST_TABLE_{uuid.uuid4().hex}"
     statements = (
-        (f"INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
-        (f"INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
-        (f"INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
-        (f"INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
+        (f"INSERT INTO {table_name} (NAME) VALUES (%s)", [str(uuid.uuid4())]),
+        (f"INSERT INTO {table_name} (NAME) VALUES (%s)", [str(uuid.uuid4())]),
+        (f"INSERT INTO {table_name} (NAME) VALUES (%s)", [str(uuid.uuid4())]),
+        (f"INSERT INTO {table_name} (NAME) VALUES (%s)", [str(uuid.uuid4())]),
     )
     payloads: list = []
     repl_starting_soon_event = threading.Event()
@@ -124,3 +124,5 @@ def test_start_replication(conn: Connection, conn2: Connection, drop_slot):
 
     payloads = [_ for _ in payloads if "INSERT:" in _]
     assert len(payloads) == len(statements)
+    for an_uuid in [stmt[1][0] for stmt in statements]:
+        assert len([_ for _ in payloads if an_uuid in _]) == 1
