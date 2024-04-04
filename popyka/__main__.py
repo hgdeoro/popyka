@@ -14,7 +14,7 @@ def main():
     dsn = "host=localhost port=5434 dbname=postgres user=postgres"
     logger.info("Connecting...")
     cn: Connection = psycopg2.connect(dsn, connection_factory=psycopg2.extras.LogicalReplicationConnection)
-    main_instance = Main(cn=cn, slot_name="popyka", consumer=ConsumerStatsToLog())
+    main_instance = Main(cn=cn, slot_name="popyka", consumer=ConsumerDumpToLog())
     logger.info("Starting consumer...")
     main_instance.start()
     try:
@@ -51,7 +51,7 @@ class Main(threading.Thread):
             except psycopg2.errors.DuplicateObject:
                 logger.info("Replication slot %s already exists", self._slot_name)
 
-            cur.start_replication(slot_name=self._slot_name, decode=True)
+            cur.start_replication(slot_name=self._slot_name, decode=True, options={"format-version": "2"})
             cur.consume_stream(self._consumer)
 
 
