@@ -1,5 +1,3 @@
-from confluent_kafka import Producer
-import socket
 import abc
 import json
 import logging
@@ -9,6 +7,7 @@ import threading
 import typing
 
 import psycopg2.extras
+from confluent_kafka import Producer
 from psycopg2.extensions import connection as Connection
 from psycopg2.extras import ReplicationCursor
 
