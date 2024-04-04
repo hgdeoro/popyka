@@ -3,3 +3,4 @@ psycopg2-binary
 black
 isort
 ipdb
+confluent-kafka

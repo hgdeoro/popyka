@@ -1,3 +1,5 @@
+from confluent_kafka import Producer
+import socket
 import abc
 import json
 import logging
@@ -44,13 +46,22 @@ class DumpToStdOutProcessor(Processor):
         logger.info("DumpToStdOutProcessor: change: %s", pprint.pformat(change))
 
 
-# class ProduceToKafkaProcessor(Processor):
-#     def process_change(self, change: Wal2JsonV2Change):
-#         pass
+class ProduceToKafkaProcessor(Processor):
+    def __init__(self):
+        conf = {
+            "bootstrap.servers": "localhost:9094",
+            "client.id": socket.gethostname(),
+        }
+        self._producer = Producer(conf)
+
+    def process_change(self, change: Wal2JsonV2Change):
+        self._producer.produce(topic="popyka", value=json.dumps(change))
+        self._producer.flush()
+        logger.info("Message written to Kafka")
 
 
 def _get_processors() -> list[Processor]:
-    return [DumpToStdOutProcessor()]
+    return [DumpToStdOutProcessor(), ProduceToKafkaProcessor()]
 
 
 def main():
