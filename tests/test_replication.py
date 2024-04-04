@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 #  pg_logical_emit_message ( transactional boolean, prefix text, content text ) → pg_lsn
 MAGIC_END_OF_TEST_PREFIX = "popyka_pytest"
 MAGIC_END_OF_TEST_CONTENT = "742cad81-3416-4dc8-9f7a-d667b54c98cf"
+MAGIC_END_OF_TEST_STATEMENT = (
+    "SELECT * FROM pg_logical_emit_message(FALSE, %s, %s)",
+    [MAGIC_END_OF_TEST_PREFIX, MAGIC_END_OF_TEST_CONTENT],
+)
 
 
 class DbStreamConsumer(threading.Thread):
@@ -185,9 +189,10 @@ def test_format_version_2(conn: Connection, conn2: Connection, drop_slot, table_
     statements = [
         ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')", []),
         ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-2')", []),
-        ("SELECT * FROM pg_logical_emit_message(FALSE, %s, %s)", [MAGIC_END_OF_TEST_PREFIX, MAGIC_END_OF_TEST_CONTENT]),
+        MAGIC_END_OF_TEST_STATEMENT,
     ]
-    expected_payloads = 2
+    expected_payloads = 6
+    # https://github.com/eulerto/wal2json?tab=readme-ov-file
     options = {"format-version": "2"}
 
     db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
