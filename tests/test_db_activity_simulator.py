@@ -34,13 +34,17 @@ class DbActivitySimulator(threading.Thread):
     def is_done(self) -> bool:
         return self._done.is_set()
 
+    def create_table(self, cur):
+        cur.execute(f"DROP TABLE IF EXISTS {self._table_name}")
+        self._cn.commit()
+
+        cur.execute(f"CREATE TABLE {self._table_name} (NAME VARCHAR)")
+        self._cn.commit()
+
     def run(self) -> None:
         with self._cn.cursor() as cur:
             cur: ReplicationCursor
-            cur.execute(f"DROP TABLE IF EXISTS {self._table_name}")
-            self._cn.commit()
-            cur.execute(f"CREATE TABLE {self._table_name} (NAME VARCHAR)")
-            self._cn.commit()
+            self.create_table(cur)
 
             logger.info("Table %s created, waiting for event to start inserting data...", self._table_name)
             assert self._repl_starting_soon_event.wait(timeout=3) is True
