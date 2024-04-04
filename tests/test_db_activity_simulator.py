@@ -21,6 +21,7 @@ class DbActivitySimulator(threading.Thread):
         self._repl_starting_soon_event: threading.Event = threading.Event()
         self._done: threading.Event = threading.Event()
         self._statements: typing.Iterable[tuple[str, list]] = statements
+        # self._statements_done: list[tuple[str, list]] = []
 
     @property
     def table_name(self) -> str:
@@ -47,9 +48,20 @@ class DbActivitySimulator(threading.Thread):
             for stmt in self._statements:
                 logger.info("%s | %s", self._table_name, str(stmt))
                 cur.execute(stmt[0].format(table_name=self._table_name), stmt[1])
+                # self._statements_done.append((stmt[0].format(table_name=self._table_name), stmt[1]))
                 self._cn.commit()
 
         self._done.set()
+
+    # def sql_select_all(self, cn: Connection):
+    #     with cn.cursor() as cur:
+    #         cur.execute(f"SELECT * FROM {self._table_name}")
+    #         return cur.fetchall()
+
+    def sql_count_all(self, cn: Connection):
+        with cn.cursor() as cur:
+            cur.execute(f"SELECT count(*) FROM {self._table_name}")
+            return cur.fetchall()[0][0]
 
 
 def test_db_activity_simulator(conn: Connection, conn2: Connection, table_name: str):
@@ -64,7 +76,4 @@ def test_db_activity_simulator(conn: Connection, conn2: Connection, table_name: 
     db_activity_simulator.join()
 
     assert db_activity_simulator.is_done
-
-    with conn2.cursor() as cur:
-        cur.execute(f"SELECT count(*) FROM {table_name}")
-        assert cur.fetchall() == [(3,)]
+    assert db_activity_simulator.sql_count_all(conn2) == 3

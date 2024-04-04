@@ -2,7 +2,6 @@ import json
 import logging
 import threading
 import time
-import typing
 import uuid
 
 import psycopg2.extras
