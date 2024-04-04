@@ -13,20 +13,25 @@ class DbActivitySimulator(threading.Thread):
         self,
         cn: Connection,
         table_name: str,
-        repl_starting_soon_event: threading.Event,
-        done: threading.Event,
-        statements: typing.Iterator[tuple[str, list]],
+        statements: typing.Iterable[tuple[str, list]],
     ):
         super().__init__(daemon=True)
         self._cn = cn
         self._table_name: str = table_name
-        self._repl_starting_soon_event: threading.Event = repl_starting_soon_event
-        self._done: threading.Event = done
-        self._statements: typing.Iterator[tuple[str, list]] = statements
+        self._repl_starting_soon_event: threading.Event = threading.Event()
+        self._done: threading.Event = threading.Event()
+        self._statements: typing.Iterable[tuple[str, list]] = statements
 
     @property
     def table_name(self) -> str:
         return self._table_name
+
+    @property
+    def repl_starting_soon_event(self) -> threading.Event:
+        return self._repl_starting_soon_event
+
+    def done(self) -> threading.Event:
+        return self._done
 
     def run(self) -> None:
         with self._cn.cursor() as cur:
@@ -48,22 +53,17 @@ class DbActivitySimulator(threading.Thread):
 
 
 def test_db_activity_simulator(conn: Connection, conn2: Connection, table_name: str):
-    repl_starting_soon_event = threading.Event()
-    db_activity_simulator_done = threading.Event()
-
     statements = (
         ("INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
         ("INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
         ("INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
     )
-    db_activity_simulator = DbActivitySimulator(
-        conn, table_name, repl_starting_soon_event, db_activity_simulator_done, statements
-    )
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
     db_activity_simulator.start()
-    repl_starting_soon_event.set()
+    db_activity_simulator.repl_starting_soon_event.set()
     db_activity_simulator.join()
 
-    assert db_activity_simulator_done.is_set()
+    assert db_activity_simulator.done().is_set()
 
     with conn2.cursor() as cur:
         cur.execute(f"SELECT count(*) FROM {table_name}")

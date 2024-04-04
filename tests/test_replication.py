@@ -90,30 +90,25 @@ def test_db_activity_simulator_fn(conn: Connection, conn2: Connection):
         assert cur.fetchall() == [(3,)]
 
 
-def test_insert_are_replicated(conn: Connection, conn2: Connection, drop_slot):
-    table_name = f"TEST_TABLE_{uuid.uuid4().hex}"
+def test_insert_are_replicated(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     uuids = [str(uuid.uuid4()) for _ in range(4)]
-    statements = [(f"INSERT INTO {table_name} (NAME) VALUES (%s)", [_]) for _ in uuids]
+    statements = [("INSERT INTO {table_name} (NAME) VALUES (%s)", [_]) for _ in uuids]
 
     payloads: list = []
-    repl_starting_soon_event = threading.Event()
-    db_activity_simulator_done = threading.Event()
 
-    db_activity_simulator = DbActivitySimulator(
-        conn, table_name, repl_starting_soon_event, db_activity_simulator_done, statements
-    )
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
 
     db_stream_consumer = threading.Thread(
         target=_db_stream_consumer,
         daemon=True,
-        args=[conn2, repl_starting_soon_event, payloads, len(statements)],
+        args=[conn2, db_activity_simulator.repl_starting_soon_event, payloads, len(statements)],
     )
 
     db_activity_simulator.start()
     db_stream_consumer.start()
 
     db_activity_simulator.join()
-    assert db_activity_simulator_done.is_set()
+    assert db_activity_simulator.done().is_set()
 
     while len(payloads) < len(statements):
         logger.info("There are %s items in 'payloads'", len(payloads))
