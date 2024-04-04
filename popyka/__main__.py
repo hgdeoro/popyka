@@ -47,12 +47,11 @@ class DumpToStdOutProcessor(Processor):
 
 
 class ProduceToKafkaProcessor(Processor):
+    def _get_conf(self) -> dict:
+        return json.loads(os.environ.get("KAFKA_CONF_DICT"))
+
     def __init__(self):
-        conf = {
-            "bootstrap.servers": "localhost:9094",
-            "client.id": socket.gethostname(),
-        }
-        self._producer = Producer(conf)
+        self._producer = Producer(self._get_conf())
 
     def process_change(self, change: Wal2JsonV2Change):
         self._producer.produce(topic="popyka", value=json.dumps(change))
