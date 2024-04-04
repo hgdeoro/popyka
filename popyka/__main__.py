@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import threading
 import typing
 
@@ -11,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    dsn = "host=localhost port=5434 dbname=postgres user=postgres"
-    logger.info("Connecting...")
+    dsn = os.environ.get("DSN")
+    logger.info("Connecting dsn=%s...", dsn[:4])
     cn: Connection = psycopg2.connect(dsn, connection_factory=psycopg2.extras.LogicalReplicationConnection)
     main_instance = Main(cn=cn, slot_name="popyka", consumer=ConsumerDumpToLog())
     logger.info("Starting consumer...")
