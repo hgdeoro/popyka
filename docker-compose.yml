@@ -1,25 +1,6 @@
-# Use postgres/example user/password credentials
 version: '3.9'
 
 services:
-
-#  db:
-#    image: postgres:16.2-alpine
-#    restart: no
-#    shm_size: 128mb
-#    environment:
-#      POSTGRES_PASSWORD: pass
-#      POSTGRES_HOST_AUTH_METHOD: trust
-#    ports:
-#      - 5432:5432
-#    command:
-#      - -c
-#      - wal_level=logical
-#      - -c
-#      - max_wal_senders=10
-#      - -c
-#      - max_replication_slots=10
-
   db-wal2json:
     build:
       context: ./postgres-wal2json
@@ -38,10 +19,3 @@ services:
       - -c
       - max_replication_slots=10
     stop_grace_period: 2s
-
-  adminer:
-    image: adminer
-    restart: no
-    ports:
-      - 8080:8080
-    stop_grace_period: 1s
