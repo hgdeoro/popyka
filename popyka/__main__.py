@@ -5,6 +5,7 @@ import typing
 
 import psycopg2.extras
 from psycopg2.extensions import connection as Connection
+from psycopg2.extras import ReplicationCursor
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,10 @@ def main():
     main_instance = Main(cn=cn, slot_name="popyka", consumer=ConsumerStatsToLog())
     logger.info("Starting consumer...")
     main_instance.start()
-    main_instance.join()
+    try:
+        main_instance.join()
+    except KeyboardInterrupt:
+        pass
 
 
 class ConsumerDumpToLog:
@@ -41,6 +45,7 @@ class Main(threading.Thread):
 
     def run(self) -> None:
         with self._cn.cursor() as cur:
+            cur: ReplicationCursor
             try:
                 cur.create_replication_slot(self._slot_name, output_plugin="wal2json")
             except psycopg2.errors.DuplicateObject:
