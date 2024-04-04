@@ -1,6 +1,7 @@
 import logging
 
 import pytest
+import psycopg2.errors
 from psycopg2.extensions import connection as Connection
 
 logger = logging.getLogger(__name__)
@@ -19,20 +20,21 @@ def test_start_without_replication_slots(conn: Connection, drop_slot):
         assert cur.fetchall() == []
 
 
+def test_fails_with_invalid_output_plugin(conn: Connection, drop_slot):
+    with conn.cursor() as cur:
+        with pytest.raises(psycopg2.errors.UndefinedFile):
+            cur.create_replication_slot("pytest_logical", output_plugin="invalid_output_plugin")
+
+
 def test_start_replication_plugin_test_decoding(conn: Connection, drop_slot):
     with conn.cursor() as cur:
         cur.create_replication_slot("pytest_logical", output_plugin="test_decoding")
         cur.start_replication(slot_name="pytest_logical", decode=True)
 
 
-@pytest.mark.xfail
 def test_start_replication_plugin_pgoutput(conn: Connection, drop_slot):
     with conn.cursor() as cur:
         cur.create_replication_slot("pytest_logical", output_plugin="pgoutput")
-        cur.start_replication(slot_name="pytest_logical", decode=False)
-
-    # >       self.start_replication_expert(
-    #             command, decode=decode, status_interval=status_interval)
-    # E       psycopg2.errors.FeatureNotSupported:
-    #                           client sent proto_version=0 but server only supports protocol 1 or higher
-    # E       CONTEXT:  slot "pytest_logical", output plugin "pgoutput", in the startup callback
+        with pytest.raises(psycopg2.errors.FeatureNotSupported):
+            # https://github.com/psycopg/psycopg2/issues/1690
+            cur.start_replication(slot_name="pytest_logical", decode=False)
