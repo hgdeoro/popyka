@@ -13,16 +13,22 @@ def main():
     dsn = "host=localhost port=5434 dbname=postgres user=postgres"
     logger.info("Connecting...")
     cn: Connection = psycopg2.connect(dsn, connection_factory=psycopg2.extras.LogicalReplicationConnection)
-    main_instance = Main(cn=cn, slot_name="popyka", consumer=ConsumerToLog())
+    main_instance = Main(cn=cn, slot_name="popyka", consumer=ConsumerStatsToLog())
     logger.info("Starting consumer...")
     main_instance.start()
     main_instance.join()
 
 
-class ConsumerToLog:
+class ConsumerDumpToLog:
     def __call__(self, msg: psycopg2.extras.ReplicationMessage):
         payload = json.dumps(json.loads(msg.payload), indent=4, sort_keys=True)
-        logger.info("ConsumerToLog: received payload: %s", payload)
+        logger.info("ConsumerDumpToLog: received payload: %s", payload)
+        msg.cursor.send_feedback(flush_lsn=msg.data_start)
+
+
+class ConsumerStatsToLog:
+    def __call__(self, msg: psycopg2.extras.ReplicationMessage):
+        logger.info("ConsumerStatsToLog: received payload size: %s", len(msg.payload))
         msg.cursor.send_feedback(flush_lsn=msg.data_start)
 
 
