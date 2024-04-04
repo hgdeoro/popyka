@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 import psycopg2
 import psycopg2.extras
@@ -10,6 +11,11 @@ logger = logging.getLogger(__name__)
 
 DSN_POSTGRES = "host=localhost port=5432 dbname=postgres user=postgres"
 DSN_POSTGRES_WAL2JSON = "host=localhost port=5434 dbname=postgres user=postgres"
+
+
+@pytest.fixture
+def table_name() -> str:
+    return f"TEST_TABLE_{uuid.uuid4().hex}"
 
 
 @pytest.fixture
