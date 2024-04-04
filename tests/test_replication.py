@@ -11,14 +11,19 @@ from tests.test_db_activity_simulator import DbActivitySimulator
 
 logger = logging.getLogger(__name__)
 
+#  pg_logical_emit_message ( transactional boolean, prefix text, content text ) → pg_lsn
+MAGIC_END_OF_TEST_PREFIX = "popyka_pytest"
+MAGIC_END_OF_TEST_CONTENT = "742cad81-3416-4dc8-9f7a-d667b54c98cf"
+
 
 class DbStreamConsumer(threading.Thread):
-    def __init__(self, cn: Connection, db_activity_simulator: DbActivitySimulator, max_payloads: int):
+    def __init__(self, cn: Connection, db_activity_simulator: DbActivitySimulator, max_payloads: int, options=None):
         super().__init__(daemon=True)
         self._cn = cn
         self._db_activity_simulator = db_activity_simulator
         self._max_payloads = max_payloads
         self._payloads = []
+        self._options = options or {}
 
     @property
     def payloads(self) -> list:
@@ -31,7 +36,7 @@ class DbStreamConsumer(threading.Thread):
     def run(self) -> None:
         with self._cn.cursor() as cur:
             cur.create_replication_slot("pytest_logical", output_plugin="wal2json")
-            cur.start_replication(slot_name="pytest_logical", decode=True)
+            cur.start_replication(slot_name="pytest_logical", decode=True, options=self._options)
 
             _payloads = self._payloads
             _max_payloads = self._max_payloads
@@ -39,8 +44,24 @@ class DbStreamConsumer(threading.Thread):
             class DemoConsumer(object):
                 def __call__(self, msg: psycopg2.extras.ReplicationMessage):
                     logger.info("DemoConsumer received payload: %s", msg.payload)
-                    _payloads.append(msg.payload)
                     msg.cursor.send_feedback(flush_lsn=msg.data_start)
+
+                    if _max_payloads is None:
+                        decoded = json.loads(msg.payload)
+                        if (
+                            decoded.get("action") == "M"
+                            and decoded.get("prefix") == MAGIC_END_OF_TEST_PREFIX
+                            and decoded.get("content") == MAGIC_END_OF_TEST_CONTENT
+                        ):
+                            # {
+                            #     "action": "M",
+                            #     "transactional": false,
+                            #     "prefix": "popyka_pytest",
+                            #     "content": "742cad81-3416-4dc8-9f7a-d667b54c98cf"
+                            # }
+                            raise psycopg2.extras.StopReplication()
+
+                    _payloads.append(msg.payload)
 
                     if len(_payloads) == _max_payloads:
                         raise psycopg2.extras.StopReplication()
@@ -96,3 +117,108 @@ def test_insert_are_replicated(conn: Connection, conn2: Connection, drop_slot, t
     json_payloads = db_stream_consumer.payloads_parsed
     assert [_["change"][0]["kind"] for _ in json_payloads] == ["insert"] * 4
     assert [_["change"][0]["columnvalues"][0] for _ in json_payloads] == uuids
+
+
+def test_json_for_default_options(conn: Connection, conn2: Connection, drop_slot, table_name: str):
+    statements = [
+        ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')", []),
+        ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-2')", []),
+    ]
+    expected_payloads = 2
+    options = {}
+
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
+    db_stream_consumer = DbStreamConsumer(conn2, db_activity_simulator, expected_payloads, options=options)
+
+    db_activity_simulator.start()
+    db_stream_consumer.start()
+    db_activity_simulator.join()
+    assert db_activity_simulator.is_done
+
+    while len(db_stream_consumer.payloads) < expected_payloads:
+        logger.info("There are %s items in 'payloads'", len(db_stream_consumer.payloads))
+        time.sleep(0.2)
+
+    db_stream_consumer.join()
+
+    assert db_stream_consumer.payloads_parsed == [
+        {
+            "change": [
+                {
+                    "columnnames": [
+                        "name",
+                    ],
+                    "columntypes": [
+                        "character varying",
+                    ],
+                    "columnvalues": [
+                        "this-is-the-value-1",
+                    ],
+                    "kind": "insert",
+                    "schema": "public",
+                    "table": table_name.lower(),
+                },
+            ],
+        },
+        {
+            "change": [
+                {
+                    "columnnames": [
+                        "name",
+                    ],
+                    "columntypes": [
+                        "character varying",
+                    ],
+                    "columnvalues": [
+                        "this-is-the-value-2",
+                    ],
+                    "kind": "insert",
+                    "schema": "public",
+                    "table": table_name.lower(),
+                },
+            ],
+        },
+    ]
+
+
+def test_format_version_2(conn: Connection, conn2: Connection, drop_slot, table_name: str):
+    statements = [
+        ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')", []),
+        ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-2')", []),
+        ("SELECT * FROM pg_logical_emit_message(FALSE, %s, %s)", [MAGIC_END_OF_TEST_PREFIX, MAGIC_END_OF_TEST_CONTENT]),
+    ]
+    expected_payloads = 2
+    options = {"format-version": "2"}
+
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
+    db_stream_consumer = DbStreamConsumer(conn2, db_activity_simulator, max_payloads=None, options=options)
+
+    db_activity_simulator.start()
+    db_stream_consumer.start()
+    db_activity_simulator.join()
+    assert db_activity_simulator.is_done
+
+    while len(db_stream_consumer.payloads) < expected_payloads:
+        logger.info("There are %s items in 'payloads'", len(db_stream_consumer.payloads))
+        time.sleep(0.2)
+
+    db_stream_consumer.join()
+
+    assert db_stream_consumer.payloads_parsed == [
+        {"action": "B"},
+        {
+            "action": "I",
+            "schema": "public",
+            "table": table_name.lower(),
+            "columns": [{"name": "name", "type": "character varying", "value": "this-is-the-value-1"}],
+        },
+        {"action": "C"},
+        {"action": "B"},
+        {
+            "action": "I",
+            "schema": "public",
+            "table": table_name.lower(),
+            "columns": [{"name": "name", "type": "character varying", "value": "this-is-the-value-2"}],
+        },
+        {"action": "C"},
+    ]
