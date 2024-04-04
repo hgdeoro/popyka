@@ -11,6 +11,41 @@ from psycopg2.extras import ReplicationCursor
 logger = logging.getLogger(__name__)
 
 
+class DbActivitySimulator(threading.Thread):
+    def __init__(
+        self,
+        cn: Connection,
+        table_name: str,
+        repl_starting_soon_event: threading.Event,
+        done: threading.Event,
+        statements: tuple[tuple[str, tuple]],
+    ):
+        super().__init__(daemon=True)
+        self.cn = cn
+        self.table_name: str = table_name
+        self.repl_starting_soon_event: threading.Event = repl_starting_soon_event
+        self.done: threading.Event = done
+        self.statements: tuple[tuple[str, tuple]] = statements
+
+    def run(self) -> None:
+        with self.cn.cursor() as cur:
+            cur: ReplicationCursor
+            cur.execute(f"DROP TABLE IF EXISTS {self.table_name}")
+            self.cn.commit()
+            cur.execute(f"CREATE TABLE {self.table_name} (NAME VARCHAR)")
+            self.cn.commit()
+
+            logger.info("Table %s created, waiting for event to start inserting data...", self.table_name)
+            assert self.repl_starting_soon_event.wait(timeout=3) is True
+
+            for stmt in self.statements:
+                logger.info("%s | %s", self.table_name, str(stmt))
+                cur.execute(stmt[0], stmt[1])
+                self.cn.commit()
+
+        self.done.set()
+
+
 def _db_activity_simulator(
     cn: Connection,
     table_name: str,
@@ -61,7 +96,7 @@ def _db_stream_consumer(cn: Connection, repl_starting_soon_event: threading.Even
         # TODO: close stream?
 
 
-def test_db_activity_simulator(conn: Connection, conn2: Connection):
+def test_db_activity_simulator_fn(conn: Connection, conn2: Connection):
     repl_starting_soon_event = threading.Event()
     db_activity_simulator_done = threading.Event()
 
@@ -87,6 +122,30 @@ def test_db_activity_simulator(conn: Connection, conn2: Connection):
         assert cur.fetchall() == [(3,)]
 
 
+def test_db_activity_simulator_class(conn: Connection, conn2: Connection):
+    repl_starting_soon_event = threading.Event()
+    db_activity_simulator_done = threading.Event()
+
+    table_name = f"TEST_TABLE_{uuid.uuid4().hex}"
+    statements = (
+        (f"INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
+        (f"INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
+        (f"INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
+    )
+    db_activity_simulator = DbActivitySimulator(
+        conn, table_name, repl_starting_soon_event, db_activity_simulator_done, statements
+    )
+    db_activity_simulator.start()
+    repl_starting_soon_event.set()
+    db_activity_simulator.join()
+
+    assert db_activity_simulator_done.is_set()
+
+    with conn2.cursor() as cur:
+        cur.execute(f"SELECT count(*) FROM {table_name}")
+        assert cur.fetchall() == [(3,)]
+
+
 def test_insert_are_replicated(conn: Connection, conn2: Connection, drop_slot):
     table_name = f"TEST_TABLE_{uuid.uuid4().hex}"
     uuids = [str(uuid.uuid4()) for _ in range(4)]
@@ -96,10 +155,8 @@ def test_insert_are_replicated(conn: Connection, conn2: Connection, drop_slot):
     repl_starting_soon_event = threading.Event()
     db_activity_simulator_done = threading.Event()
 
-    db_activity_simulator = threading.Thread(
-        target=_db_activity_simulator,
-        daemon=True,
-        args=[conn, table_name, repl_starting_soon_event, db_activity_simulator_done, statements],
+    db_activity_simulator = DbActivitySimulator(
+        conn, table_name, repl_starting_soon_event, db_activity_simulator_done, statements
     )
 
     db_stream_consumer = threading.Thread(
