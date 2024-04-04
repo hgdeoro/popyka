@@ -1,6 +1,8 @@
+import abc
 import json
 import logging
 import os
+import pprint
 import threading
 import typing
 
@@ -23,14 +25,55 @@ def _get_slot_name() -> str:
     return "popyka"
 
 
+class Wal2JsonV2Change(dict):
+    # FIXME: this is pretty awful, name and design
+    pass
+
+
+class Processor(abc.ABC):
+    # FIXME: this is pretty awful, name and design
+    # on_error?
+    # retries?
+
+    def process_change(self, change: Wal2JsonV2Change):
+        raise NotImplementedError()
+
+
+class DumpToStdOutProcessor(Processor):
+    def process_change(self, change: Wal2JsonV2Change):
+        logger.info("DumpToStdOutProcessor: change: %s", pprint.pformat(change))
+
+
+# class ProduceToKafkaProcessor(Processor):
+#     def process_change(self, change: Wal2JsonV2Change):
+#         pass
+
+
+def _get_processors() -> list[Processor]:
+    return [DumpToStdOutProcessor()]
+
+
 def main():
-    main_instance = Main(cn=_get_connection(), slot_name=_get_slot_name(), consumer=ConsumerDumpToLog())
+    consumer = ConsumerRunProcessors(_get_processors())
+    main_instance = Main(cn=_get_connection(), slot_name=_get_slot_name(), consumer=consumer)
     logger.info("Starting consumer...")
     main_instance.start()
     try:
         main_instance.join()
     except KeyboardInterrupt:
         pass
+
+
+class ConsumerRunProcessors:
+    def __init__(self, processors: list[Processor]):
+        self._processors = processors
+
+    def __call__(self, msg: psycopg2.extras.ReplicationMessage):
+        logger.info("ConsumerRunProcessors: received payload: %s", msg)
+        change = Wal2JsonV2Change(json.loads(msg.payload))
+        for processor in self._processors:
+            processor.process_change(change)
+        msg.cursor.send_feedback(flush_lsn=msg.data_start)
 
 
 class ConsumerDumpToLog:
