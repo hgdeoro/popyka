@@ -1,20 +1,20 @@
 import logging
-import threading
-import uuid
 
 import psycopg2
 import psycopg2.extras
 import pytest
 from psycopg2.extensions import connection as Connection
-from psycopg2.extras import ReplicationCursor
-
 
 logger = logging.getLogger(__name__)
 
 
+DSN_POSTGRES = "host=localhost port=5432 dbname=postgres user=postgres"
+DSN_POSTGRES_WAL2JSON = "host=localhost port=5434 dbname=postgres user=postgres"
+
+
 @pytest.fixture
 def dsn():
-    return "host=localhost port=5432 dbname=postgres user=postgres"
+    return DSN_POSTGRES_WAL2JSON
 
 
 @pytest.fixture
