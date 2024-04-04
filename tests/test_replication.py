@@ -1,3 +1,4 @@
+import json
 import logging
 import threading
 import time
@@ -37,7 +38,7 @@ def _db_activity_simulator(
 
 def _db_stream_consumer(cn: Connection, repl_starting_soon_event: threading.Event, payloads: list, max_payloads: int):
     with cn.cursor() as cur:
-        cur.create_replication_slot("pytest_logical", output_plugin="test_decoding")
+        cur.create_replication_slot("pytest_logical", output_plugin="wal2json")
         cur.start_replication(slot_name="pytest_logical", decode=True)
 
         class DemoConsumer(object):
@@ -88,12 +89,9 @@ def test_db_activity_simulator(conn: Connection, conn2: Connection):
 
 def test_insert_are_replicated(conn: Connection, conn2: Connection, drop_slot):
     table_name = f"TEST_TABLE_{uuid.uuid4().hex}"
-    statements = (
-        (f"INSERT INTO {table_name} (NAME) VALUES (%s)", [str(uuid.uuid4())]),
-        (f"INSERT INTO {table_name} (NAME) VALUES (%s)", [str(uuid.uuid4())]),
-        (f"INSERT INTO {table_name} (NAME) VALUES (%s)", [str(uuid.uuid4())]),
-        (f"INSERT INTO {table_name} (NAME) VALUES (%s)", [str(uuid.uuid4())]),
-    )
+    uuids = [str(uuid.uuid4()) for _ in range(4)]
+    statements = [(f"INSERT INTO {table_name} (NAME) VALUES (%s)", [_]) for _ in uuids]
+
     payloads: list = []
     repl_starting_soon_event = threading.Event()
     db_activity_simulator_done = threading.Event()
@@ -107,7 +105,7 @@ def test_insert_are_replicated(conn: Connection, conn2: Connection, drop_slot):
     db_stream_consumer = threading.Thread(
         target=_db_stream_consumer,
         daemon=True,
-        args=[conn2, repl_starting_soon_event, payloads, 3 * len(statements)],
+        args=[conn2, repl_starting_soon_event, payloads, len(statements)],
     )
 
     db_activity_simulator.start()
@@ -116,13 +114,31 @@ def test_insert_are_replicated(conn: Connection, conn2: Connection, drop_slot):
     db_activity_simulator.join()
     assert db_activity_simulator_done.is_set()
 
-    while len(payloads) < 3 * len(statements):
+    while len(payloads) < len(statements):
         logger.info("There are %s items in 'payloads'", len(payloads))
         time.sleep(0.2)
 
     db_stream_consumer.join()
 
-    payloads = [_ for _ in payloads if "INSERT:" in _]
-    assert len(payloads) == len(statements)
-    for an_uuid in [stmt[1][0] for stmt in statements]:
-        assert len([_ for _ in payloads if an_uuid in _]) == 1
+    # {
+    #     "change": [
+    #         {
+    #             "kind": "insert",
+    #             "schema": "public",
+    #             "table": "test_table_005902aae27f4f7ab33fada1c78d7f14",
+    #             "columnnames": [
+    #                 "name"
+    #             ],
+    #             "columntypes": [
+    #                 "character varying"
+    #             ],
+    #             "columnvalues": [
+    #                 "53b5cda2-e3cc-4011-a9c7-7f628bc7e008"
+    #             ]
+    #         }
+    #     ]
+    # },
+
+    payloads = [json.loads(_) for _ in payloads]
+    assert [_["change"][0]["kind"] for _ in payloads] == ["insert"] * 4
+    assert [_["change"][0]["columnvalues"][0] for _ in payloads] == uuids

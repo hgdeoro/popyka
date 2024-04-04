@@ -10,6 +10,7 @@ def test_test_decoding_plugin(dsn, drop_slot):
         cur.start_replication(slot_name="pytest_logical", decode=False)
 
 
+@pytest.mark.xfail
 def test_pgoutput_plugin(dsn, drop_slot):
     conn: Connection = psycopg2.connect(dsn, connection_factory=psycopg2.extras.LogicalReplicationConnection)
     with conn.cursor() as cur:

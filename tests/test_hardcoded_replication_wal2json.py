@@ -117,7 +117,6 @@ def test_start_replication(conn: Connection, conn2: Connection, drop_slot):
     assert not db_stream_consumer.is_alive()
 
     assert len(payloads) == 5
-    payloads = [json.loads(_) for _ in payloads]
 
     # {
     #     "change": [
@@ -138,5 +137,6 @@ def test_start_replication(conn: Connection, conn2: Connection, drop_slot):
     #     ]
     # },
 
+    payloads = [json.loads(_) for _ in payloads]
     kinds = [_["change"][0]["kind"] for _ in payloads]
     assert kinds == ["insert"] * 5

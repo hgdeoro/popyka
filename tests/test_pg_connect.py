@@ -25,7 +25,7 @@ def test_start_replication_plugin_test_decoding(conn: Connection, drop_slot):
         cur.start_replication(slot_name="pytest_logical", decode=True)
 
 
-@pytest.mark.skip
+@pytest.mark.xfail
 def test_start_replication_plugin_pgoutput(conn: Connection, drop_slot):
     with conn.cursor() as cur:
         cur.create_replication_slot("pytest_logical", output_plugin="pgoutput")
