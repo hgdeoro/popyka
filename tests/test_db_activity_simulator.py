@@ -26,12 +26,12 @@ class DbActivitySimulator(threading.Thread):
     def table_name(self) -> str:
         return self._table_name
 
-    @property
-    def repl_starting_soon_event(self) -> threading.Event:
-        return self._repl_starting_soon_event
+    def start_activity(self):
+        return self._repl_starting_soon_event.set()
 
-    def done(self) -> threading.Event:
-        return self._done
+    @property
+    def is_done(self) -> bool:
+        return self._done.is_set()
 
     def run(self) -> None:
         with self._cn.cursor() as cur:
@@ -60,10 +60,10 @@ def test_db_activity_simulator(conn: Connection, conn2: Connection, table_name: 
     )
     db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
     db_activity_simulator.start()
-    db_activity_simulator.repl_starting_soon_event.set()
+    db_activity_simulator.start_activity()
     db_activity_simulator.join()
 
-    assert db_activity_simulator.done().is_set()
+    assert db_activity_simulator.is_done
 
     with conn2.cursor() as cur:
         cur.execute(f"SELECT count(*) FROM {table_name}")

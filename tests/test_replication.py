@@ -39,7 +39,7 @@ def _db_activity_simulator(
     done.set()
 
 
-def _db_stream_consumer(cn: Connection, repl_starting_soon_event: threading.Event, payloads: list, max_payloads: int):
+def _db_stream_consumer(cn: Connection, db_activity_simulator: DbActivitySimulator, payloads: list, max_payloads: int):
     with cn.cursor() as cur:
         cur.create_replication_slot("pytest_logical", output_plugin="wal2json")
         cur.start_replication(slot_name="pytest_logical", decode=True)
@@ -55,7 +55,7 @@ def _db_stream_consumer(cn: Connection, repl_starting_soon_event: threading.Even
 
         consumer = DemoConsumer()
 
-        repl_starting_soon_event.set()
+        db_activity_simulator.start_activity()
         try:
             cur.consume_stream(consumer)
         except psycopg2.extras.StopReplication:
@@ -101,14 +101,14 @@ def test_insert_are_replicated(conn: Connection, conn2: Connection, drop_slot, t
     db_stream_consumer = threading.Thread(
         target=_db_stream_consumer,
         daemon=True,
-        args=[conn2, db_activity_simulator.repl_starting_soon_event, payloads, len(statements)],
+        args=[conn2, db_activity_simulator, payloads, len(statements)],
     )
 
     db_activity_simulator.start()
     db_stream_consumer.start()
 
     db_activity_simulator.join()
-    assert db_activity_simulator.done().is_set()
+    assert db_activity_simulator.is_done
 
     while len(payloads) < len(statements):
         logger.info("There are %s items in 'payloads'", len(payloads))
