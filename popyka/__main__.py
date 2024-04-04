@@ -11,11 +11,20 @@ from psycopg2.extras import ReplicationCursor
 logger = logging.getLogger(__name__)
 
 
-def main():
+def _get_connection() -> Connection:
     dsn = os.environ.get("DSN")
     logger.info("Connecting dsn=%s...", dsn[:4])
     cn: Connection = psycopg2.connect(dsn, connection_factory=psycopg2.extras.LogicalReplicationConnection)
-    main_instance = Main(cn=cn, slot_name="popyka", consumer=ConsumerDumpToLog())
+    logger.info("Server version: %s", cn.info.server_version)
+    return cn
+
+
+def _get_slot_name() -> str:
+    return "popyka"
+
+
+def main():
+    main_instance = Main(cn=_get_connection(), slot_name=_get_slot_name(), consumer=ConsumerDumpToLog())
     logger.info("Starting consumer...")
     main_instance.start()
     try:
