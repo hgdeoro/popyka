@@ -62,9 +62,9 @@ class DbActivitySimulator(threading.Thread):
     #         cur.execute(f"SELECT * FROM {self._table_name}")
     #         return cur.fetchall()
 
-    def sql_count_all(self, cn: Connection):
+    def sql_count_all(self, cn: Connection, table_name_suffix=""):
         with cn.cursor() as cur:
-            cur.execute(f"SELECT count(*) FROM {self._table_name}")
+            cur.execute(f"SELECT count(*) FROM {self._table_name}{table_name_suffix}")
             return cur.fetchall()[0][0]
 
 
@@ -81,3 +81,28 @@ def test_db_activity_simulator(conn: Connection, conn2: Connection, table_name: 
 
     assert db_activity_simulator.is_done
     assert db_activity_simulator.sql_count_all(conn2) == 3
+
+
+def test_db_activity_simulator_custom_tables(conn: Connection, conn2: Connection, table_name: str):
+    class CustomDbActivitySimulator(DbActivitySimulator):
+        def create_table(self, cur):
+            cur.execute(f"DROP TABLE IF EXISTS {self._table_name}_a")
+            cur.execute(f"DROP TABLE IF EXISTS {self._table_name}_b")
+            self._cn.commit()
+
+            cur.execute(f"CREATE TABLE {self._table_name}_a (NAME_A VARCHAR)")
+            cur.execute(f"CREATE TABLE {self._table_name}_b (NAME_B VARCHAR)")
+            self._cn.commit()
+
+    statements = (
+        ("INSERT INTO {table_name}_a (NAME_a) VALUES (gen_random_uuid())", []),
+        ("INSERT INTO {table_name}_b (NAME_b) VALUES (gen_random_uuid())", []),
+    )
+    db_activity_simulator = CustomDbActivitySimulator(conn, table_name, statements)
+    db_activity_simulator.start()
+    db_activity_simulator.start_activity()
+    db_activity_simulator.join()
+
+    assert db_activity_simulator.is_done
+    assert db_activity_simulator.sql_count_all(conn2, table_name_suffix="_a") == 1
+    assert db_activity_simulator.sql_count_all(conn2, table_name_suffix="_b") == 1
