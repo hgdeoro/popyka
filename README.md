@@ -20,7 +20,7 @@ Run PoPyKa to read the changes from PostgreSql and write JSONs to Kafka:
 
 You can see the contents of the Kafka topic using ~~Kowl~~ Redpanda Console at http://localhost:8080/topics/popyka
 
-**List of captured changes**:
+**List of captured changes streamed to Kafka**:
 
 ![kafka-topic.png](docs%2Fkafka-topic.png)
 
