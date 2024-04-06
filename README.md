@@ -2,6 +2,18 @@
 
 So far the code is small, everything fits in [__main__.py](./popyka/__main__.py).
 
+```mermaid
+sequenceDiagram
+    Main->>Postgres: create_replication_slot()
+    Main->>Postgres: start_replication()
+    Postgres->>ReplicationConsumerToProcessorAdaptor: wal2json change
+    ReplicationConsumerToProcessorAdaptor->>IgnoreTxFilter: ignore_change()
+    ReplicationConsumerToProcessorAdaptor->>LogChangeProcessor: process_change()
+    ReplicationConsumerToProcessorAdaptor->>ProduceToKafkaProcessor: process_change()
+    ProduceToKafkaProcessor->>Kafka: publish()
+    ReplicationConsumerToProcessorAdaptor->>Postgres: flush_lsn
+```
+
 # Run locally
 
 Launch PostgreSql and Kafka using docker compose:
