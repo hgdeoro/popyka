@@ -2,7 +2,6 @@ import abc
 import json
 import logging
 import os
-import pprint
 import threading
 import typing
 from urllib.parse import urlparse
@@ -13,6 +12,57 @@ from psycopg2.extensions import connection as Connection
 from psycopg2.extras import ReplicationCursor
 
 logger = logging.getLogger(__name__)
+
+
+class Wal2JsonV2Change(dict):
+    # FIXME: this is pretty awful, name and design
+    pass
+
+
+class Processor(abc.ABC):
+    # FIXME: this is pretty awful, name and design
+    # on_error?
+    # retries?
+
+    def process_change(self, change: Wal2JsonV2Change):
+        raise NotImplementedError()
+
+
+class DumpToStdOutProcessor(Processor):
+    """Processor that dumps the payload"""
+
+    def process_change(self, change: Wal2JsonV2Change):
+        # FIXME: make json.dumps() lazy
+        logger.debug("DumpToStdOutProcessor: change: %s", json.dumps(change, indent=4))
+
+
+class ProduceToKafkaProcessor(Processor):
+    def _get_conf(self) -> dict:
+        return json.loads(os.environ.get("KAFKA_CONF_DICT"))
+
+    def __init__(self):
+        self._producer = Producer(self._get_conf())
+
+    def process_change(self, change: Wal2JsonV2Change):
+        self._producer.produce(topic="popyka", value=json.dumps(change))
+        self._producer.flush()
+        logger.info("Message produced to Kafka was flush()'ed")
+
+
+class ReplicationConsumerToProcessorAdapter:
+    """Psycopg2 replication consumer that runs configured PoPyKa processors on the received changes"""
+
+    def __init__(self, processors: list[Processor]):
+        self._processors = processors
+
+    def __call__(self, msg: psycopg2.extras.ReplicationMessage):
+        logger.info("ConsumerRunProcessors: received payload: %s", msg)
+        change = Wal2JsonV2Change(json.loads(msg.payload))
+        for processor in self._processors:
+            processor.process_change(change)
+
+        # Flush after every message is successfully processed
+        msg.cursor.send_feedback(flush_lsn=msg.data_start)
 
 
 def _parse_dsn(dsn: str) -> tuple[object, str]:
@@ -41,79 +91,13 @@ def _get_slot_name() -> str:
     return f"popyka_{db_name}"
 
 
-class Wal2JsonV2Change(dict):
-    # FIXME: this is pretty awful, name and design
-    pass
-
-
-class Processor(abc.ABC):
-    # FIXME: this is pretty awful, name and design
-    # on_error?
-    # retries?
-
-    def process_change(self, change: Wal2JsonV2Change):
-        raise NotImplementedError()
-
-
-class DumpToStdOutProcessor(Processor):
-    def process_change(self, change: Wal2JsonV2Change):
-        logger.info("DumpToStdOutProcessor: change: %s", pprint.pformat(change))
-
-
-class ProduceToKafkaProcessor(Processor):
-    def _get_conf(self) -> dict:
-        return json.loads(os.environ.get("KAFKA_CONF_DICT"))
-
-    def __init__(self):
-        self._producer = Producer(self._get_conf())
-
-    def process_change(self, change: Wal2JsonV2Change):
-        self._producer.produce(topic="popyka", value=json.dumps(change))
-        self._producer.flush()
-        logger.info("Message written to Kafka")
-
-
 def _get_processors() -> list[Processor]:
     return [DumpToStdOutProcessor(), ProduceToKafkaProcessor()]
 
 
-def main():
-    consumer = ConsumerRunProcessors(_get_processors())
-    main_instance = Main(cn=_get_connection(), slot_name=_get_slot_name(), consumer=consumer)
-    logger.info("Starting consumer...")
-    main_instance.start()
-    try:
-        main_instance.join()
-    except KeyboardInterrupt:
-        pass
-
-
-class ConsumerRunProcessors:
-    def __init__(self, processors: list[Processor]):
-        self._processors = processors
-
-    def __call__(self, msg: psycopg2.extras.ReplicationMessage):
-        logger.info("ConsumerRunProcessors: received payload: %s", msg)
-        change = Wal2JsonV2Change(json.loads(msg.payload))
-        for processor in self._processors:
-            processor.process_change(change)
-        msg.cursor.send_feedback(flush_lsn=msg.data_start)
-
-
-class ConsumerDumpToLog:
-    def __call__(self, msg: psycopg2.extras.ReplicationMessage):
-        payload = json.dumps(json.loads(msg.payload), indent=4, sort_keys=True)
-        logger.info("ConsumerDumpToLog: received payload: %s", payload)
-        msg.cursor.send_feedback(flush_lsn=msg.data_start)
-
-
-class ConsumerStatsToLog:
-    def __call__(self, msg: psycopg2.extras.ReplicationMessage):
-        logger.info("ConsumerStatsToLog: received payload size: %s", len(msg.payload))
-        msg.cursor.send_feedback(flush_lsn=msg.data_start)
-
-
 class Main(threading.Thread):
+    # TODO: why a thread? Try to simplify this
+
     def __init__(self, cn: Connection, slot_name: str, consumer: typing.Callable):
         super().__init__(daemon=True)
         self._cn = cn
@@ -130,6 +114,17 @@ class Main(threading.Thread):
 
             cur.start_replication(slot_name=self._slot_name, decode=True, options={"format-version": "2"})
             cur.consume_stream(self._consumer)
+
+
+def main():
+    consumer = ReplicationConsumerToProcessorAdapter(_get_processors())
+    main_instance = Main(cn=_get_connection(), slot_name=_get_slot_name(), consumer=consumer)
+    logger.info("Starting consumer...")
+    main_instance.start()
+    try:
+        main_instance.join()
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":
