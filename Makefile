@@ -5,7 +5,8 @@ VENVDIR ?= $(abspath ./venv)
 
 export PATH := $(VENVDIR)/bin:$(PATH)
 
-LOCAL_DSN = "host=localhost port=5434 dbname=postgres user=postgres"
+LOCAL_DSN = "postgresql://postgres:pass@localhost:5434/postgres"
+LOCAL_DSN_SAMPLE_1 = "postgresql://postgres:pass@localhost:5434/sample_1"
 KAFKA_CONF_DICT = '{"bootstrap.servers": "localhost:9094","client.id": "popyka-client"}'
 
 venv:
@@ -31,14 +32,14 @@ docker-build-popyka:
 
 docker-run-popyka:
 	env \
-		DSN="host=localhost port=5434 dbname=sample_1 user=postgres" \
+		DSN=$(LOCAL_DSN_SAMPLE_1) \
 		KAFKA_CONF_DICT=$(KAFKA_CONF_DICT) \
 			docker run --rm -ti --network host -e DSN -e KAFKA_CONF_DICT \
 				local-popyka python3 -m popyka
 
 docker-run-db-activity-simulator:
 	docker build -t db-activity-simulator ./tests/docker/db-activity-simulator
-	docker run --network host --rm -ti db-activity-simulator
+	docker run --network host --rm -ti -e DSN=$(LOCAL_DSN_SAMPLE_1) db-activity-simulator
 
 local-run:
 	env \
