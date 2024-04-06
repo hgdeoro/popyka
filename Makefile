@@ -39,7 +39,10 @@ docker-run-popyka:
 
 docker-run-db-activity-simulator:
 	docker build -t db-activity-simulator ./tests/docker/db-activity-simulator
-	docker run --network host --rm -ti -e DSN=$(LOCAL_DSN_SAMPLE_1) db-activity-simulator
+	docker run --network host --rm -ti \
+		-e DSN=$(LOCAL_DSN_SAMPLE_1) \
+		-e DSN_CREATE_DB=$(LOCAL_DSN) \
+		db-activity-simulator
 
 local-run:
 	env \

@@ -5,6 +5,7 @@ import os
 import pprint
 import threading
 import typing
+from urllib.parse import urlparse
 
 import psycopg2.extras
 from confluent_kafka import Producer
@@ -14,16 +15,30 @@ from psycopg2.extras import ReplicationCursor
 logger = logging.getLogger(__name__)
 
 
+def _parse_dsn(dsn: str) -> tuple[object, str]:
+    dsn_parsed = urlparse(dsn)
+    db_name = dsn_parsed.path
+    assert db_name.startswith("/")
+    db_name = db_name[1:]
+    return dsn_parsed, db_name
+
+
 def _get_connection() -> Connection:
+    # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
     dsn = os.environ.get("DSN")
-    logger.info("Connecting dsn=%s...", dsn[:4])
+    dsn_parsed, db_name = _parse_dsn(dsn)
+    logger.info(
+        "Connecting host=%s port=%s user=%s db=%s", dsn_parsed.hostname, dsn_parsed.port, dsn_parsed.username, db_name
+    )
     cn: Connection = psycopg2.connect(dsn, connection_factory=psycopg2.extras.LogicalReplicationConnection)
     logger.info("Server version: %s", cn.info.server_version)
     return cn
 
 
 def _get_slot_name() -> str:
-    return "popyka"
+    # FIXME: let user overwrite via env variables
+    _, db_name = _parse_dsn(os.environ.get("DSN"))
+    return f"popyka_{db_name}"
 
 
 class Wal2JsonV2Change(dict):

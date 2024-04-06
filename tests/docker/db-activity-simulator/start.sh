@@ -3,9 +3,10 @@
 set -eu
 
 echo "DSN=${DSN}"
+echo "DSN_CREATE_DB=${DSN_CREATE_DB}"
 
 psql ${DSN} -c "select 1" || \
-    psql ${DSN} -c "create database sample_1"
+    psql ${DSN_CREATE_DB} -c "create database sample_1"
 
 psql ${DSN} -c "create table if not exists sample_table_activity (id serial primary key, name varchar)"
 
