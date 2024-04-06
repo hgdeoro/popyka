@@ -42,7 +42,7 @@ def conn(dsn: str):
 
     try:
         cn.close()
-    except:
+    except:  # noqa: E722
         logger.exception("Exception detected when trying to close connection")
 
 
@@ -54,5 +54,5 @@ def conn2(dsn: str):
 
     try:
         cn.close()
-    except:
+    except:  # noqa: E722
         logger.exception("Exception detected when trying to close connection")
