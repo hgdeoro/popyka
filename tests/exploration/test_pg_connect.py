@@ -1,7 +1,7 @@
 import logging
 
-import pytest
 import psycopg2.errors
+import pytest
 from psycopg2.extensions import connection as Connection
 
 logger = logging.getLogger(__name__)
