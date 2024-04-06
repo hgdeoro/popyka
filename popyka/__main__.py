@@ -43,12 +43,12 @@ class Processor(abc.ABC):
 # Processors implementations
 
 
-class DumpToStdOutProcessor(Processor):
+class LogChangeProcessor(Processor):
     """Processor that dumps the payload"""
 
     def process_change(self, change: Wal2JsonV2Change):
         # TODO: make json.dumps() lazy
-        logger.debug("DumpToStdOutProcessor: change: %s", json.dumps(change, indent=4))
+        logger.info("LogChangeProcessor: change: %s", json.dumps(change, indent=4))
 
 
 class ProduceToKafkaProcessor(Processor):
@@ -90,7 +90,7 @@ class ReplicationConsumerToProcessorAdaptor:
 class Main:
     def get_processors(self) -> list[Processor]:
         # TODO: take class name of processors from env
-        return [DumpToStdOutProcessor(), ProduceToKafkaProcessor()]
+        return [LogChangeProcessor(), ProduceToKafkaProcessor()]
 
     def get_slot_name(self) -> str:
         # TODO: let user overwrite via env variables
