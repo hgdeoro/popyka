@@ -40,31 +40,30 @@ docker-compose-wait:
 
 # ----------
 
-TEST_DSN_POSTGRES = "postgresql://postgres:pass@localhost:5434/postgres"
-TEST_DSN_SAMPLE_1 = "postgresql://postgres:pass@localhost:5434/sample_1"
-TEST_KAFKA_CONF_DICT = '{"bootstrap.servers": "localhost:9094","client.id": "popyka-client"}'
+TEST_POPYKA_DB_DSN_POSTGRES_DB = "postgresql://postgres:pass@localhost:5434/postgres"
+TEST_POPYKA_DB_DSN_SAMPLE_1_DB = "postgresql://postgres:pass@localhost:5434/sample_1"
+TEST_POPYKA_KAFKA_CONF_DICT = '{"bootstrap.servers": "localhost:9094","client.id": "popyka-client"}'
 
 docker-popyka-build:
 	docker build --build-arg HTTP_PROXY=$$http_proxy --build-arg HTTPS_PROXY=$$https_proxy -t local-popyka .
 
 docker-popyka-run:
 	# docker container run using host network to keep it similar to running code locally
-	env \
-		DSN=$(TEST_DSN_SAMPLE_1) \
-		KAFKA_CONF_DICT=$(TEST_KAFKA_CONF_DICT) \
-			docker run --rm -ti --network host -e DSN -e KAFKA_CONF_DICT \
-				local-popyka python3 -m popyka
+	docker run --rm -ti --network host \
+		-e POPYKA_DB_DSN=$(TEST_POPYKA_DB_DSN_SAMPLE_1_DB) \
+		-e POPYKA_KAFKA_CONF_DICT=$(TEST_POPYKA_KAFKA_CONF_DICT) \
+			local-popyka python3 -m popyka
 
 docker-db-activity-simulator-run:
 	# docker container run using host network to keep it similar to running code locally
 	docker build -t db-activity-simulator ./tests/docker/db-activity-simulator
 	docker run --network host --rm -ti \
-		-e DSN=$(TEST_DSN_SAMPLE_1) \
-		-e DSN_CREATE_DB=$(TEST_DSN_POSTGRES) \
+		-e DSN_CHECK_DB=$(TEST_POPYKA_DB_DSN_POSTGRES_DB) \
+		-e DSN_ACTIVITY_SIMULATOR=$(TEST_POPYKA_DB_DSN_SAMPLE_1_DB) \
 			db-activity-simulator
 
 local-run:
 	env \
-		DSN=$(TEST_DSN_POSTGRES) \
-		KAFKA_CONF_DICT=$(TEST_KAFKA_CONF_DICT) \
-		./venv/bin/python3 -m popyka
+		POPYKA_DB_DSN=$(POPYKA_DB_DSN_POSTGRES_DB) \
+		POPYKA_KAFKA_CONF_DICT=$(POPYKA_KAFKA_CONF_DICT) \
+			./venv/bin/python3 -m popyka

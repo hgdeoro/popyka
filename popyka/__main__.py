@@ -11,9 +11,14 @@ from psycopg2.extras import ReplicationCursor
 
 logger = logging.getLogger(__name__)
 
+# Environment variables
 
-POPYKA_KAFKA_CONF_DICT = os.environ.get("KAFKA_CONF_DICT")
-POPYKA_DB_DSN = os.environ.get("DSN")
+
+POPYKA_DB_DSN = os.environ.get("POPYKA_DB_DSN")
+"""URI: DSN to connect to PostgreSql"""
+
+POPYKA_KAFKA_CONF_DICT = os.environ.get("POPYKA_KAFKA_CONF_DICT")
+"""JSON formatted configuration of Kafka producer"""
 
 # Kinda public API
 
