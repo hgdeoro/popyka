@@ -26,6 +26,15 @@ pip-sync:
 
 pip-compile-sync: pip-compile pip-sync
 
+docker-build:
+	docker build --build-arg HTTP_PROXY=$$http_proxy --build-arg HTTPS_PROXY=$$https_proxy -t local-popyka .
+
+docker-run:
+	env \
+		DSN=$(LOCAL_DSN) \
+		KAFKA_CONF_DICT=$(KAFKA_CONF_DICT) \
+			docker run --rm -ti --network host -e DSN -e KAFKA_CONF_DICT \
+				local-popyka python3 -m popyka
 
 local-run:
 	env \
