@@ -40,6 +40,29 @@ class Processor(abc.ABC):
         raise NotImplementedError()
 
 
+class Filter(abc.ABC):
+    """Base class for change filters"""
+
+    def ignore_change(self, change: Wal2JsonV2Change) -> bool:
+        """
+        Receives a change and returns True if should be ignored.
+        Ignored changes won't reach the processors.
+        """
+        raise NotImplementedError()
+
+
+# Filter implementations
+
+
+class IgnoreTxFilter(Filter):
+    """Ignore changes associated BEGIN/COMMIT"""
+
+    IGNORED_ACTIONS = {"B", "C"}
+
+    def ignore_change(self, change: Wal2JsonV2Change) -> bool:
+        return change["action"] in self.IGNORED_ACTIONS
+
+
 # Processors implementations
 
 
@@ -71,14 +94,20 @@ class ProduceToKafkaProcessor(Processor):
 class ReplicationConsumerToProcessorAdaptor:
     """Psycopg2 replication consumer that runs configured PoPyKa Processors on the received changes"""
 
-    def __init__(self, processors: list[Processor]):
+    def __init__(self, processors: list[Processor], filters: list[Filter]):
         self._processors = processors
+        self._filters = filters
 
     def __call__(self, msg: psycopg2.extras.ReplicationMessage):
         logger.info("ConsumerRunProcessors: received payload: %s", msg)
         change = Wal2JsonV2Change(json.loads(msg.payload))
-        for processor in self._processors:
-            processor.process_change(change)
+        ignore = any([a_filter.ignore_change(change) for a_filter in self._filters])
+
+        if ignore:
+            logger.info("Ignoring change")
+        else:
+            for processor in self._processors:
+                processor.process_change(change)
 
         # Flush after every message is successfully processed
         msg.cursor.send_feedback(flush_lsn=msg.data_start)
@@ -88,6 +117,11 @@ class ReplicationConsumerToProcessorAdaptor:
 
 
 class Main:
+
+    def get_filters(self) -> list[Filter]:
+        # TODO: take class name of filters from env
+        return [IgnoreTxFilter()]
+
     def get_processors(self) -> list[Processor]:
         # TODO: take class name of processors from env
         return [LogChangeProcessor(), ProduceToKafkaProcessor()]
@@ -110,7 +144,7 @@ class Main:
         return POPYKA_DB_DSN, parsed, parsed.path[1:]
 
     def main(self):
-        adaptor = ReplicationConsumerToProcessorAdaptor(self.get_processors())
+        adaptor = ReplicationConsumerToProcessorAdaptor(self.get_processors(), self.get_filters())
         cn = self.get_connection()
         slot_name = self.get_slot_name()
 
