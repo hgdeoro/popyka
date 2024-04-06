@@ -27,6 +27,17 @@ pip-sync:
 docker-compose-up:
 	docker compose up -d
 
+docker-compose-logs:
+	docker compose logs -f
+
+docker-compose-wait:
+	while /bin/true ; do\
+ 		nc -z localhost 5434 || echo "Waiting for PostgreSql..." ; \
+ 		nc -z localhost 9094 || echo "Waiting for Kafka..." ; \
+ 		nc -z localhost 5434 && nc -z localhost 9094 && break ; \
+ 		sleep 1 ; \
+	done
+
 # ----------
 
 TEST_DSN_POSTGRES = "postgresql://postgres:pass@localhost:5434/postgres"
