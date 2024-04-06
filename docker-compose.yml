@@ -19,7 +19,6 @@ services:
       - -c
       - max_replication_slots=10
     stop_grace_period: 2s
-    # network_mode: host
 
   kafka:
     image: 'bitnami/kafka:3.5'
@@ -34,7 +33,6 @@ services:
     ports:
       - 9092:9092
       - 9094:9094
-    # network_mode: host
 
   kowl:
     image: docker.redpanda.com/redpandadata/console:latest
@@ -42,4 +40,3 @@ services:
       - KAFKA_BROKERS=kafka:9092
     ports:
       - 8080:8080
-    # network_mode: host
