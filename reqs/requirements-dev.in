@@ -1,0 +1,7 @@
+-c requirements-prod.txt
+
+pytest
+black
+isort
+ipdb
+pre-commit
