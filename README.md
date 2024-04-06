@@ -1,3 +1,7 @@
+# Code
+
+So far the code is small, everything fits in [__main__.py](./popyka/__main__.py).
+
 # Run locally
 
 Launch PostgreSql and Kafka using docker compose:
