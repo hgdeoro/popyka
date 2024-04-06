@@ -27,8 +27,13 @@ Simulate some DB activity (insert, update, delete):
 
 Run PoPyKa to read the changes from PostgreSql and write JSONs to Kafka:
 
+    $ make docker-popyka-run-gitlab
+
+or building the image locally (if you want to try your changes):
+
     $ make docker-popyka-build
     $ make docker-popyka-run
+
 
 You can see the contents of the Kafka topic using ~~Kowl~~ Redpanda Console at http://localhost:8080/topics/popyka
 

@@ -40,6 +40,15 @@ docker-compose-wait:
 
 # ----------
 
+docker-popyka-run-gitlab:
+	# docker container run using host network to keep it similar to running code locally
+	docker run --rm -ti --network host \
+		-e POPYKA_DB_DSN=$(TEST_POPYKA_DB_DSN_SAMPLE_1_DB) \
+		-e POPYKA_KAFKA_CONF_DICT=$(TEST_POPYKA_KAFKA_CONF_DICT) \
+			registry.gitlab.com/hgdeoro/popyka/test
+
+# ----------
+
 TEST_POPYKA_DB_DSN_POSTGRES_DB = "postgresql://postgres:pass@localhost:5434/postgres"
 TEST_POPYKA_DB_DSN_SAMPLE_1_DB = "postgresql://postgres:pass@localhost:5434/sample_1"
 TEST_POPYKA_KAFKA_CONF_DICT = '{"bootstrap.servers": "localhost:9094","client.id": "popyka-client"}'
@@ -52,7 +61,7 @@ docker-popyka-run:
 	docker run --rm -ti --network host \
 		-e POPYKA_DB_DSN=$(TEST_POPYKA_DB_DSN_SAMPLE_1_DB) \
 		-e POPYKA_KAFKA_CONF_DICT=$(TEST_POPYKA_KAFKA_CONF_DICT) \
-			local-popyka python3 -m popyka
+			local-popyka
 
 docker-db-activity-simulator-run:
 	# docker container run using host network to keep it similar to running code locally

@@ -33,3 +33,5 @@ RUN pip install --no-cache-dir --no-index --find-links=/wheels/ /wheels/* \
 COPY --chown=root:root ./popyka ${APP_HOME}/popyka
 
 USER nobody
+
+CMD ["python3", "-m", "popyka"]
