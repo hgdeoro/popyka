@@ -26,15 +26,19 @@ pip-sync:
 
 pip-compile-sync: pip-compile pip-sync
 
-docker-build:
+docker-build-popyka:
 	docker build --build-arg HTTP_PROXY=$$http_proxy --build-arg HTTPS_PROXY=$$https_proxy -t local-popyka .
 
-docker-run:
+docker-run-popyka:
 	env \
-		DSN=$(LOCAL_DSN) \
+		DSN="host=localhost port=5434 dbname=sample_1 user=postgres" \
 		KAFKA_CONF_DICT=$(KAFKA_CONF_DICT) \
 			docker run --rm -ti --network host -e DSN -e KAFKA_CONF_DICT \
 				local-popyka python3 -m popyka
+
+docker-run-db-activity-simulator:
+	docker build -t db-activity-simulator ./tests/docker/db-activity-simulator
+	docker run --network host --rm -ti db-activity-simulator
 
 local-run:
 	env \
