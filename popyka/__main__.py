@@ -12,6 +12,9 @@ from psycopg2.extras import ReplicationCursor
 logger = logging.getLogger(__name__)
 
 
+POPYKA_KAFKA_CONF_DICT = os.environ.get("KAFKA_CONF_DICT")
+POPYKA_DB_DSN = os.environ.get("DSN")
+
 # Kinda public API
 
 
@@ -46,7 +49,7 @@ class DumpToStdOutProcessor(Processor):
 class ProduceToKafkaProcessor(Processor):
     @staticmethod
     def _get_conf() -> dict:
-        return json.loads(os.environ.get("KAFKA_CONF_DICT"))
+        return json.loads(POPYKA_KAFKA_CONF_DICT)
 
     def __init__(self):
         self._producer = Producer(self._get_conf())
@@ -97,10 +100,9 @@ class Main:
 
     def get_dsn(self) -> tuple[str, object, str]:
         """Return DSN, also parsed URI and database name"""
-        dsn = os.environ.get("DSN")
-        parsed = urlparse(dsn)
+        parsed = urlparse(POPYKA_DB_DSN)
         assert parsed.path.startswith("/")
-        return dsn, parsed, parsed.path[1:]
+        return POPYKA_DB_DSN, parsed, parsed.path[1:]
 
     def main(self):
         adaptor = ReplicationConsumerToProcessorAdaptor(self.get_processors())
