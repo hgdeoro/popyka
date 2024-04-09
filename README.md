@@ -1,5 +1,8 @@
 ![popyka.png](docs%2Fpopyka.png)
 
+* Main repository at **GitLab**: https://gitlab.com/hgdeoro/popyka
+* Mirror at **GitHub**: https://github.com/hgdeoro/popyka
+
 # Status
 
 ### PoC
