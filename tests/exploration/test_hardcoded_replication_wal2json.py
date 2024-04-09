@@ -64,7 +64,9 @@ def _db_stream_consumer(cn: Connection, repl_starting_soon_event: threading.Even
         # TODO: close stream?
 
 
-@pytest.mark.skipif(os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored")
+@pytest.mark.skipif(
+    os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored (EXPLORATION_TEST)"
+)
 def test_db_activity_simulator(conn: Connection, conn2: Connection):
     repl_starting_soon_event = threading.Event()
     db_activity_simulator_done = threading.Event()
@@ -87,7 +89,9 @@ def test_db_activity_simulator(conn: Connection, conn2: Connection):
         assert cur.fetchall() == [(5,)]
 
 
-@pytest.mark.skipif(os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored")
+@pytest.mark.skipif(
+    os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored (EXPLORATION_TEST)"
+)
 def test_start_replication(conn: Connection, conn2: Connection, drop_slot):
     table_name = f"TEST_TABLE_{uuid.uuid4().hex}"
     payloads: list = []

@@ -1,10 +1,12 @@
 import json
 import logging
+import os
 import threading
 import time
 import uuid
 
 import psycopg2.extras
+import pytest
 from psycopg2.extensions import connection as Connection
 
 from tests.test_db_activity_simulator import DbActivitySimulator
@@ -81,6 +83,9 @@ class DbStreamConsumer(threading.Thread):
             # TODO: close stream?
 
 
+@pytest.mark.skipif(
+    os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored (EXPLORATION_TEST)"
+)
 def test_insert_are_replicated(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     uuids = [str(uuid.uuid4()) for _ in range(4)]
     statements = [("INSERT INTO {table_name} (NAME) VALUES (%s)", [_]) for _ in uuids]
@@ -123,6 +128,9 @@ def test_insert_are_replicated(conn: Connection, conn2: Connection, drop_slot, t
     assert [_["change"][0]["columnvalues"][0] for _ in json_payloads] == uuids
 
 
+@pytest.mark.skipif(
+    os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored (EXPLORATION_TEST)"
+)
 def test_json_for_default_options(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     statements = [
         ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')", []),

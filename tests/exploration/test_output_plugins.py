@@ -6,7 +6,9 @@ import pytest
 from psycopg2.extensions import connection as Connection
 
 
-@pytest.mark.skipif(os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored")
+@pytest.mark.skipif(
+    os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored (EXPLORATION_TEST)"
+)
 def test_test_decoding_plugin(dsn, drop_slot):
     conn: Connection = psycopg2.connect(dsn, connection_factory=psycopg2.extras.LogicalReplicationConnection)
     with conn.cursor() as cur:
@@ -14,7 +16,9 @@ def test_test_decoding_plugin(dsn, drop_slot):
         cur.start_replication(slot_name="pytest_logical", decode=False)
 
 
-@pytest.mark.skipif(os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored")
+@pytest.mark.skipif(
+    os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored (EXPLORATION_TEST)"
+)
 def test_pgoutput_plugin(dsn, drop_slot):
     conn: Connection = psycopg2.connect(dsn, connection_factory=psycopg2.extras.LogicalReplicationConnection)
     with conn.cursor() as cur:
@@ -24,7 +28,6 @@ def test_pgoutput_plugin(dsn, drop_slot):
             cur.start_replication(slot_name="pytest_logical", decode=False)
 
 
-# @pytest.mark.skipif(os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored")
 def test_wal2json_plugin(dsn, drop_slot):
     conn: Connection = psycopg2.connect(dsn, connection_factory=psycopg2.extras.LogicalReplicationConnection)
     with conn.cursor() as cur:
