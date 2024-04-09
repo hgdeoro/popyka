@@ -1,3 +1,10 @@
+[project]
+name = "popyka"
+dynamic = ["version"]
+
+[tool.setuptools]
+py-modules = []
+
 [tool.isort]
 profile = "black"
 
