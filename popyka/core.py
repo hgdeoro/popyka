@@ -1,7 +1,6 @@
 import abc
 import json
 import logging
-import threading
 from urllib.parse import urlparse
 
 import psycopg2.extras
@@ -73,10 +72,6 @@ class ReplicationConsumerToProcessorAdaptor:
 class Server(abc.ABC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._replication_started = threading.Event()
-
-    def wait_for_replication_started(self):
-        self._replication_started.wait()
 
     @abc.abstractmethod
     def get_filters(self) -> list[Filter]:
@@ -105,8 +100,13 @@ class Server(abc.ABC):
     def get_adaptor(self) -> ReplicationConsumerToProcessorAdaptor:
         return ReplicationConsumerToProcessorAdaptor(self.get_processors(), self.get_filters())
 
-    def run(self):
-        adaptor = self.get_adaptor()
+    def start_replication(self):
+        """
+        Start the replication. Can be called from main thread or a different one.
+
+        This step needs to be done before starting to consume.
+        It's a different method because makes testing much easier with no major disadvantage.
+        """
         cn = self.get_connection()
         slot_name = self.get_slot_name()
 
@@ -118,8 +118,14 @@ class Server(abc.ABC):
             except psycopg2.errors.DuplicateObject:
                 logger.info("Replication slot %s already exists", slot_name)
 
+    def run(self):
+        adaptor = self.get_adaptor()
+        cn = self.get_connection()
+        slot_name = self.get_slot_name()
+
+        with cn.cursor() as cur:
+            cur: ReplicationCursor
             cur.start_replication(slot_name=slot_name, decode=True, options={"format-version": "2"})
-            self._replication_started.set()
 
             try:
                 cur.consume_stream(adaptor)

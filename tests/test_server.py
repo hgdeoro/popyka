@@ -46,19 +46,16 @@ class ServerTestImpl(Server, threading.Thread):
 def test_server(dsn: str, conn: Connection, conn2: Connection, drop_slot, table_name: str):
     filters = []
     processors = [ProcessorImpl(max_changes=3)]
-    # slot_name = "pytest_logical"
+    # slot_name = f"pytest_{table_name}"
     server = ServerTestImpl(dsn, filters, processors)
+    server.start_replication()  # It's important to start replication before activity is simulated
     server.start()
-    server.wait_for_replication_started()
-
-    # <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8 <8
 
     uuids = [str(uuid.uuid4()) for _ in range(4)]
     statements = [("INSERT INTO {table_name} (NAME) VALUES (%s)", [_]) for _ in uuids]
-
     db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
     db_activity_simulator.start()
-    db_activity_simulator.join()
+    db_activity_simulator.join_or_fail(timeout=2)
 
-    server.join(timeout=5)
+    server.join(timeout=3)
     assert not server.is_alive()
