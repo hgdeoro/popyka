@@ -117,7 +117,6 @@ class ReplicationConsumerToProcessorAdaptor:
 
 
 class Main:
-
     def get_filters(self) -> list[Filter]:
         # TODO: take class name of filters from env
         return [IgnoreTxFilter()]
