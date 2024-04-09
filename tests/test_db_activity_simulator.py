@@ -9,9 +9,9 @@ logger = logging.getLogger(__name__)
 
 def test_db_activity_simulator(conn: Connection, conn2: Connection, table_name: str):
     statements = (
-        ("INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
-        ("INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
-        ("INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
+        ("INSERT INTO {table_name} (NAME) VALUES (md5(random()::text))", []),
+        ("INSERT INTO {table_name} (NAME) VALUES (md5(random()::text))", []),
+        ("INSERT INTO {table_name} (NAME) VALUES (md5(random()::text))", []),
     )
     db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
     db_activity_simulator.start()
@@ -32,8 +32,8 @@ def test_db_activity_simulator_custom_tables(conn: Connection, conn2: Connection
             self._cn.commit()
 
     statements = (
-        ("INSERT INTO {table_name}_a (NAME_a) VALUES (gen_random_uuid())", []),
-        ("INSERT INTO {table_name}_b (NAME_b) VALUES (gen_random_uuid())", []),
+        ("INSERT INTO {table_name}_a (NAME_a) VALUES (md5(random()::text))", []),
+        ("INSERT INTO {table_name}_b (NAME_b) VALUES (md5(random()::text))", []),
     )
     db_activity_simulator = CustomDbActivitySimulator(conn, table_name, statements)
     db_activity_simulator.start()

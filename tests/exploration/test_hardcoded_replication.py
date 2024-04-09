@@ -28,11 +28,11 @@ def _db_activity_simulator(
         logger.info("Table created, waiting for event to start inserting data...")
         assert repl_starting_soon_event.wait(timeout=3) is True
 
-        cur.execute(f"INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())")
-        cur.execute(f"INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())")
-        cur.execute(f"INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())")
-        cur.execute(f"INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())")
-        cur.execute(f"INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())")
+        cur.execute(f"INSERT INTO {table_name} (NAME) VALUES (md5(random()::text))")
+        cur.execute(f"INSERT INTO {table_name} (NAME) VALUES (md5(random()::text))")
+        cur.execute(f"INSERT INTO {table_name} (NAME) VALUES (md5(random()::text))")
+        cur.execute(f"INSERT INTO {table_name} (NAME) VALUES (md5(random()::text))")
+        cur.execute(f"INSERT INTO {table_name} (NAME) VALUES (md5(random()::text))")
         cn.commit()
 
     done.set()
