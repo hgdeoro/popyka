@@ -1,4 +1,5 @@
 import logging
+import os
 import uuid
 
 import psycopg2
@@ -10,6 +11,11 @@ logger = logging.getLogger(__name__)
 
 DSN_POSTGRES = "postgresql://postgres:pass@localhost:5432/postgres"
 DSN_POSTGRES_WAL2JSON = "postgresql://postgres:pass@localhost:5434/postgres"
+
+
+exploration_test = pytest.mark.skipif(
+    os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored (EXPLORATION_TEST)"
+)
 
 
 @pytest.fixture
