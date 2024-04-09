@@ -3,6 +3,13 @@
 * Main repository at **GitLab**: https://gitlab.com/hgdeoro/popyka
 * Mirror at **GitHub**: https://github.com/hgdeoro/popyka
 
+[![Hatch project](https://img.shields.io/badge/Packaging-Hatch-blue)](.)
+[![Apache License](https://img.shields.io/badge/License-Apache-blue)](.)
+[![Python](https://img.shields.io/badge/Python-3.10%2C%203.11%2C%203.12-blue)](.)
+[![PostgreSql](https://img.shields.io/badge/PostgreSql-12%2C%2013%2C%2014%2C%2015%2C%2016-blue)](.)
+[![pipeline status](https://gitlab.com/hgdeoro/popyka/badges/main/pipeline.svg)](https://gitlab.com/hgdeoro/popyka/-/commits/main)
+[![Latest Release](https://gitlab.com/hgdeoro/popyka/-/badges/release.svg)](https://gitlab.com/hgdeoro/popyka/-/releases)
+
 # MVP (v1.0)
 
 * Supported versions of **Python**: ~~3.8~~, ~~3.9~~, `3.10`, `3.11`, `3.12`
