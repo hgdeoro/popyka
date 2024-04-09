@@ -1,6 +1,7 @@
 import logging
 import threading
 import uuid
+from unittest.mock import MagicMock
 
 from psycopg2.extensions import connection as Connection
 
@@ -42,12 +43,16 @@ class ServerTestImpl(Server, threading.Thread):
     def get_dsn(self) -> str:
         return self._dsn
 
+    def get_slot_name(self) -> str:
+        raise NotImplementedError()
+
 
 def test_server(dsn: str, conn: Connection, conn2: Connection, drop_slot, table_name: str):
     filters = []
     processors = [ProcessorImpl(max_changes=3)]
-    # slot_name = f"pytest_{table_name}"
     server = ServerTestImpl(dsn, filters, processors)
+    server.get_slot_name = MagicMock()
+    server.get_slot_name.return_value = f"pytest_{table_name}".lower()
     server.start_replication()  # It's important to start replication before activity is simulated
     server.start()
 
