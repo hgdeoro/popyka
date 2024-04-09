@@ -3,19 +3,16 @@
 * Main repository at **GitLab**: https://gitlab.com/hgdeoro/popyka
 * Mirror at **GitHub**: https://github.com/hgdeoro/popyka
 
-# Status
-
-### PoC
-
-* The Proof of Concept is finished (`v0.1.0`)
-* To clone it: `git clone git@gitlab.com:hgdeoro/popyka.git --branch v0.1.0`
-* To now more about the process to go from zero to PoC you can read my blog post: [From Zero to CDC: A 3-days Agile Journey to the PoC](https://hdo.dev/posts/20240406-popyka/).
-
-### MVP
+# MVP (v1.0)
 
 * Supported versions of Python: ~~3.8~~, ~~3.9~~, `3.10`, `3.11`, `3.12`
 * Supported versions of PostgreSql: `12`, `13`, `14`, `15`, `16`
-* The MVP is under development on the `main` branch:
+
+### Status
+
+The MVP is under development on the `main` branch.
+
+TODO (the list is still changing):
   1. create mechanism to allow inclusion of user's Python code (processors)
   2. improve developer/devops/sre experience
   3. ~~improve automated testing~~
@@ -23,7 +20,16 @@
   5. ~~define supported Python versions and run tests on all supported versions~~
   6. implement semantic versioning
 
-# Code
+
+# PoC (v0.1)
+
+### Status
+
+* The Proof of Concept is finished (`v0.1.0`)
+* To clone it: `git clone git@gitlab.com:hgdeoro/popyka.git --branch v0.1.0`
+* To now more about the process to go from zero to PoC you can read my blog post: [From Zero to CDC: A 3-days Agile Journey to the PoC](https://hdo.dev/posts/20240406-popyka/).
+
+### Code
 
 So far the code is small, everything fits in [__main__.py](./popyka/__main__.py).
 
