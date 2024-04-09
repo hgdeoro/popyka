@@ -5,7 +5,7 @@ import uuid
 from psycopg2.extensions import connection as Connection
 
 from popyka.core import Filter, Processor, Server, StopServer, Wal2JsonV2Change
-from tests.test_db_activity_simulator import DbActivitySimulator
+from tests.utils import DbActivitySimulator
 
 logger = logging.getLogger(__name__)
 

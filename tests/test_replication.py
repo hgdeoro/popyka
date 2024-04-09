@@ -1,72 +1,12 @@
-import json
 import logging
-import threading
 import uuid
 
-import psycopg2.extras
 from psycopg2.extensions import connection as Connection
 
 from tests.conftest import exploration_test
-from tests.test_db_activity_simulator import DbActivitySimulator
+from tests.utils import DbActivitySimulator, DbStreamConsumer
 
 logger = logging.getLogger(__name__)
-
-
-class DbStreamConsumer(threading.Thread):
-    def __init__(self, cn: Connection, options=None):
-        super().__init__(daemon=True)
-        self._cn = cn
-        self._payloads = []
-        self._options = options or {}
-        self._cursor = self._cn.cursor()
-
-    def start_replication(self) -> "DbStreamConsumer":
-        """
-        We create the slot as soon as possible, this way no change will be lost.
-        consumer = DbStreamConsumerSimple().start_replication()
-            or
-        consumer = DbStreamConsumerSimple()
-        consumer.start_replication().start()
-        """
-        self._cursor.create_replication_slot("pytest_logical", output_plugin="wal2json")
-        self._cursor.start_replication(slot_name="pytest_logical", decode=True, options=self._options)
-        return self
-
-    @property
-    def payloads(self) -> list:
-        return list(self._payloads)
-
-    @property
-    def payloads_parsed(self) -> list[dict]:
-        return [json.loads(_) for _ in self._payloads]
-
-    def join_or_fail(self, timeout):
-        self.join(timeout=timeout)
-        assert not self.is_alive()
-
-    def run(self) -> None:
-        _payloads = self._payloads
-
-        class DemoConsumer(object):
-            def __call__(self, msg: psycopg2.extras.ReplicationMessage):
-                logger.info("DemoConsumer received payload: %s", msg.payload)
-                msg.cursor.send_feedback(flush_lsn=msg.data_start)
-
-                if DbActivitySimulator.is_magic_end_of_test_change(json.loads(msg.payload)):
-                    raise psycopg2.extras.StopReplication()
-
-                # FIXME: ^^^ maybe we should add also the payload from the "magic" statement?
-
-                _payloads.append(msg.payload)
-
-        consumer = DemoConsumer()
-
-        try:
-            self._cursor.consume_stream(consumer)
-        except psycopg2.extras.StopReplication:
-            pass
-
-        # TODO: close stream?
 
 
 @exploration_test
