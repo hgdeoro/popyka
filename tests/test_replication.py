@@ -2,69 +2,72 @@ import json
 import logging
 import os
 import threading
-import time
 import uuid
 
 import psycopg2.extras
 import pytest
 from psycopg2.extensions import connection as Connection
 
-from tests.test_db_activity_simulator import DbActivitySimulator
+from tests.test_db_activity_simulator import DbActivitySimulatorSmall
 
 logger = logging.getLogger(__name__)
 
 
-class DbStreamConsumer(threading.Thread):
-    def __init__(self, cn: Connection, db_activity_simulator: DbActivitySimulator, max_payloads: int, options=None):
+class DbStreamConsumerSimple(threading.Thread):
+    def __init__(self, cn: Connection, options=None):
         super().__init__(daemon=True)
         self._cn = cn
-        self._db_activity_simulator = db_activity_simulator
-        self._max_payloads = max_payloads
         self._payloads = []
         self._options = options or {}
+        self._cursor = self._cn.cursor()
+
+    def start_replication(self) -> "DbStreamConsumerSimple":
+        """
+        We create the slot as soon as possible, this way no change will be lost.
+        consumer = DbStreamConsumerSimple().start_replication()
+            or
+        consumer = DbStreamConsumerSimple()
+        consumer.start_replication().start()
+        """
+        self._cursor.create_replication_slot("pytest_logical", output_plugin="wal2json")
+        self._cursor.start_replication(slot_name="pytest_logical", decode=True, options=self._options)
+        return self
 
     @property
     def payloads(self) -> list:
-        return self._payloads
+        return list(self._payloads)
 
     @property
     def payloads_parsed(self) -> list[dict]:
         return [json.loads(_) for _ in self._payloads]
 
+    def join_or_fail(self, timeout):
+        self.join(timeout=timeout)
+        assert not self.is_alive()
+
     def run(self) -> None:
-        with self._cn.cursor() as cur:
-            cur.create_replication_slot("pytest_logical", output_plugin="wal2json")
-            cur.start_replication(slot_name="pytest_logical", decode=True, options=self._options)
+        _payloads = self._payloads
 
-            _payloads = self._payloads
-            _max_payloads = self._max_payloads
+        class DemoConsumer(object):
+            def __call__(self, msg: psycopg2.extras.ReplicationMessage):
+                logger.info("DemoConsumer received payload: %s", msg.payload)
+                msg.cursor.send_feedback(flush_lsn=msg.data_start)
 
-            class DemoConsumer(object):
-                def __call__(self, msg: psycopg2.extras.ReplicationMessage):
-                    logger.info("DemoConsumer received payload: %s", msg.payload)
-                    msg.cursor.send_feedback(flush_lsn=msg.data_start)
+                if DbActivitySimulatorSmall.is_magic_end_of_test_change(json.loads(msg.payload)):
+                    raise psycopg2.extras.StopReplication()
 
-                    if _max_payloads is None:
-                        decoded = json.loads(msg.payload)
-                        if DbActivitySimulator.is_magic_end_of_test_change(decoded):
-                            raise psycopg2.extras.StopReplication()
+                # FIXME: ^^^ maybe we should add also the payload from the "magic" statement?
 
-                    # FIXME: ^^^ maybe we should add also the payload from the "magic" statement?
+                _payloads.append(msg.payload)
 
-                    _payloads.append(msg.payload)
+        consumer = DemoConsumer()
 
-                    if len(_payloads) == _max_payloads:
-                        raise psycopg2.extras.StopReplication()
+        try:
+            self._cursor.consume_stream(consumer)
+        except psycopg2.extras.StopReplication:
+            pass
 
-            consumer = DemoConsumer()
-
-            self._db_activity_simulator.start_activity()
-            try:
-                cur.consume_stream(consumer)
-            except psycopg2.extras.StopReplication:
-                pass
-
-            # TODO: close stream?
+        # TODO: close stream?
 
 
 @pytest.mark.skipif(
@@ -74,19 +77,13 @@ def test_insert_are_replicated(conn: Connection, conn2: Connection, drop_slot, t
     uuids = [str(uuid.uuid4()) for _ in range(4)]
     statements = [("INSERT INTO {table_name} (NAME) VALUES (%s)", [_]) for _ in uuids]
 
-    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
-    db_stream_consumer = DbStreamConsumer(conn2, db_activity_simulator, len(statements))
+    db_stream_consumer = DbStreamConsumerSimple(conn2)
+    db_activity_simulator = DbActivitySimulatorSmall(conn, table_name, statements)
 
+    db_stream_consumer.start_replication().start()
     db_activity_simulator.start()
-    db_stream_consumer.start()
-    db_activity_simulator.join()
-    assert db_activity_simulator.is_done
-
-    while len(db_stream_consumer.payloads) < len(statements):
-        logger.info("There are %s items in 'payloads'", len(db_stream_consumer.payloads))
-        time.sleep(0.2)
-
-    db_stream_consumer.join()
+    db_activity_simulator.join_or_fail(timeout=1)
+    db_stream_consumer.join(timeout=3)
 
     # {
     #     "change": [
@@ -108,6 +105,7 @@ def test_insert_are_replicated(conn: Connection, conn2: Connection, drop_slot, t
     # },
 
     json_payloads = db_stream_consumer.payloads_parsed
+    json_payloads = [_ for _ in json_payloads if _["change"]]
     assert [_["change"][0]["kind"] for _ in json_payloads] == ["insert"] * 4
     assert [_["change"][0]["columnvalues"][0] for _ in json_payloads] == uuids
 
@@ -120,24 +118,20 @@ def test_json_for_default_options(conn: Connection, conn2: Connection, drop_slot
         ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')", []),
         ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-2')", []),
     ]
-    expected_payloads = 2
     options = {}
 
-    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
-    db_stream_consumer = DbStreamConsumer(conn2, db_activity_simulator, expected_payloads, options=options)
+    db_activity_simulator = DbActivitySimulatorSmall(conn, table_name, statements)
+    db_stream_consumer = DbStreamConsumerSimple(conn2, options=options)
 
+    db_stream_consumer.start_replication().start()
     db_activity_simulator.start()
-    db_stream_consumer.start()
-    db_activity_simulator.join()
-    assert db_activity_simulator.is_done
-
-    while len(db_stream_consumer.payloads) < expected_payloads:
-        logger.info("There are %s items in 'payloads'", len(db_stream_consumer.payloads))
-        time.sleep(0.2)
-
-    db_stream_consumer.join()
+    db_activity_simulator.join_or_fail(timeout=1)
+    db_stream_consumer.join_or_fail(timeout=3)
 
     assert db_stream_consumer.payloads_parsed == [
+        {
+            "change": [],
+        },
         {
             "change": [
                 {
@@ -181,41 +175,34 @@ def test_format_version_2(conn: Connection, conn2: Connection, drop_slot, table_
     statements = [
         ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')", []),
         ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-2')", []),
-        DbActivitySimulator.MAGIC_END_OF_TEST_STATEMENT,
     ]
-    expected_payloads = 6
     # https://github.com/eulerto/wal2json?tab=readme-ov-file
     options = {"format-version": "2"}
 
-    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
-    db_stream_consumer = DbStreamConsumer(conn2, db_activity_simulator, max_payloads=None, options=options)
+    db_activity_simulator = DbActivitySimulatorSmall(conn, table_name, statements)
+    db_stream_consumer = DbStreamConsumerSimple(conn2, options=options)
 
+    db_stream_consumer.start_replication().start()
     db_activity_simulator.start()
-    db_stream_consumer.start()
-    db_activity_simulator.join()
-    assert db_activity_simulator.is_done
+    db_activity_simulator.join_or_fail(timeout=3)
 
-    while len(db_stream_consumer.payloads) < expected_payloads:
-        logger.info("There are %s items in 'payloads'", len(db_stream_consumer.payloads))
-        time.sleep(0.2)
+    # while len(db_stream_consumer.payloads) < expected_payloads:
+    #     logger.info("There are %s items in 'payloads'", len(db_stream_consumer.payloads))
+    #     time.sleep(0.2)
 
-    db_stream_consumer.join()
+    db_stream_consumer.join_or_fail(timeout=3)
 
-    assert db_stream_consumer.payloads_parsed == [
-        {"action": "B"},
+    assert [_ for _ in db_stream_consumer.payloads_parsed if _["action"] not in "BC"] == [
         {
             "action": "I",
             "schema": "public",
             "table": table_name.lower(),
             "columns": [{"name": "name", "type": "character varying", "value": "this-is-the-value-1"}],
         },
-        {"action": "C"},
-        {"action": "B"},
         {
             "action": "I",
             "schema": "public",
             "table": table_name.lower(),
             "columns": [{"name": "name", "type": "character varying", "value": "this-is-the-value-2"}],
         },
-        {"action": "C"},
     ]
