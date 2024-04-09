@@ -76,3 +76,9 @@ local-run:
 		POPYKA_DB_DSN=$(POPYKA_DB_DSN_POSTGRES_DB) \
 		POPYKA_KAFKA_CONF_DICT=$(POPYKA_KAFKA_CONF_DICT) \
 			./venv/bin/python3 -m popyka
+
+test:
+	$(VENVDIR)/bin/pytest -v
+
+test-all:
+	env EXPLORATION_TEST=1 $(VENVDIR)/bin/pytest -v
