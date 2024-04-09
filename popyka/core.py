@@ -1,7 +1,8 @@
 import abc
 import json
 import logging
-import os
+import threading
+from urllib.parse import urlparse
 
 import psycopg2.extras
 from psycopg2.extensions import connection as Connection
@@ -10,12 +11,12 @@ from psycopg2.extras import ReplicationCursor
 logger = logging.getLogger(__name__)
 
 
-POPYKA_DB_DSN = os.environ.get("POPYKA_DB_DSN")
-"""URI: DSN to connect to PostgreSql"""
+class PopykaException(Exception):
+    pass
 
 
-POPYKA_KAFKA_CONF_DICT = os.environ.get("POPYKA_KAFKA_CONF_DICT")
-"""JSON formatted configuration of Kafka producer"""
+class StopServer(PopykaException):
+    pass
 
 
 class Wal2JsonV2Change(dict):
@@ -30,6 +31,7 @@ class Processor(abc.ABC):
     # FIXME: this is pretty awful, name and design.
     # TODO: Implement error handling, retries, etc.
 
+    @abc.abstractmethod
     def process_change(self, change: Wal2JsonV2Change):
         """Receives a change and process it."""
         raise NotImplementedError()
@@ -38,6 +40,7 @@ class Processor(abc.ABC):
 class Filter(abc.ABC):
     """Base class for change filters"""
 
+    @abc.abstractmethod
     def ignore_change(self, change: Wal2JsonV2Change) -> bool:
         """
         Receives a change and returns True if should be ignored.
@@ -69,6 +72,13 @@ class ReplicationConsumerToProcessorAdaptor:
 
 
 class Server(abc.ABC):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._replication_started = threading.Event()
+
+    def wait_for_replication_started(self):
+        self._replication_started.wait()
+
     @abc.abstractmethod
     def get_filters(self) -> list[Filter]:
         raise NotImplementedError()
@@ -78,23 +88,26 @@ class Server(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def get_slot_name(self) -> str:
-        # TODO: let user overwrite via env variables
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def get_connection(self) -> Connection:
-        """Returns a psycopg2 connection"""
-        # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def get_dsn(self) -> tuple[str, object, str]:
+    def get_dsn(self) -> str:
         """Return DSN, parsed URI and database name"""
         raise NotImplementedError()
 
+    def get_connection(self) -> Connection:
+        """Returns a psycopg2 connection"""
+        # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+        return psycopg2.connect(self.get_dsn(), connection_factory=psycopg2.extras.LogicalReplicationConnection)
+
+    def get_slot_name(self) -> str:
+        database_name = urlparse(self.get_dsn()).path
+        assert database_name.startswith("/")
+        database_name = database_name[1:]
+        return f"popyka_{database_name}"
+
+    def get_adaptor(self) -> ReplicationConsumerToProcessorAdaptor:
+        return ReplicationConsumerToProcessorAdaptor(self.get_processors(), self.get_filters())
+
     def run(self):
-        adaptor = ReplicationConsumerToProcessorAdaptor(self.get_processors(), self.get_filters())
+        adaptor = self.get_adaptor()
         cn = self.get_connection()
         slot_name = self.get_slot_name()
 
@@ -107,4 +120,16 @@ class Server(abc.ABC):
                 logger.info("Replication slot %s already exists", slot_name)
 
             cur.start_replication(slot_name=slot_name, decode=True, options={"format-version": "2"})
-            cur.consume_stream(adaptor)
+            self._replication_started.set()
+
+            try:
+                cur.consume_stream(adaptor)
+            except StopServer:
+                logger.info("StopServer received. Slot is still active, this can cause problems in your DB.")
+                return
+            except KeyboardInterrupt:
+                logger.info("StopServer received. Slot is still active, this can cause problems in your DB.")
+                return
+
+        # FIXME: do `drop_replication_slot()`, by default or when requested or depending on configuration
+        # FIXME: if `drop_replication_slot()` is not done, log the dangers

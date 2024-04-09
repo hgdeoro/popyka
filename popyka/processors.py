@@ -3,7 +3,7 @@ import logging
 
 from confluent_kafka import Producer
 
-from popyka.core import POPYKA_KAFKA_CONF_DICT, Processor, Wal2JsonV2Change
+from popyka.core import Processor, Wal2JsonV2Change
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +17,8 @@ class LogChangeProcessor(Processor):
 
 
 class ProduceToKafkaProcessor(Processor):
-    @staticmethod
-    def _get_conf() -> dict:
-        return json.loads(POPYKA_KAFKA_CONF_DICT)
-
-    def __init__(self):
-        self._producer = Producer(self._get_conf())
+    def __init__(self, kafka_config: dict):
+        self._producer = Producer(kafka_config)
 
     def process_change(self, change: Wal2JsonV2Change):
         self._producer.produce(topic="popyka", value=json.dumps(change))

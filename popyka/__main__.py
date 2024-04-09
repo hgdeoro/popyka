@@ -1,14 +1,16 @@
+import json
 import logging
-from urllib.parse import urlparse
+import os
 
-import psycopg2.extras
-from psycopg2.extensions import connection as Connection
-
-from popyka.core import POPYKA_DB_DSN, Filter, Processor, Server
+from popyka.core import Filter, Processor, Server
 from popyka.filters import IgnoreTxFilter
 from popyka.processors import LogChangeProcessor, ProduceToKafkaProcessor
 
 logger = logging.getLogger(__name__)
+
+
+class PopykaConfigurationError(Exception):
+    pass
 
 
 class Main(Server):
@@ -16,24 +18,26 @@ class Main(Server):
         return [IgnoreTxFilter()]
 
     def get_processors(self) -> list[Processor]:
-        return [LogChangeProcessor(), ProduceToKafkaProcessor()]
+        kafka_config_str = os.environ.get("POPYKA_KAFKA_CONF_DICT", "").strip()
+        if not kafka_config_str:
+            raise PopykaConfigurationError("The environment variable POPYKA_KAFKA_CONF_DICT is not set or empty")
 
-    def get_slot_name(self) -> str:
-        _, _, db = self.get_dsn()
-        return f"popyka_{db}"
+        try:
+            kafka_config = json.loads(kafka_config_str)
+        except json.decoder.JSONDecodeError:
+            raise PopykaConfigurationError(
+                "The string from environment variable POPYKA_KAFKA_CONF_DICT is not a valid JSON"
+            )
+        return [LogChangeProcessor(), ProduceToKafkaProcessor(kafka_config)]
 
-    def get_connection(self) -> Connection:
-        # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
-        dsn, parsed, db = self.get_dsn()
-        logger.info("DSN host=%s port=%s user=%s db=%s", parsed.hostname, parsed.port, parsed.username, db)
-        return psycopg2.connect(dsn, connection_factory=psycopg2.extras.LogicalReplicationConnection)
-
-    def get_dsn(self) -> tuple[str, object, str]:
-        parsed = urlparse(POPYKA_DB_DSN)
-        assert parsed.path.startswith("/")
-        return POPYKA_DB_DSN, parsed, parsed.path[1:]
+    def get_dsn(self) -> str:
+        dsn = os.environ.get("POPYKA_DB_DSN", "").strip()
+        if not dsn:
+            raise PopykaConfigurationError("The environment variable POPYKA_DB_DSN is not set or empty")
+        return dsn
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    enable_debug = bool(os.environ.get("POPYKA_DEBUG", "").strip())
+    logging.basicConfig(level=logging.DEBUG if enable_debug else logging.INFO)
     Main().run()
