@@ -45,7 +45,9 @@ tox-docker-compose-build-all:
 		build \
 			--build-arg HTTP_PROXY=$$http_proxy \
 			--build-arg HTTPS_PROXY=$$https_proxy \
-			pg15 pg16
+			pg12 pg13 pg14 pg15 pg16
+	docker compose --project-name popyka-tox --file docker-compose-tox.yml \
+		up -d pg12 pg13 pg14 pg15 pg16
 
 # ----------
 
