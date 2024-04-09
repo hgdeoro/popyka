@@ -8,9 +8,8 @@ from psycopg2.extensions import connection as Connection
 
 logger = logging.getLogger(__name__)
 
-
-DSN_POSTGRES = "host=localhost port=5432 dbname=postgres user=postgres"
-DSN_POSTGRES_WAL2JSON = "host=localhost port=5434 dbname=postgres user=postgres"
+DSN_POSTGRES = "postgresql://postgres:pass@localhost:5432/postgres"
+DSN_POSTGRES_WAL2JSON = "postgresql://postgres:pass@localhost:5434/postgres"
 
 
 @pytest.fixture
