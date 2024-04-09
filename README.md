@@ -5,8 +5,8 @@
 
 # MVP (v1.0)
 
-* Supported versions of Python: ~~3.8~~, ~~3.9~~, `3.10`, `3.11`, `3.12`
-* Supported versions of PostgreSql: `12`, `13`, `14`, `15`, `16`
+* Supported versions of **Python**: ~~3.8~~, ~~3.9~~, `3.10`, `3.11`, `3.12`
+* Supported versions of **PostgreSql**: `12`, `13`, `14`, `15`, `16`
 
 ### Status
 
@@ -25,7 +25,7 @@ TODO (the list is still changing):
 
 ### Status
 
-* The Proof of Concept is finished (`v0.1.0`)
+* The Proof of Concept is **finished** (`v0.1.0`)
 * To clone it: `git clone git@gitlab.com:hgdeoro/popyka.git --branch v0.1.0`
 * To now more about the process to go from zero to PoC you can read my blog post: [From Zero to CDC: A 3-days Agile Journey to the PoC](https://hdo.dev/posts/20240406-popyka/).
 
