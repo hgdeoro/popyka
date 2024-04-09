@@ -12,7 +12,7 @@ cache:
 
 before_script:
   - python --version ; pip --version  # For debugging
-  - pip install virtualenv
+  - pip install virtualenv pre-commit
   - virtualenv venv
   - source venv/bin/activate
 
