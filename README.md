@@ -13,12 +13,15 @@
 
 ### MVP
 
+* Supported versions of Python: ~~3.8~~, ~~3.9~~, `3.10`, `3.11`, `3.12`
+* Supported versions of PostgreSql: `12`, `13`, `14`, `15`, `16`
 * The MVP is under development on the `main` branch:
   1. create mechanism to allow inclusion of user's Python code (processors)
   2. improve developer/devops/sre experience
-  3. improve automated testing
+  3. ~~improve automated testing~~
   4. improve configuration mechanism to support real world scenarios
-  5. define supported Python versions and run tests on all supported versions
+  5. ~~define supported Python versions and run tests on all supported versions~~
+  6. implement semantic versioning
 
 # Code
 
