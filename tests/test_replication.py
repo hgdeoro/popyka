@@ -13,14 +13,6 @@ from tests.test_db_activity_simulator import DbActivitySimulator
 
 logger = logging.getLogger(__name__)
 
-#  pg_logical_emit_message ( transactional boolean, prefix text, content text ) → pg_lsn
-MAGIC_END_OF_TEST_PREFIX = "popyka_pytest"
-MAGIC_END_OF_TEST_CONTENT = "742cad81-3416-4dc8-9f7a-d667b54c98cf"
-MAGIC_END_OF_TEST_STATEMENT = (
-    "SELECT * FROM pg_logical_emit_message(FALSE, %s, %s)",
-    [MAGIC_END_OF_TEST_PREFIX, MAGIC_END_OF_TEST_CONTENT],
-)
-
 
 class DbStreamConsumer(threading.Thread):
     def __init__(self, cn: Connection, db_activity_simulator: DbActivitySimulator, max_payloads: int, options=None):
@@ -54,18 +46,10 @@ class DbStreamConsumer(threading.Thread):
 
                     if _max_payloads is None:
                         decoded = json.loads(msg.payload)
-                        if (
-                            decoded.get("action") == "M"
-                            and decoded.get("prefix") == MAGIC_END_OF_TEST_PREFIX
-                            and decoded.get("content") == MAGIC_END_OF_TEST_CONTENT
-                        ):
-                            # {
-                            #     "action": "M",
-                            #     "transactional": false,
-                            #     "prefix": "popyka_pytest",
-                            #     "content": "742cad81-3416-4dc8-9f7a-d667b54c98cf"
-                            # }
+                        if DbActivitySimulator.is_magic_end_of_test_change(decoded):
                             raise psycopg2.extras.StopReplication()
+
+                    # FIXME: ^^^ maybe we should add also the payload from the "magic" statement?
 
                     _payloads.append(msg.payload)
 
@@ -197,7 +181,7 @@ def test_format_version_2(conn: Connection, conn2: Connection, drop_slot, table_
     statements = [
         ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')", []),
         ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-2')", []),
-        MAGIC_END_OF_TEST_STATEMENT,
+        DbActivitySimulator.MAGIC_END_OF_TEST_STATEMENT,
     ]
     expected_payloads = 6
     # https://github.com/eulerto/wal2json?tab=readme-ov-file

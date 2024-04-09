@@ -21,7 +21,22 @@ class DbActivitySimulator(threading.Thread):
         self._repl_starting_soon_event: threading.Event = threading.Event()
         self._done: threading.Event = threading.Event()
         self._statements: typing.Iterable[tuple[str, list]] = statements
-        # self._statements_done: list[tuple[str, list]] = []
+
+    #  pg_logical_emit_message ( transactional boolean, prefix text, content text ) → pg_lsn
+    MAGIC_END_OF_TEST_PREFIX = "popyka_pytest"
+    MAGIC_END_OF_TEST_CONTENT = "742cad81-3416-4dc8-9f7a-d667b54c98cf"
+    MAGIC_END_OF_TEST_STATEMENT = (
+        "SELECT * FROM pg_logical_emit_message(FALSE, %s, %s)",
+        [MAGIC_END_OF_TEST_PREFIX, MAGIC_END_OF_TEST_CONTENT],
+    )
+
+    @classmethod
+    def is_magic_end_of_test_change(cls, change: dict):
+        return (
+            change.get("action") == "M"
+            and change.get("prefix") == DbActivitySimulator.MAGIC_END_OF_TEST_PREFIX
+            and change.get("content") == DbActivitySimulator.MAGIC_END_OF_TEST_CONTENT
+        )
 
     @property
     def table_name(self) -> str:
@@ -52,15 +67,9 @@ class DbActivitySimulator(threading.Thread):
             for stmt in self._statements:
                 logger.info("%s | %s", self._table_name, str(stmt))
                 cur.execute(stmt[0].format(table_name=self._table_name), stmt[1])
-                # self._statements_done.append((stmt[0].format(table_name=self._table_name), stmt[1]))
                 self._cn.commit()
 
         self._done.set()
-
-    # def sql_select_all(self, cn: Connection):
-    #     with cn.cursor() as cur:
-    #         cur.execute(f"SELECT * FROM {self._table_name}")
-    #         return cur.fetchall()
 
     def sql_count_all(self, cn: Connection, table_name_suffix=""):
         with cn.cursor() as cur:
@@ -106,3 +115,19 @@ def test_db_activity_simulator_custom_tables(conn: Connection, conn2: Connection
     assert db_activity_simulator.is_done
     assert db_activity_simulator.sql_count_all(conn2, table_name_suffix="_a") == 1
     assert db_activity_simulator.sql_count_all(conn2, table_name_suffix="_b") == 1
+
+
+def test_magic_end_of_test_statement(conn: Connection, conn2: Connection, table_name: str):
+    statements = (
+        ("INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
+        ("INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
+        ("INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
+        DbActivitySimulator.MAGIC_END_OF_TEST_STATEMENT,
+    )
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
+    db_activity_simulator.start()
+    db_activity_simulator.start_activity()
+    db_activity_simulator.join()
+
+    assert db_activity_simulator.is_done
+    assert db_activity_simulator.sql_count_all(conn2) == 3  # 3 insert, last statement does nothing
