@@ -12,9 +12,10 @@ cache:
 
 before_script:
   - python --version ; pip --version  # For debugging
-  - pip install virtualenv pre-commit
+  - pip install virtualenv
   - virtualenv venv
   - source venv/bin/activate
+  - ./venv/bin/pip install pre-commit
 
 lint:
   script:
