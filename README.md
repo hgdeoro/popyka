@@ -14,9 +14,11 @@
 ### MVP
 
 * The MVP is under development on the `main` branch:
+  1. create mechanism to allow inclusion of user's Python code (processors)
+  1. improve developer/devops/sre experience
   1. improve automated testing
-  2. create mechanism to facilitate shipping of end user's Python code (processors)
-  3. improve configuration mechanism to support real world scenarios
+  1. improve configuration mechanism to support real world scenarios
+  1. define supported Python versions and run tests on all supported versions
 
 # Code
 
