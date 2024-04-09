@@ -181,10 +181,6 @@ def test_format_version_2(conn: Connection, conn2: Connection, drop_slot, table_
     db_activity_simulator.start()
     db_activity_simulator.join_or_fail(timeout=3)
 
-    # while len(db_stream_consumer.payloads) < expected_payloads:
-    #     logger.info("There are %s items in 'payloads'", len(db_stream_consumer.payloads))
-    #     time.sleep(0.2)
-
     db_stream_consumer.join_or_fail(timeout=3)
 
     assert [_ for _ in db_stream_consumer.payloads_parsed if _["action"] not in "BC"] == [
