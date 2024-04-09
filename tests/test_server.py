@@ -5,7 +5,7 @@ import uuid
 from psycopg2.extensions import connection as Connection
 
 from popyka.core import Filter, Processor, Server, StopServer, Wal2JsonV2Change
-from tests.test_db_activity_simulator import DbActivitySimulatorSmall
+from tests.test_db_activity_simulator import DbActivitySimulator
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ def test_server(dsn: str, conn: Connection, conn2: Connection, drop_slot, table_
     uuids = [str(uuid.uuid4()) for _ in range(4)]
     statements = [("INSERT INTO {table_name} (NAME) VALUES (%s)", [_]) for _ in uuids]
 
-    db_activity_simulator = DbActivitySimulatorSmall(conn, table_name, statements)
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
     db_activity_simulator.start()
     db_activity_simulator.join()
 

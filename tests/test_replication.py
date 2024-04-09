@@ -7,12 +7,12 @@ import psycopg2.extras
 from psycopg2.extensions import connection as Connection
 
 from tests.conftest import exploration_test
-from tests.test_db_activity_simulator import DbActivitySimulatorSmall
+from tests.test_db_activity_simulator import DbActivitySimulator
 
 logger = logging.getLogger(__name__)
 
 
-class DbStreamConsumerSimple(threading.Thread):
+class DbStreamConsumer(threading.Thread):
     def __init__(self, cn: Connection, options=None):
         super().__init__(daemon=True)
         self._cn = cn
@@ -20,7 +20,7 @@ class DbStreamConsumerSimple(threading.Thread):
         self._options = options or {}
         self._cursor = self._cn.cursor()
 
-    def start_replication(self) -> "DbStreamConsumerSimple":
+    def start_replication(self) -> "DbStreamConsumer":
         """
         We create the slot as soon as possible, this way no change will be lost.
         consumer = DbStreamConsumerSimple().start_replication()
@@ -52,7 +52,7 @@ class DbStreamConsumerSimple(threading.Thread):
                 logger.info("DemoConsumer received payload: %s", msg.payload)
                 msg.cursor.send_feedback(flush_lsn=msg.data_start)
 
-                if DbActivitySimulatorSmall.is_magic_end_of_test_change(json.loads(msg.payload)):
+                if DbActivitySimulator.is_magic_end_of_test_change(json.loads(msg.payload)):
                     raise psycopg2.extras.StopReplication()
 
                 # FIXME: ^^^ maybe we should add also the payload from the "magic" statement?
@@ -74,8 +74,8 @@ def test_insert_are_replicated(conn: Connection, conn2: Connection, drop_slot, t
     uuids = [str(uuid.uuid4()) for _ in range(4)]
     statements = [("INSERT INTO {table_name} (NAME) VALUES (%s)", [_]) for _ in uuids]
 
-    db_stream_consumer = DbStreamConsumerSimple(conn2)
-    db_activity_simulator = DbActivitySimulatorSmall(conn, table_name, statements)
+    db_stream_consumer = DbStreamConsumer(conn2)
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
 
     db_stream_consumer.start_replication().start()
     db_activity_simulator.start()
@@ -115,8 +115,8 @@ def test_json_for_default_options(conn: Connection, conn2: Connection, drop_slot
     ]
     options = {}
 
-    db_activity_simulator = DbActivitySimulatorSmall(conn, table_name, statements)
-    db_stream_consumer = DbStreamConsumerSimple(conn2, options=options)
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
+    db_stream_consumer = DbStreamConsumer(conn2, options=options)
 
     db_stream_consumer.start_replication().start()
     db_activity_simulator.start()
@@ -174,8 +174,8 @@ def test_format_version_2(conn: Connection, conn2: Connection, drop_slot, table_
     # https://github.com/eulerto/wal2json?tab=readme-ov-file
     options = {"format-version": "2"}
 
-    db_activity_simulator = DbActivitySimulatorSmall(conn, table_name, statements)
-    db_stream_consumer = DbStreamConsumerSimple(conn2, options=options)
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
+    db_stream_consumer = DbStreamConsumer(conn2, options=options)
 
     db_stream_consumer.start_replication().start()
     db_activity_simulator.start()

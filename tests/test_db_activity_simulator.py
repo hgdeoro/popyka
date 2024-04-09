@@ -9,7 +9,7 @@ from psycopg2.extras import ReplicationCursor
 logger = logging.getLogger(__name__)
 
 
-class DbActivitySimulatorSmall(threading.Thread):
+class DbActivitySimulator(threading.Thread):
     def __init__(
         self,
         cn: Connection,
@@ -46,8 +46,8 @@ class DbActivitySimulatorSmall(threading.Thread):
             for a_change in change["change"]:
                 if (
                     a_change.get("kind") == "message"
-                    and a_change.get("prefix") == DbActivitySimulatorSmall.MAGIC_END_OF_TEST_PREFIX
-                    and a_change.get("content") == DbActivitySimulatorSmall.MAGIC_END_OF_TEST_CONTENT
+                    and a_change.get("prefix") == DbActivitySimulator.MAGIC_END_OF_TEST_PREFIX
+                    and a_change.get("content") == DbActivitySimulator.MAGIC_END_OF_TEST_CONTENT
                 ):
                     return True
             return False
@@ -62,8 +62,8 @@ class DbActivitySimulatorSmall(threading.Thread):
         if "action" in change:
             return (
                 change.get("action") == "M"
-                and change.get("prefix") == DbActivitySimulatorSmall.MAGIC_END_OF_TEST_PREFIX
-                and change.get("content") == DbActivitySimulatorSmall.MAGIC_END_OF_TEST_CONTENT
+                and change.get("prefix") == DbActivitySimulator.MAGIC_END_OF_TEST_PREFIX
+                and change.get("content") == DbActivitySimulator.MAGIC_END_OF_TEST_CONTENT
             )
             return False
 
@@ -113,7 +113,7 @@ def test_db_activity_simulator(conn: Connection, conn2: Connection, table_name: 
         ("INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
         ("INSERT INTO {table_name} (NAME) VALUES (gen_random_uuid())", []),
     )
-    db_activity_simulator = DbActivitySimulatorSmall(conn, table_name, statements)
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
     db_activity_simulator.start()
     db_activity_simulator.join()
 
@@ -121,7 +121,7 @@ def test_db_activity_simulator(conn: Connection, conn2: Connection, table_name: 
 
 
 def test_db_activity_simulator_custom_tables(conn: Connection, conn2: Connection, table_name: str):
-    class CustomDbActivitySimulator(DbActivitySimulatorSmall):
+    class CustomDbActivitySimulator(DbActivitySimulator):
         def _create_table(self, cur):
             cur.execute(f"DROP TABLE IF EXISTS {self._table_name}_a")
             cur.execute(f"DROP TABLE IF EXISTS {self._table_name}_b")
@@ -144,8 +144,8 @@ def test_db_activity_simulator_custom_tables(conn: Connection, conn2: Connection
 
 
 def test_magic_end_of_test_statement(conn: Connection, conn2: Connection, table_name: str):
-    statements = (DbActivitySimulatorSmall.MAGIC_END_OF_TEST_STATEMENT,)
-    db_activity_simulator = DbActivitySimulatorSmall(conn, table_name, statements)
+    statements = (DbActivitySimulator.MAGIC_END_OF_TEST_STATEMENT,)
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
     db_activity_simulator.start()
     db_activity_simulator.join()
     assert db_activity_simulator.sql_count_all(conn2) == 0  # 0 insert, MAGIC_END_OF_TEST_STATEMENT does nothing
