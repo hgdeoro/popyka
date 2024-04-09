@@ -1,9 +1,39 @@
+[build-system]
+# https://github.com/ofek/hatch-showcase/blob/master/pyproject.toml
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "popyka"
 dynamic = ["version"]
+license = { file = "LICENSE" }
 
-[tool.setuptools]
-py-modules = []
+description = "Lightweight Python-based CDC system, supports PostgreSql to Kafka"
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = [
+    "cdc",
+]
+authors = [
+    { name = "Horacio G. de Oro", email = "hgdeoro@gmail.com" },
+]
+classifiers = [
+    # https://pypi.org/classifiers/
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: System :: Distributed Computing",
+]
+
+[tool.hatch.version]
+path = "popyka/__version__.py"
 
 [tool.isort]
 profile = "black"
