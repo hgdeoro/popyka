@@ -28,7 +28,6 @@ class Wal2JsonV2Change(dict):
 class Processor(abc.ABC):
     """Base class for processors of changes"""
 
-    # FIXME: this is pretty awful, name and design.
     # TODO: Implement error handling, retries, etc.
 
     @abc.abstractmethod
