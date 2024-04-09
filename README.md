@@ -1,3 +1,20 @@
+![popyka.png](docs%2Fpopyka.png)
+
+# Status
+
+### PoC
+
+* The Proof of Concept is finished (`v0.1.0`)
+* To clone it: `git clone git@gitlab.com:hgdeoro/popyka.git --branch v0.1.0`
+* To now more about the process to go from zero to PoC you can read my blog post: [From Zero to CDC: A 3-days Agile Journey to the PoC](https://hdo.dev/posts/20240406-popyka/).
+
+### MVP
+
+* The MVP is under development on the `main` branch:
+  1. improve automated testing
+  2. create mechanism to facilitate shipping of end user's Python code (processors)
+  3. improve configuration mechanism to support real world scenarios
+
 # Code
 
 So far the code is small, everything fits in [__main__.py](./popyka/__main__.py).

@@ -20,3 +20,5 @@ build:
     - buildah build -t $FQ_IMAGE_NAME
     - buildah images
     - buildah push $FQ_IMAGE_NAME
+  only:
+    - main
