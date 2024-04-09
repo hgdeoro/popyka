@@ -15,11 +15,10 @@ The MVP is under development on the `main` branch.
 TODO (the list is still changing):
   1. create mechanism to allow inclusion of user's Python code (processors)
   2. improve developer/devops/sre experience
-  3. ~~improve automated testing~~
+  3. ~~improve automated testing~~ **DONE**
   4. improve configuration mechanism to support real world scenarios
-  5. ~~define supported Python versions and run tests on all supported versions~~
+  5. ~~define supported Python versions and run tests on all supported versions~~ **DONE**
   6. implement semantic versioning
-
 
 # PoC (v0.1)
 
