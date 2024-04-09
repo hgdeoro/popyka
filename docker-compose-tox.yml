@@ -1,0 +1,41 @@
+version: '3.9'
+
+services:
+
+  pg15:
+    build:
+      context: tests/docker/postgres15-wal2json
+    restart: no
+    shm_size: 128mb
+    environment:
+      POSTGRES_PASSWORD: pass
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - 54015:5432
+    command:
+      - -c
+      - wal_level=logical
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
+    stop_grace_period: 2s
+
+  pg16:
+    build:
+      context: tests/docker/postgres16-wal2json
+    restart: no
+    shm_size: 128mb
+    environment:
+      POSTGRES_PASSWORD: pass
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - 54016:5432
+    command:
+      - -c
+      - wal_level=logical
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
+    stop_grace_period: 2s

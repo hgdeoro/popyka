@@ -9,8 +9,10 @@ from psycopg2.extensions import connection as Connection
 
 logger = logging.getLogger(__name__)
 
+OVERRIDE_PORT = os.environ.get("OVERRIDE_PORT", "5434")
+
 DSN_POSTGRES = "postgresql://postgres:pass@localhost:5432/postgres"
-DSN_POSTGRES_WAL2JSON = "postgresql://postgres:pass@localhost:5434/postgres"
+DSN_POSTGRES_WAL2JSON = f"postgresql://postgres:pass@localhost:{OVERRIDE_PORT}/postgres"
 
 
 exploration_test = pytest.mark.skipif(

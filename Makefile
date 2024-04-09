@@ -40,6 +40,15 @@ docker-compose-wait:
 
 # ----------
 
+tox-docker-compose-build-all:
+	docker compose --project-name popyka-tox --file docker-compose-tox.yml \
+		build \
+			--build-arg HTTP_PROXY=$$http_proxy \
+			--build-arg HTTPS_PROXY=$$https_proxy \
+			pg15 pg16
+
+# ----------
+
 docker-popyka-run-gitlab:
 	# docker container run using host network to keep it similar to running code locally
 	docker run --rm -ti --network host \
