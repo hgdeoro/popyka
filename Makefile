@@ -62,6 +62,9 @@ tox-docker-compose-build-all:
 tox: tox-docker-compose-build-all
 	tox --result-json tox-result.json
 
+tox-quick: tox-docker-compose-build-all
+	tox -e py310-pg12,py312-pg16
+
 # ----------
 
 docker-popyka-run-gitlab:
