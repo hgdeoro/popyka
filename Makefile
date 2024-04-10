@@ -48,6 +48,19 @@ tox-docker-compose-build-all:
 			pg12 pg13 pg14 pg15 pg16
 	docker compose --project-name popyka-tox --file docker-compose-tox.yml \
 		up -d pg12 pg13 pg14 pg15 pg16
+	while /bin/true ; do \
+ 		nc -z localhost 54012 && \
+ 			nc -zv localhost 54013 && \
+ 			nc -zv localhost 54014 && \
+ 			nc -zv localhost 54015 && \
+ 			nc -zv localhost 54016 && \
+ 			break ; \
+ 		sleep 0.5 ;\
+	done
+
+
+tox: tox-docker-compose-build-all
+	tox --result-json tox-result.json
 
 # ----------
 
