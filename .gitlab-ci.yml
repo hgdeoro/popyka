@@ -17,7 +17,7 @@ before_script:
   - source venv/bin/activate
   - ./venv/bin/pip install pre-commit
 
-lint:
+test:
   script:
     - pre-commit run -a
 
@@ -43,5 +43,5 @@ build:
     - buildah build -t $FQ_IMAGE_NAME
     - buildah images
     - buildah push $FQ_IMAGE_NAME
-  only:
-    - main
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
