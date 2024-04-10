@@ -25,6 +25,7 @@ TODO (the list is still changing):
 1. _dev experience_: generate documentation of public API
 1. _dev experience_: create sample projects using popyka
 1. _ci/cd_: build image from release tag
+1. _ci/cd_: publish docker image to public repository
 1. ~~improve automated testing~~ **DONE**
 1. ~~define supported Python versions and run tests on all supported versions~~ **DONE**
 1. ~~implement semantic versioning~~ **DONE**
