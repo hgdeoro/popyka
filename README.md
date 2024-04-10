@@ -10,6 +10,24 @@
 [![pipeline status](https://gitlab.com/hgdeoro/popyka/badges/main/pipeline.svg)](https://gitlab.com/hgdeoro/popyka/-/commits/main)
 [![Latest Release](https://gitlab.com/hgdeoro/popyka/-/badges/release.svg)](https://gitlab.com/hgdeoro/popyka/-/releases)
 
+Tox results:
+
+![Static Badge](https://img.shields.io/badge/py310%2Bpg12-pass-green)
+![Static Badge](https://img.shields.io/badge/py310%2Bpg13-pass-green)
+![Static Badge](https://img.shields.io/badge/py310%2Bpg14-pass-green)
+![Static Badge](https://img.shields.io/badge/py310%2Bpg15-pass-green)
+![Static Badge](https://img.shields.io/badge/py310%2Bpg16-pass-green)
+![Static Badge](https://img.shields.io/badge/py311%2Bpg12-pass-green)
+![Static Badge](https://img.shields.io/badge/py311%2Bpg13-pass-green)
+![Static Badge](https://img.shields.io/badge/py311%2Bpg14-pass-green)
+![Static Badge](https://img.shields.io/badge/py311%2Bpg15-pass-green)
+![Static Badge](https://img.shields.io/badge/py311%2Bpg16-pass-green)
+![Static Badge](https://img.shields.io/badge/py312%2Bpg12-pass-green)
+![Static Badge](https://img.shields.io/badge/py312%2Bpg13-pass-green)
+![Static Badge](https://img.shields.io/badge/py312%2Bpg14-pass-green)
+![Static Badge](https://img.shields.io/badge/py312%2Bpg15-pass-green)
+![Static Badge](https://img.shields.io/badge/py312%2Bpg16-pass-green)
+
 # MVP (v1.0)
 
 * Supported versions of **Python**: ~~3.8~~, ~~3.9~~, `3.10`, `3.11`, `3.12`
