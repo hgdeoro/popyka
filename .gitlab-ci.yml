@@ -10,6 +10,8 @@ cache:
     - .cache/pip
     - .cache/pre-commit
 
+stages: [lint, release]
+
 before_script:
   - python --version ; pip --version  # For debugging
   - pip install virtualenv
@@ -17,12 +19,13 @@ before_script:
   - source venv/bin/activate
   - ./venv/bin/pip install pre-commit
 
-test:
+lint:
+  stage: lint
   script:
     - pre-commit run -a
 
-build:
-  stage: build
+release:
+  stage: release
   image: quay.io/buildah/stable
   variables:
     # Use vfs with buildah. Docker offers overlayfs as a default, but Buildah
