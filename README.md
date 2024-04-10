@@ -59,7 +59,8 @@ TODO (the list is still changing):
 
 ### Code
 
-So far the code is small, everything fits in [__main__.py](./popyka/__main__.py).
+So far the code is small, everything fits in [__main__.py](../blob/v0.1.0/popyka/__main__.py?ref_type=tags).
+
 
 ```mermaid
 sequenceDiagram
@@ -73,7 +74,11 @@ sequenceDiagram
     ReplicationConsumerToProcessorAdaptor->>Postgres: flush_lsn
 ```
 
-# Run locally
+### PoC: run locally
+
+Clone the PoC:
+
+    $ git clone git@gitlab.com:hgdeoro/popyka.git --branch v0.1.0
 
 Launch PostgreSql and Kafka using docker compose:
 
