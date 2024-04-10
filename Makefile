@@ -97,8 +97,16 @@ test-all:
 
 # ----------
 
-release:
+release-patch:
 	$(VENVDIR)/bin/hatch version $$($(VENVDIR)/bin/hatch version | cut -d. -f1,2,3)
+	git commit popyka/__version__.py -m "Bump version"
+	git tag -a v$$($(VENVDIR)/bin/hatch version) -m "New version: $$($(VENVDIR)/bin/hatch version)"
+	$(VENVDIR)/bin/hatch version dev
+	git commit popyka/__version__.py -m "Bump version"
+
+release-minor:
+	$(VENVDIR)/bin/hatch version $$($(VENVDIR)/bin/hatch version | cut -d. -f1,2,3)
+	$(VENVDIR)/bin/hatch version minor
 	git commit popyka/__version__.py -m "Bump version"
 	git tag -a v$$($(VENVDIR)/bin/hatch version) -m "New version: $$($(VENVDIR)/bin/hatch version)"
 	$(VENVDIR)/bin/hatch version dev
