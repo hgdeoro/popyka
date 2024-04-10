@@ -3,3 +3,5 @@ venv
 __pycache__
 popyka.egg-info/
 dist/
+.tox/
+tox-result.json
