@@ -21,6 +21,10 @@ services:
       - max_wal_senders=10
       - -c
       - max_replication_slots=10
+      #  - -c
+      #  - fsync=off
+      #  - -c
+      #  - full_page_writes=off
     stop_grace_period: 2s
     volumes:
       - "./tests/docker/postgresql-init.sh:/docker-entrypoint-initdb.d/postgresql-init.sh"
@@ -45,6 +49,10 @@ services:
       - max_wal_senders=10
       - -c
       - max_replication_slots=10
+      #  - -c
+      #  - fsync=off
+      #  - -c
+      #  - full_page_writes=off
     stop_grace_period: 2s
     volumes:
       - "./tests/docker/postgresql-init.sh:/docker-entrypoint-initdb.d/postgresql-init.sh"
@@ -69,6 +77,10 @@ services:
       - max_wal_senders=10
       - -c
       - max_replication_slots=10
+      #  - -c
+      #  - fsync=off
+      #  - -c
+      #  - full_page_writes=off
     stop_grace_period: 2s
     volumes:
       - "./tests/docker/postgresql-init.sh:/docker-entrypoint-initdb.d/postgresql-init.sh"
@@ -93,6 +105,10 @@ services:
       - max_wal_senders=10
       - -c
       - max_replication_slots=10
+      #  - -c
+      #  - fsync=off
+      #  - -c
+      #  - full_page_writes=off
     stop_grace_period: 2s
     volumes:
       - "./tests/docker/postgresql-init.sh:/docker-entrypoint-initdb.d/postgresql-init.sh"
@@ -117,6 +133,10 @@ services:
       - max_wal_senders=10
       - -c
       - max_replication_slots=10
+      #  - -c
+      #  - fsync=off
+      #  - -c
+      #  - full_page_writes=off
     volumes:
       - "./tests/docker/postgresql-init.sh:/docker-entrypoint-initdb.d/postgresql-init.sh"
 
