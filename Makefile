@@ -118,6 +118,11 @@ test-all:
 
 # ----------
 
+clean-docker:
+	docker compose kill
+	docker container prune -f
+	docker volume prune -af
+
 release-patch:
 	$(VENVDIR)/bin/hatch version $$($(VENVDIR)/bin/hatch version | cut -d. -f1,2,3)
 	git commit popyka/__version__.py -m "Bump version"
