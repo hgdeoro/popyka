@@ -76,32 +76,29 @@ tox-quick: tox-docker-compose-up tox-docker-compose-wait ## [tox] Run tox on old
 
 # ----------
 
-docker-popyka-run-gitlab:
-	docker run --rm -ti --network host \
-		-e POPYKA_DB_DSN=$(DOCKER_COMPOSE_POPYKA_DB_DSN_SAMPLE_1) \
-		-e POPYKA_KAFKA_CONF_DICT=$(DOCKER_COMPOSE_POPYKA_KAFKA_CONF_DICT) \
-			registry.gitlab.com/hgdeoro/popyka/test
-
-# ----------
-
 DOCKER_COMPOSE_POPYKA_DB_DSN_SAMPLE_1 = "postgresql://postgres:pass@pg16:5432/popyka_test"
 DOCKER_COMPOSE_POPYKA_KAFKA_CONF_DICT = '{"bootstrap.servers": "kafka:9092","client.id": "popyka-client"}'
 
 LOCAL_POPYKA_DB_DSN_SAMPLE_1 = "postgresql://postgres:pass@localhost:54016/popyka_test"
 LOCAL_POPYKA_KAFKA_CONF_DICT = '{"bootstrap.servers": "localhost:9094","client.id": "popyka-client"}'
 
+# ----------
+
+# FIXME: test
+docker-popyka-run-gitlab:
+	# `popyka_default` is the network name created by docker compose # TODO: use predictable network name
+	docker run --rm -ti --network popyka_default \
+		-e POPYKA_DB_DSN=$(DOCKER_COMPOSE_POPYKA_DB_DSN_SAMPLE_1) \
+		-e POPYKA_KAFKA_CONF_DICT=$(DOCKER_COMPOSE_POPYKA_KAFKA_CONF_DICT) \
+			registry.gitlab.com/hgdeoro/popyka/test
+
+# ----------
+
 docker-compose-db-activity-simulator:
 	docker compose up db-activity-simulator
 
 docker-compose-popyka-run:
 	docker compose up popyka
-
-#docker-popyka-run:
-#	# docker container run using host network to keep it similar to running code locally
-#	docker run --rm -ti --network host \
-#		-e POPYKA_DB_DSN=$(DOCKER_COMPOSE_POPYKA_DB_DSN_SAMPLE_1) \
-#		-e POPYKA_KAFKA_CONF_DICT=$(DOCKER_COMPOSE_POPYKA_KAFKA_CONF_DICT) \
-#			local-popyka
 
 local-run:
 	env \
@@ -114,7 +111,6 @@ test:
 
 test-all:
 	env EXPLORATION_TEST=1 $(VENVDIR)/bin/pytest -v
-
 
 # ----------
 
