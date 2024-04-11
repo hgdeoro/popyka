@@ -1,0 +1,72 @@
+services:
+  demo-db:
+    build:
+      args:
+        HTTP_PROXY: ${http_proxy}
+        HTTPS_PROXY: ${https_proxy}
+      context: postgres16-wal2json
+    restart: no
+    shm_size: 128mb
+    environment:
+      POSTGRES_PASSWORD: pass
+      POSTGRES_HOST_AUTH_METHOD: trust
+    command:
+      - -c
+      - wal_level=logical
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
+    stop_grace_period: 2s
+
+  demo-django-admin:
+    build:
+      args:
+        HTTP_PROXY: ${http_proxy}
+        HTTPS_PROXY: ${https_proxy}
+      context: .
+    restart: no
+    shm_size: 128mb
+    depends_on:
+      - demo-db
+    environment:
+      DATABASE_URL: "postgresql://postgres:pass@demo-db:5432/postgres"
+    stop_grace_period: 1s
+    stop_signal: SIGKILL
+    ports:
+      - 8081:8080
+
+  demo-popyka:
+    build:
+      args:
+        HTTP_PROXY: ${http_proxy}
+        HTTPS_PROXY: ${https_proxy}
+      context: ../../
+    restart: no
+    shm_size: 128mb
+    depends_on:
+      - demo-kafka
+      - demo-db
+    environment:
+      POPYKA_DB_DSN: "postgresql://postgres:pass@demo-db:5432/postgres"
+      POPYKA_KAFKA_CONF_DICT: '{"bootstrap.servers": "demo-kafka:9092","client.id": "popyka-client"}'
+    stop_grace_period: 1s
+    stop_signal: SIGKILL
+
+  demo-kafka:
+    image: 'bitnami/kafka:3.5'
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@demo-kafka:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://demo-kafka:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+
+  demo-kowl:
+    image: docker.redpanda.com/redpandadata/console:latest
+    environment:
+      - KAFKA_BROKERS=demo-kafka:9092
+    ports:
+      - 8082:8080
