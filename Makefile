@@ -68,10 +68,10 @@ tox-docker-compose-wait: ## [tox] Busy-waits until the services required for run
  		sleep 0.5 ;\
 	done
 
-tox: tox-docker-compose-start ## [tox] Run tox (run pytest on all supported combinations)
+tox: tox-docker-compose-up tox-docker-compose-wait ## [tox] Run tox (run pytest on all supported combinations)
 	tox --result-json tox-result.json
 
-tox-quick: tox-docker-compose-start ## [tox] Run tox on oldest and newest Python/PostgreSql
+tox-quick: tox-docker-compose-up tox-docker-compose-wait ## [tox] Run tox on oldest and newest Python/PostgreSql
 	tox -e py310-pg12,py312-pg16
 
 # ----------
@@ -84,12 +84,10 @@ docker-popyka-run-gitlab:
 
 # ----------
 
-DOCKER_COMPOSE_POPYKA_DB_DSN_POSTGRES = "postgresql://postgres:pass@pg16:5432/postgres"
-DOCKER_COMPOSE_POPYKA_DB_DSN_SAMPLE_1 = "postgresql://postgres:pass@pg16:5432/sample_1"
+DOCKER_COMPOSE_POPYKA_DB_DSN_SAMPLE_1 = "postgresql://postgres:pass@pg16:5432/popyka_test"
 DOCKER_COMPOSE_POPYKA_KAFKA_CONF_DICT = '{"bootstrap.servers": "kafka:9092","client.id": "popyka-client"}'
 
-LOCAL_POPYKA_DB_DSN_POSTGRES = "postgresql://postgres:pass@localhost:54016/postgres"
-LOCAL_POPYKA_DB_DSN_SAMPLE_1 = "postgresql://postgres:pass@localhost:54016/sample_1"
+LOCAL_POPYKA_DB_DSN_SAMPLE_1 = "postgresql://postgres:pass@localhost:54016/popyka_test"
 LOCAL_POPYKA_KAFKA_CONF_DICT = '{"bootstrap.servers": "localhost:9094","client.id": "popyka-client"}'
 
 docker-compose-db-activity-simulator:

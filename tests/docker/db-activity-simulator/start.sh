@@ -2,11 +2,7 @@
 
 set -eu
 
-echo "DSN_CHECK_DB=${DSN_CHECK_DB}"
 echo "DSN_ACTIVITY_SIMULATOR=${DSN_ACTIVITY_SIMULATOR}"
-
-psql ${DSN_ACTIVITY_SIMULATOR} -c "select 1" || \
-    psql ${DSN_CHECK_DB} -c "create database sample_1"
 
 psql ${DSN_ACTIVITY_SIMULATOR} -c "create table if not exists sample_table_activity (id serial primary key, name varchar)"
 
