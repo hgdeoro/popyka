@@ -22,6 +22,8 @@ services:
       - -c
       - max_replication_slots=10
     stop_grace_period: 2s
+    volumes:
+      - "./tests/docker/postgresql-init.sh:/docker-entrypoint-initdb.d/postgresql-init.sh"
 
   pg13:
     build:
@@ -44,6 +46,8 @@ services:
       - -c
       - max_replication_slots=10
     stop_grace_period: 2s
+    volumes:
+      - "./tests/docker/postgresql-init.sh:/docker-entrypoint-initdb.d/postgresql-init.sh"
 
   pg14:
     build:
@@ -66,6 +70,8 @@ services:
       - -c
       - max_replication_slots=10
     stop_grace_period: 2s
+    volumes:
+      - "./tests/docker/postgresql-init.sh:/docker-entrypoint-initdb.d/postgresql-init.sh"
 
   pg15:
     build:
@@ -88,6 +94,8 @@ services:
       - -c
       - max_replication_slots=10
     stop_grace_period: 2s
+    volumes:
+      - "./tests/docker/postgresql-init.sh:/docker-entrypoint-initdb.d/postgresql-init.sh"
 
   pg16:
     build:
@@ -109,6 +117,9 @@ services:
       - max_wal_senders=10
       - -c
       - max_replication_slots=10
+    volumes:
+      - "./tests/docker/postgresql-init.sh:/docker-entrypoint-initdb.d/postgresql-init.sh"
+
     stop_grace_period: 2s
 
   db-activity-simulator:
