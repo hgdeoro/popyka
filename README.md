@@ -38,6 +38,7 @@ Tox results:
 The MVP is under development on the `main` branch.
 
 TODO (the list is still changing):
+1. fix issues on MacOS (for local development, it requires `--network=host`)
 1. create mechanism to allow inclusion of user's Python code (processors)
 1. improve configuration mechanism to support real world scenarios
 1. _dev experience_: generate documentation of public API
