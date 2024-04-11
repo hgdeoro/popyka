@@ -138,7 +138,9 @@ pygments==2.17.2
 pytest==8.1.1
     # via -r reqs/requirements-dev.in
 pyyaml==6.0.1
-    # via pre-commit
+    # via
+    #   -c reqs/requirements-prod.txt
+    #   pre-commit
 rich==13.7.1
     # via hatch
 secretstorage==3.3.3
