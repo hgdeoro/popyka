@@ -2,6 +2,8 @@
 # 'local' means running the code locally (using PostgreSql & Kafka from docker compose)
 # 'docker' means running the code in the docker image (also using PostgreSql & Kafka from docker compose)
 
+.PHONY: help
+
 SHELL := /bin/bash
 
 PYTHON ?= python3.11
@@ -9,28 +11,31 @@ VENVDIR ?= $(abspath ./venv)
 
 export PATH := $(VENVDIR)/bin:$(PATH)
 
-venv:
+help:
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+venv: ## Creates the Python virtualenv for local development
 	$(PYTHON) -m venv venv
 	$(VENVDIR)/bin/pip install pip-tools
 
-pip-compile:
+pip-compile: ## Compiles dependencies (pip-tools) into requirements-*.txt
 	$(VENVDIR)/bin/pip-compile -o reqs/requirements-prod.txt reqs/requirements-prod.in
 	$(VENVDIR)/bin/pip-compile -o reqs/requirements-dev.txt  reqs/requirements-dev.in
 
-pip-compile-upgrade:
+pip-compile-upgrade: ## Compiles dependencies (pip-tools) into requirements-*.txt checking for new versions
 	$(VENVDIR)/bin/pip-compile --upgrade -o reqs/requirements-prod.txt reqs/requirements-prod.in
 	$(VENVDIR)/bin/pip-compile --upgrade -o reqs/requirements-dev.txt  reqs/requirements-dev.in
 
-pip-sync:
+pip-sync: ## Run pip-sync (pip-tools)
 	$(VENVDIR)/bin/pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
 
-docker-compose-up:
+docker-compose-up: ## Brings up required service for local development
 	docker compose up -d
 
-docker-compose-logs:
+docker-compose-logs: ## Shows logs of docker compose services
 	docker compose logs -f
 
-docker-compose-wait:
+docker-compose-wait: ## Busy-waits until the services are up
 	while : ; do\
  		nc -z localhost 5434 || echo "Waiting for PostgreSql..." ; \
  		nc -z localhost 9094 || echo "Waiting for Kafka..." ; \
@@ -40,7 +45,7 @@ docker-compose-wait:
 
 # ----------
 
-tox-docker-compose-build-all:
+tox-docker-compose-build-all: ## [tox] Build and start containers required for running Tox
 	docker compose --project-name popyka-tox --file docker-compose-tox.yml \
 		build \
 			--build-arg HTTP_PROXY=$$http_proxy \
@@ -48,6 +53,8 @@ tox-docker-compose-build-all:
 			pg12 pg13 pg14 pg15 pg16
 	docker compose --project-name popyka-tox --file docker-compose-tox.yml \
 		up -d pg12 pg13 pg14 pg15 pg16
+
+tox-docker-compose-wait: ## [tox] Busy-waits until the services required for running Tox are up
 	while /bin/true ; do \
  		nc -z localhost 54012 && \
  			nc -zv localhost 54013 && \
@@ -58,17 +65,15 @@ tox-docker-compose-build-all:
  		sleep 0.5 ;\
 	done
 
-
-tox: tox-docker-compose-build-all
+tox: tox-docker-compose-build-all ## [tox] Run tox (run pytest on all supported combinations)
 	tox --result-json tox-result.json
 
-tox-quick: tox-docker-compose-build-all
+tox-quick: tox-docker-compose-build-all ## [tox] Run tox on oldest and newest Python/PostgreSql
 	tox -e py310-pg12,py312-pg16
 
 # ----------
 
 docker-popyka-run-gitlab:
-	# docker container run using host network to keep it similar to running code locally
 	docker run --rm -ti --network host \
 		-e POPYKA_DB_DSN=$(TEST_POPYKA_DB_DSN_SAMPLE_1_DB) \
 		-e POPYKA_KAFKA_CONF_DICT=$(TEST_POPYKA_KAFKA_CONF_DICT) \
