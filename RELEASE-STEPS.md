@@ -4,6 +4,8 @@
 
     pre-commit run --all-files
     tox
+    python tox2badge.py
+    # update README with output of `tox2badge.py`
     # check fixmes
     # check README
 
