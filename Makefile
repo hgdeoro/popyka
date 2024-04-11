@@ -54,7 +54,7 @@ tox-docker-compose-build: ## [tox] Build containers required for running Tox
 			--build-arg HTTPS_PROXY=$$https_proxy \
 			$(DOCKER_COMPOSE_TOX_SERVICES)
 
-tox-docker-compose-start: ## [tox] Start containers required for running Tox
+tox-docker-compose-up: ## [tox] Start containers required for running Tox
 	docker compose up -d $(DOCKER_COMPOSE_TOX_SERVICES)
 
 tox-docker-compose-wait: ## [tox] Busy-waits until the services required for running Tox are up
