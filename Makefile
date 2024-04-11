@@ -31,7 +31,7 @@ docker-compose-logs:
 	docker compose logs -f
 
 docker-compose-wait:
-	while /bin/true ; do\
+	while : ; do\
  		nc -z localhost 5434 || echo "Waiting for PostgreSql..." ; \
  		nc -z localhost 9094 || echo "Waiting for Kafka..." ; \
  		nc -z localhost 5434 && nc -z localhost 9094 && break ; \
