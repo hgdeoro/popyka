@@ -2,9 +2,9 @@ import json
 import logging
 import os
 
+from popyka.builtin.filters import IgnoreTxFilter
+from popyka.builtin.processors import LogChangeProcessor, ProduceToKafkaProcessor
 from popyka.core import Filter, Processor, Server
-from popyka.filters import IgnoreTxFilter
-from popyka.processors import LogChangeProcessor, ProduceToKafkaProcessor
 
 logger = logging.getLogger(__name__)
 
