@@ -8,6 +8,8 @@ SHELL := /bin/bash
 
 PYTHON ?= python3.11
 VENVDIR ?= $(abspath ./venv)
+DOCKER_COMPOSE_LOCAL_DEVELOPMENT_SERVICES ?= pg16 kafka kowl
+DOCKER_COMPOSE_TOX_SERVICES ?= pg12 pg13 pg14 pg15 pg16
 
 export PATH := $(VENVDIR)/bin:$(PATH)
 
@@ -30,29 +32,30 @@ pip-sync: ## Run pip-sync (pip-tools)
 	$(VENVDIR)/bin/pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
 
 docker-compose-up: ## Brings up required service for local development
-	docker compose up -d
+	docker compose up --remove-orphans -d $(DOCKER_COMPOSE_LOCAL_DEVELOPMENT_SERVICES)
 
-docker-compose-logs: ## Shows logs of docker compose services
-	docker compose logs -f
+docker-compose-logs: ## Shows logs of docker compose services used for local development
+	docker compose logs -f $(DOCKER_COMPOSE_LOCAL_DEVELOPMENT_SERVICES)
 
 docker-compose-wait: ## Busy-waits until the services are up
-	while : ; do\
- 		nc -z localhost 5434 || echo "Waiting for PostgreSql..." ; \
- 		nc -z localhost 9094 || echo "Waiting for Kafka..." ; \
- 		nc -z localhost 5434 && nc -z localhost 9094 && break ; \
- 		sleep 1 ; \
+	while /bin/true ; do \
+		nc -zv localhost 9094 && \
+			nc -zv localhost 54016 && \
+			nc -zv localhost 8080 && \
+			break ; \
+ 		sleep 0.5 ;\
 	done
 
 # ----------
 
-tox-docker-compose-build-all: ## [tox] Build and start containers required for running Tox
-	docker compose --project-name popyka-tox --file docker-compose-tox.yml \
-		build \
+tox-docker-compose-build: ## [tox] Build containers required for running Tox
+	docker compose build \
 			--build-arg HTTP_PROXY=$$http_proxy \
 			--build-arg HTTPS_PROXY=$$https_proxy \
-			pg12 pg13 pg14 pg15 pg16
-	docker compose --project-name popyka-tox --file docker-compose-tox.yml \
-		up -d pg12 pg13 pg14 pg15 pg16
+			$(DOCKER_COMPOSE_TOX_SERVICES)
+
+tox-docker-compose-start: ## [tox] Start containers required for running Tox
+	docker compose up -d $(DOCKER_COMPOSE_TOX_SERVICES)
 
 tox-docker-compose-wait: ## [tox] Busy-waits until the services required for running Tox are up
 	while /bin/true ; do \
@@ -65,48 +68,47 @@ tox-docker-compose-wait: ## [tox] Busy-waits until the services required for run
  		sleep 0.5 ;\
 	done
 
-tox: tox-docker-compose-build-all ## [tox] Run tox (run pytest on all supported combinations)
+tox: tox-docker-compose-start ## [tox] Run tox (run pytest on all supported combinations)
 	tox --result-json tox-result.json
 
-tox-quick: tox-docker-compose-build-all ## [tox] Run tox on oldest and newest Python/PostgreSql
+tox-quick: tox-docker-compose-start ## [tox] Run tox on oldest and newest Python/PostgreSql
 	tox -e py310-pg12,py312-pg16
 
 # ----------
 
 docker-popyka-run-gitlab:
 	docker run --rm -ti --network host \
-		-e POPYKA_DB_DSN=$(TEST_POPYKA_DB_DSN_SAMPLE_1_DB) \
-		-e POPYKA_KAFKA_CONF_DICT=$(TEST_POPYKA_KAFKA_CONF_DICT) \
+		-e POPYKA_DB_DSN=$(DOCKER_COMPOSE_POPYKA_DB_DSN_SAMPLE_1) \
+		-e POPYKA_KAFKA_CONF_DICT=$(DOCKER_COMPOSE_POPYKA_KAFKA_CONF_DICT) \
 			registry.gitlab.com/hgdeoro/popyka/test
 
 # ----------
 
-TEST_POPYKA_DB_DSN_POSTGRES_DB = "postgresql://postgres:pass@localhost:5434/postgres"
-TEST_POPYKA_DB_DSN_SAMPLE_1_DB = "postgresql://postgres:pass@localhost:5434/sample_1"
-TEST_POPYKA_KAFKA_CONF_DICT = '{"bootstrap.servers": "localhost:9094","client.id": "popyka-client"}'
+DOCKER_COMPOSE_POPYKA_DB_DSN_POSTGRES = "postgresql://postgres:pass@pg16:5432/postgres"
+DOCKER_COMPOSE_POPYKA_DB_DSN_SAMPLE_1 = "postgresql://postgres:pass@pg16:5432/sample_1"
+DOCKER_COMPOSE_POPYKA_KAFKA_CONF_DICT = '{"bootstrap.servers": "kafka:9092","client.id": "popyka-client"}'
 
-docker-popyka-build:
-	docker build --build-arg HTTP_PROXY=$$http_proxy --build-arg HTTPS_PROXY=$$https_proxy -t local-popyka .
+LOCAL_POPYKA_DB_DSN_POSTGRES = "postgresql://postgres:pass@localhost:54016/postgres"
+LOCAL_POPYKA_DB_DSN_SAMPLE_1 = "postgresql://postgres:pass@localhost:54016/sample_1"
+LOCAL_POPYKA_KAFKA_CONF_DICT = '{"bootstrap.servers": "localhost:9094","client.id": "popyka-client"}'
 
-docker-popyka-run:
-	# docker container run using host network to keep it similar to running code locally
-	docker run --rm -ti --network host \
-		-e POPYKA_DB_DSN=$(TEST_POPYKA_DB_DSN_SAMPLE_1_DB) \
-		-e POPYKA_KAFKA_CONF_DICT=$(TEST_POPYKA_KAFKA_CONF_DICT) \
-			local-popyka
+docker-compose-db-activity-simulator:
+	docker compose up db-activity-simulator
 
-docker-db-activity-simulator-run:
-	# docker container run using host network to keep it similar to running code locally
-	docker build -t db-activity-simulator ./tests/docker/db-activity-simulator
-	docker run --network host --rm -ti \
-		-e DSN_CHECK_DB=$(TEST_POPYKA_DB_DSN_POSTGRES_DB) \
-		-e DSN_ACTIVITY_SIMULATOR=$(TEST_POPYKA_DB_DSN_SAMPLE_1_DB) \
-			db-activity-simulator
+docker-compose-popyka-run:
+	docker compose up popyka
+
+#docker-popyka-run:
+#	# docker container run using host network to keep it similar to running code locally
+#	docker run --rm -ti --network host \
+#		-e POPYKA_DB_DSN=$(DOCKER_COMPOSE_POPYKA_DB_DSN_SAMPLE_1) \
+#		-e POPYKA_KAFKA_CONF_DICT=$(DOCKER_COMPOSE_POPYKA_KAFKA_CONF_DICT) \
+#			local-popyka
 
 local-run:
 	env \
-		POPYKA_DB_DSN=$(POPYKA_DB_DSN_POSTGRES_DB) \
-		POPYKA_KAFKA_CONF_DICT=$(POPYKA_KAFKA_CONF_DICT) \
+		POPYKA_DB_DSN=$(LOCAL_POPYKA_DB_DSN_SAMPLE_1) \
+		POPYKA_KAFKA_CONF_DICT=$(LOCAL_POPYKA_KAFKA_CONF_DICT) \
 			./venv/bin/python3 -m popyka
 
 test:
