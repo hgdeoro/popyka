@@ -1,4 +1,37 @@
 import dataclasses
+import importlib
+
+from popyka.core import Filter, PopykaException
+
+
+class ConfigError(PopykaException):
+    pass
+
+
+class FactoryMixin:
+    @classmethod
+    def get_class_from_fqn(cls, fqn: str, expected_type: type):
+        split_result = fqn.rsplit(".", maxsplit=1)
+        if len(split_result) != 2:
+            raise ConfigError(f"Invalid fully qualified class name: '{fqn}'")
+
+        module_name, class_name = split_result
+        try:
+            module_instance = importlib.import_module(module_name)
+        except ModuleNotFoundError:
+            raise ConfigError(f"Module not found: '{module_name}'. fqn: '{fqn}'")
+
+        try:
+            class_instance = getattr(module_instance, class_name)
+        except AttributeError:
+            raise ConfigError(f"Class not found: '{class_name}'. fqn: '{fqn}'")
+
+        if not issubclass(class_instance, expected_type):
+            raise ConfigError(f"The class '{fqn}' is not a subclass of '{expected_type}'. fqn: '{fqn}'")
+        return class_instance
+
+    def instantiate(self):
+        raise NotImplementedError()
 
 
 @dataclasses.dataclass
@@ -15,7 +48,7 @@ class DatabaseConfig:
 
 
 @dataclasses.dataclass
-class FilterConfig:
+class FilterConfig(FactoryMixin):
     class_fqn: str
     config_generic: dict
 
@@ -23,10 +56,20 @@ class FilterConfig:
     def from_yaml(cls, config: dict) -> "FilterConfig":
         class_fqn = config["class"]
         config_generic = config["config"]
+        assert isinstance(class_fqn, str)
+        assert isinstance(config_generic, dict)
         return FilterConfig(
             class_fqn=class_fqn,
             config_generic=config_generic,
         )
+
+    def instantiate(self) -> Filter:
+        """Creates an instance of `Filter` based on configuration"""
+        filter_class = self.get_class_from_fqn(self.class_fqn, Filter)
+        instance = filter_class(self.config_generic)
+        # instance.setup()  # This is an idea, maybe we should have an explicit method to run business logic
+        # to avoid doing it on __init__()
+        return instance
 
 
 @dataclasses.dataclass

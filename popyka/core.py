@@ -38,6 +38,11 @@ class Processor(abc.ABC):
 class Filter(abc.ABC):
     """Base class for change filters"""
 
+    def __init__(self, config_generic: dict):
+        self._config_generic = config_generic
+
+    # TODO: should we have a post_init()/setup()/init()/etc?
+
     @abc.abstractmethod
     def ignore_change(self, change: Wal2JsonV2Change) -> bool:
         """
