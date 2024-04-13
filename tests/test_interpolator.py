@@ -183,3 +183,27 @@ def test_partial_interpolation():
     print(json.dumps(config, indent=4))
     assert config is not original_config
     assert config == expected_config
+
+
+def test_default_value():
+    environment: dict[str, str] = {
+        "ENV_KEY_1": "value-1",
+    }
+
+    original_config = {
+        "key-1": "${ENV_KEY_1:-default-value-1}",
+        "key-2": "${ENV_KEY_B:-default-value-2}",
+        "key-3": "${ENV_KEY_C}",
+    }
+
+    expected_config = {
+        "key-1": "value-1",
+        "key-2": "default-value-2",
+        "key-3": "",
+    }
+
+    interpolator = Interpolator(environment=environment)
+    config = interpolator.interpolate(config=original_config)
+    print(json.dumps(config, indent=4))
+    assert config is not original_config
+    assert config == expected_config
