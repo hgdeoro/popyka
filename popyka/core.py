@@ -98,11 +98,6 @@ class Server(abc.ABC):
         return psycopg2.connect(self.get_dsn(), connection_factory=psycopg2.extras.LogicalReplicationConnection)
 
     def get_slot_name(self) -> str:
-        # database_name = urlparse(self.get_dsn()).path
-        # assert database_name.startswith("/")
-        # database_name = database_name[1:]
-        # return f"popyka_{database_name}"
-        # FIXME: remove ^^^
         return self._config.database.slot_name
 
     def get_adaptor(self) -> ReplicationConsumerToProcessorAdaptor:
