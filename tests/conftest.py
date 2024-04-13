@@ -13,7 +13,6 @@ OVERRIDE_PORT = os.environ.get("OVERRIDE_PORT", "54016")
 
 DSN_POSTGRES_WAL2JSON = f"postgresql://postgres:pass@localhost:{OVERRIDE_PORT}/popyka_test"
 
-
 exploration_test = pytest.mark.skipif(
     os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored (EXPLORATION_TEST)"
 )
@@ -30,8 +29,12 @@ def dsn():
 
 
 @pytest.fixture
-def popyka_env_vars(dsn: str):
-    return {"POPYKA_DB_DSN": dsn, "POPYKA_KAFKA_BOOTSTRAP_SERVERS": "localhost:9094"}
+def popyka_env_vars(dsn: str, table_name: str):
+    return {
+        "POPYKA_DB_DSN": dsn,
+        "POPYKA_KAFKA_BOOTSTRAP_SERVERS": "localhost:1234",
+        "POPYKA_DB_SLOT_NAME": f"test_popyka_{table_name}".lower(),
+    }
 
 
 @pytest.fixture

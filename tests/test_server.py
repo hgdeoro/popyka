@@ -38,8 +38,6 @@ def test_server(conn: Connection, conn2: Connection, drop_slot, table_name: str,
     server.get_filters.return_value = []
     server.get_processors = MagicMock()
     server.get_processors.return_value = processors
-    server.get_slot_name = MagicMock()
-    server.get_slot_name.return_value = f"pytest_{table_name}".lower()
     server.start_replication()  # It's important to start replication before activity is simulated
     server.start()
 
