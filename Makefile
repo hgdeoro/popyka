@@ -89,7 +89,7 @@ LOCAL_POPYKA_KAFKA_CONF_DICT = '{"bootstrap.servers": "localhost:9094","client.i
 
 # ----------
 
-# FIXME: test
+# FIXME: test this target! It's intended to new users, this should work.
 docker-popyka-run-gitlab:
 	# `popyka_default` is the network name created by docker compose # TODO: use predictable network name
 	docker run --rm -ti --network popyka_default \
