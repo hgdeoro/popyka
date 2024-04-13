@@ -1,8 +1,22 @@
 import pathlib
 
+import pytest
 import yaml
 
 from popyka.config import PopykaConfig
+from popyka.errors import ConfigError
+
+
+def test_default_config_with_fixture(popyka_env_vars):
+    # Default config is expected to WORK when the fixture `popyka_env_vars` is used
+    default_config = PopykaConfig.get_default_config(environment=popyka_env_vars)
+    assert default_config
+
+
+def test_default_config_without_fixture():
+    # Default config is expected to FAIL without `popyka_env_vars`
+    with pytest.raises(ConfigError):
+        PopykaConfig.get_default_config(environment={})
 
 
 def test_default_config_instantiate(popyka_env_vars):
