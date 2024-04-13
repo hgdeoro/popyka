@@ -164,5 +164,4 @@ class Server(abc.ABC):
                 self.logger.info("StopServer received. Slot is still active, this can cause problems in your DB.")
                 return
 
-        # FIXME: do `drop_replication_slot()`, by default or when requested or depending on configuration
-        # FIXME: if `drop_replication_slot()` is not done, log the dangers
+        # FIXME: DOC: document the risks of not consuming the stream (full server disk, etc.)
