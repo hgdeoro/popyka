@@ -67,9 +67,8 @@ class FilterConfig(FactoryMixin):
     def instantiate(self) -> Filter:
         """Creates an instance of `Filter` based on configuration"""
         filter_class = self.get_class_from_fqn(self.class_fqn, Filter)
-        instance = filter_class(self.config_generic)
-        # instance.setup()  # This is an idea, maybe we should have an explicit method to run business logic
-        # to avoid doing it on __init__()
+        instance: Filter = filter_class(self.config_generic)
+        instance.setup()
         return instance
 
 
@@ -93,9 +92,8 @@ class ProcessorConfig(FactoryMixin):
     def instantiate(self) -> Processor:
         """Creates an instance of `Processor` based on configuration"""
         processor_class = self.get_class_from_fqn(self.class_fqn, Processor)
-        instance = processor_class(self.config_generic)
-        # instance.setup()  # This is an idea, maybe we should have an explicit method to run business logic
-        # to avoid doing it on __init__()
+        instance: Processor = processor_class(self.config_generic)
+        instance.setup()
         return instance
 
 

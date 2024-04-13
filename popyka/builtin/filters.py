@@ -18,7 +18,8 @@ class IgnoreTxFilter(Filter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if self._config_generic:
+    def setup(self):
+        if self.config_generic:
             raise ConfigError("IgnoreTxFilter filter does not accepts any configuration")
 
     def ignore_change(self, change: Wal2JsonV2Change) -> bool:

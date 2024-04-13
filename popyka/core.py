@@ -7,7 +7,7 @@ import psycopg2.extras
 from psycopg2.extensions import connection as Connection
 from psycopg2.extras import ReplicationCursor
 
-from popyka.errors import StopServer
+from popyka.errors import ConfigError, StopServer
 from popyka.logging import LazyToStr
 
 if TYPE_CHECKING:
@@ -23,7 +23,31 @@ class Wal2JsonV2Change(dict):
     # TODO: use class or dataclass, to make API more clear and easier for implementations of `Processors`
 
 
-class Processor(abc.ABC):
+class Configurable:
+    def __init__(self, config_generic: dict, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._config_generic = config_generic
+
+    @property
+    def config_generic(self):
+        return self._config_generic
+
+    def _get_config(self, config: dict, key: str, value_type: type, clean: callable = None):
+        try:
+            value = config[key]
+        except KeyError:
+            raise ConfigError(f"Invalid config: `{key}` is required and was not found or is `null`")
+
+        if not isinstance(value, value_type):
+            raise ConfigError(f"Invalid config: `{key}` is expected to be a `{value_type}` but was {type(value)}")
+
+        if clean is not None:
+            value = clean(value)
+
+        return value
+
+
+class Processor(abc.ABC, Configurable):
     """Base class for processors of changes"""
 
     logger = logging.getLogger(f"{__name__}.Filter")
@@ -31,10 +55,13 @@ class Processor(abc.ABC):
     # FIXME: Implement error handling, retries, etc.
 
     def __init__(self, config_generic: dict):
+        super().__init__(config_generic=config_generic)
         self.logger.debug("Instantiating processor with config: %s", LazyToStr(config_generic))
-        self._config_generic = config_generic
 
-    # TODO: should we have a post_init()/setup()/init()/etc?
+    @abc.abstractmethod
+    def setup(self):
+        """Setup the component (validate configuration, setup clients, etc.)."""
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def process_change(self, change: Wal2JsonV2Change):
@@ -42,16 +69,19 @@ class Processor(abc.ABC):
         raise NotImplementedError()
 
 
-class Filter(abc.ABC):
+class Filter(abc.ABC, Configurable):
     """Base class for change filters"""
 
     logger = logging.getLogger(f"{__name__}.Filter")
 
     def __init__(self, config_generic: dict):
+        super().__init__(config_generic=config_generic)
         self.logger.debug("Instantiating filter with config: %s", LazyToStr(config_generic))
-        self._config_generic = config_generic
 
-    # TODO: should we have a post_init()/setup()/init()/etc?
+    @abc.abstractmethod
+    def setup(self):
+        """Setup the component (validate configuration, setup clients, etc.)."""
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def ignore_change(self, change: Wal2JsonV2Change) -> bool:

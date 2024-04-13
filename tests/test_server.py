@@ -19,6 +19,9 @@ class ProcessorImpl(Processor):
         self.changes: list[Wal2JsonV2Change] = []
         self.max_changes = max_changes
 
+    def setup(self):
+        pass
+
     def process_change(self, change: Wal2JsonV2Change):
         self.changes.append(change)
         if len(self.changes) >= self.max_changes:

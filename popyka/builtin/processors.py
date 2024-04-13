@@ -4,6 +4,7 @@ import logging
 from confluent_kafka import Producer
 
 from popyka.core import Processor, Wal2JsonV2Change
+from popyka.errors import ConfigError
 from popyka.logging import LazyToStr
 
 logger = logging.getLogger(__name__)
@@ -15,6 +16,10 @@ class LogChangeProcessor(Processor):
 
     This processor does not accept any configuration.
     """
+
+    def setup(self):
+        if self.config_generic:
+            raise ConfigError("LogChangeProcessor filter does not accepts any configuration")
 
     def process_change(self, change: Wal2JsonV2Change):
         logger.info("LogChangeProcessor: change: %s", LazyToStr(change))
@@ -42,13 +47,24 @@ class ProduceToKafkaProcessor(Processor):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        producer_config = self._config_generic["producer_config"]
+        self._producer: Producer | None = None
+        self._topic: str | None = None
+
+    def setup(self):
+        self._topic = self._get_config(self.config_generic, "topic", str, clean=lambda v: v.strip())
+        if not self._topic:
+            raise ConfigError("Invalid config: `topic` is required")
+
+        producer_config = self._get_config(self.config_generic, "producer_config", dict)
+        if not producer_config.get("bootstrap.servers"):
+            raise ConfigError("Invalid config: `bootstrap.servers` is required")
+        if not producer_config.get("client.id"):
+            raise ConfigError("Invalid config: `client.id` is required")
+
         self._producer = Producer(producer_config)
 
-    def _validate_producer_config(self, producer_config: dict):
-        pass
-
     def process_change(self, change: Wal2JsonV2Change):
-        self._producer.produce(topic="popyka", value=json.dumps(change))
+        assert self._producer is not None
+        self._producer.produce(topic=self._topic, value=json.dumps(change))
         self._producer.flush()
-        logger.info("Message produced to Kafka was flush()'ed")
+        logger.debug("Message produced to Kafka was flush()'ed")
