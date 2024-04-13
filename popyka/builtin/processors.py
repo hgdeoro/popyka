@@ -9,16 +9,44 @@ logger = logging.getLogger(__name__)
 
 
 class LogChangeProcessor(Processor):
-    """Processor that dumps the payload"""
+    """
+    This processor logs the payload using Python `logging` module.
+
+    This processor does not accept any configuration.
+    """
 
     def process_change(self, change: Wal2JsonV2Change):
-        # TODO: make json.dumps() lazy
-        logger.info("LogChangeProcessor: change: %s", json.dumps(change, indent=4))
+        # FIXME: make json.dumps() lazy
+        logger.info("LogChangeProcessor: change: %s", json.dumps(change, indent=4, sort_keys=True))
 
 
 class ProduceToKafkaProcessor(Processor):
-    def __init__(self, kafka_config: dict):
-        self._producer = Producer(kafka_config)
+    """
+    This processor send the changes to Kafka.
+
+    This processor **requires** configuration:
+    * `config.topic`: topic where to write changes.
+    * `config.producer_config`: dictionary to configure the `confluent_kafka.Producer` instance (passed as is).
+    ```
+    processors:
+        - class: builtin.ProduceToKafkaProcessor
+          config:
+            topic: "cdc_django"
+            producer_config:
+            - "bootstrap.servers": "server1:9092,server2:9092"
+            - "client.id": client
+    ```
+    """
+
+    # FIXME: document required configuration
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        producer_config = self._config_generic["producer_config"]
+        self._producer = Producer(producer_config)
+
+    def _validate_producer_config(self, producer_config: dict):
+        pass
 
     def process_change(self, change: Wal2JsonV2Change):
         self._producer.produce(topic="popyka", value=json.dumps(change))

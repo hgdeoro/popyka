@@ -1,7 +1,7 @@
 import dataclasses
 import importlib
 
-from popyka.core import Filter, PopykaException
+from popyka.core import Filter, PopykaException, Processor
 
 
 class ConfigError(PopykaException):
@@ -73,7 +73,7 @@ class FilterConfig(FactoryMixin):
 
 
 @dataclasses.dataclass
-class ProcessorConfig:
+class ProcessorConfig(FactoryMixin):
     class_fqn: str
     filters: list[FilterConfig]
     config_generic: dict
@@ -88,6 +88,14 @@ class ProcessorConfig:
             filters=filters,
             config_generic=config_generic,
         )
+
+    def instantiate(self) -> Processor:
+        """Creates an instance of `Processor` based on configuration"""
+        processor_class = self.get_class_from_fqn(self.class_fqn, Processor)
+        instance = processor_class(self.config_generic)
+        # instance.setup()  # This is an idea, maybe we should have an explicit method to run business logic
+        # to avoid doing it on __init__()
+        return instance
 
 
 @dataclasses.dataclass

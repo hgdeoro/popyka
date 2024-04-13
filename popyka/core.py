@@ -29,6 +29,11 @@ class Processor(abc.ABC):
 
     # TODO: Implement error handling, retries, etc.
 
+    def __init__(self, config_generic: dict):
+        self._config_generic = config_generic
+
+    # TODO: should we have a post_init()/setup()/init()/etc?
+
     @abc.abstractmethod
     def process_change(self, change: Wal2JsonV2Change):
         """Receives a change and process it."""
