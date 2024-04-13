@@ -3,6 +3,7 @@ import copy
 
 class Interpolator:
     def __init__(self, environment: dict[str, str]):
+        assert isinstance(environment, dict)
         self._environment = environment
 
     def _interpolate_list(self, element: list) -> list:
