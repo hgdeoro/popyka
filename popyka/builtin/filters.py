@@ -1,4 +1,5 @@
 from popyka.core import Filter, Wal2JsonV2Change
+from popyka.errors import ConfigError
 
 
 class IgnoreTxFilter(Filter):
@@ -10,12 +11,10 @@ class IgnoreTxFilter(Filter):
     This filter does not accept any configuration.
     """
 
-    IGNORED_ACTIONS = {"B", "C"}
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        assert not self._config_generic, "This filter does not accepts any configuration"
-        # FIXME: use something better than a plain `assert`, since this is a configuration error, not an internal err
+        if self._config_generic:
+            raise ConfigError("IgnoreTxFilter filter does not accepts any configuration")
 
     def ignore_change(self, change: Wal2JsonV2Change) -> bool:
-        return change["action"] in self.IGNORED_ACTIONS
+        return change["action"] == "B" or change["action"] == "C"
