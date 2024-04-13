@@ -1,5 +1,8 @@
 import dataclasses
 import importlib
+import pathlib
+
+import yaml
 
 from popyka.core import Filter, PopykaException, Processor
 
@@ -106,6 +109,7 @@ class PopykaConfig:
 
     @classmethod
     def from_yaml(cls, config: dict) -> "PopykaConfig":
+        # FIXME: a better name would be 'from_dict()'
         database_config = DatabaseConfig.from_yaml(config["database"])
         filters = [FilterConfig.from_yaml(_) for _ in config["filters"]]
         processors = [ProcessorConfig.from_yaml(_) for _ in config["processors"]]
@@ -114,3 +118,9 @@ class PopykaConfig:
             filters=filters,
             processors=processors,
         )
+
+    @classmethod
+    def get_default_config(cls) -> "PopykaConfig":
+        config_path = pathlib.Path(__file__).parent / "popyka-default.yaml"
+        config_dict = yaml.safe_load(config_path.read_text())
+        return PopykaConfig.from_yaml(config_dict)

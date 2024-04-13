@@ -5,14 +5,16 @@ from unittest.mock import MagicMock
 
 from psycopg2.extensions import connection as Connection
 
-from popyka.core import Filter, Processor, Server, StopServer, Wal2JsonV2Change
+from popyka.config import PopykaConfig
+from popyka.core import Processor, Server, StopServer, Wal2JsonV2Change
 from tests.utils import DbActivitySimulator
 
 logger = logging.getLogger(__name__)
 
 
 class ProcessorImpl(Processor):
-    def __init__(self, max_changes: int):
+    def __init__(self, max_changes: int, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.changes: list[Wal2JsonV2Change] = []
         self.max_changes = max_changes
 
@@ -23,34 +25,18 @@ class ProcessorImpl(Processor):
 
 
 class ServerTestImpl(Server, threading.Thread):
-    def __init__(
-        self,
-        dsn: str,
-        filters: list[Filter],
-        processors: list[Processor],
-    ):
-        super().__init__(daemon=True)
-        self._filters = filters
-        self._dsn = dsn
-        self._processors = processors
-
-    def get_filters(self) -> list[Filter]:
-        return self._filters
-
-    def get_processors(self) -> list[Processor]:
-        return self._processors
-
-    def get_dsn(self) -> str:
-        return self._dsn
-
-    def get_slot_name(self) -> str:
-        raise NotImplementedError()
+    def __init__(self, config):
+        super().__init__(config=config, daemon=True)
 
 
 def test_server(dsn: str, conn: Connection, conn2: Connection, drop_slot, table_name: str):
-    filters = []
-    processors = [ProcessorImpl(max_changes=3)]
-    server = ServerTestImpl(dsn, filters, processors)
+    processors = [ProcessorImpl(max_changes=3, config_generic={})]
+
+    server = ServerTestImpl(config=PopykaConfig.get_default_config())
+    server.get_filters = MagicMock()
+    server.get_filters.return_value = []
+    server.get_processors = MagicMock()
+    server.get_processors.return_value = processors
     server.get_slot_name = MagicMock()
     server.get_slot_name.return_value = f"pytest_{table_name}".lower()
     server.start_replication()  # It's important to start replication before activity is simulated

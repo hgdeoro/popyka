@@ -1,0 +1,19 @@
+# FIXME: use interpolation from env
+# FIXME: create a better default (so far, this is replication default config of PoC)
+database:
+    connect_url: "postgresql://postgres:pass@localhost:54016/popyka_test"  # FIXME: ${POPYKA_DB_DSN}
+    slot_name: "popyka_test"
+filters:
+    - class: popyka.builtin.filters.IgnoreTxFilter
+      config: {}
+processors:
+    - class: popyka.builtin.processors.LogChangeProcessor
+      filters: []
+      config: {}
+    - class: popyka.builtin.processors.ProduceToKafkaProcessor
+      filters: []
+      config:
+        topic: "popyka_test"
+        producer_config:
+        - "bootstrap.servers": "localhost:9094"
+        - "client.id": "popyka-client"

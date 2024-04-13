@@ -1,45 +1,28 @@
-import json
 import logging
 import os
 
-from popyka.builtin.filters import IgnoreTxFilter
-from popyka.builtin.processors import LogChangeProcessor, ProduceToKafkaProcessor
-from popyka.core import Filter, Processor, Server
+from popyka.config import PopykaConfig
+from popyka.core import Server
 
 logger = logging.getLogger(__name__)
 
 
 class PopykaConfigurationError(Exception):
+    # FIXME: remove this exception
     pass
 
 
 class Main(Server):
-    def get_filters(self) -> list[Filter]:
-        return [IgnoreTxFilter()]
+    pass
 
-    def get_processors(self) -> list[Processor]:
-        kafka_config_str = os.environ.get("POPYKA_KAFKA_CONF_DICT", "").strip()
-        if not kafka_config_str:
-            raise PopykaConfigurationError("The environment variable POPYKA_KAFKA_CONF_DICT is not set or empty")
-
-        try:
-            kafka_config = json.loads(kafka_config_str)
-        except json.decoder.JSONDecodeError:
-            raise PopykaConfigurationError(
-                "The string from environment variable POPYKA_KAFKA_CONF_DICT is not a valid JSON"
-            )
-        return [LogChangeProcessor(), ProduceToKafkaProcessor(kafka_config)]
-
-    def get_dsn(self) -> str:
-        dsn = os.environ.get("POPYKA_DB_DSN", "").strip()
-        if not dsn:
-            raise PopykaConfigurationError("The environment variable POPYKA_DB_DSN is not set or empty")
-        return dsn
+    # This class used to use 2 environment variables:
+    # - POPYKA_DB_DSN
+    # - POPYKA_KAFKA_CONF_DICT
 
 
 if __name__ == "__main__":
     enable_debug = bool(os.environ.get("POPYKA_DEBUG", "").strip())
     logging.basicConfig(level=logging.DEBUG if enable_debug else logging.INFO)
-    main = Main()
+    main = Main(config=PopykaConfig.get_default_config())
     main.start_replication()
     main.run()

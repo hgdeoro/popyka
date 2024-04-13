@@ -1,11 +1,15 @@
 import abc
 import json
 import logging
-from urllib.parse import urlparse
+from typing import TYPE_CHECKING
 
 import psycopg2.extras
 from psycopg2.extensions import connection as Connection
 from psycopg2.extras import ReplicationCursor
+
+if TYPE_CHECKING:
+    from popyka.config import PopykaConfig
+
 
 logger = logging.getLogger(__name__)
 
@@ -80,21 +84,19 @@ class ReplicationConsumerToProcessorAdaptor:
 
 
 class Server(abc.ABC):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, config: "PopykaConfig", *args, **kwargs):
+        self._config = config
         super().__init__(*args, **kwargs)
 
-    @abc.abstractmethod
     def get_filters(self) -> list[Filter]:
-        raise NotImplementedError()
+        return [_.instantiate() for _ in self._config.filters]
 
-    @abc.abstractmethod
     def get_processors(self) -> list[Processor]:
-        raise NotImplementedError()
+        return [_.instantiate() for _ in self._config.processors]
 
-    @abc.abstractmethod
     def get_dsn(self) -> str:
         """Return DSN, parsed URI and database name"""
-        raise NotImplementedError()
+        return self._config.database.connect_url
 
     def get_connection(self) -> Connection:
         """Returns a psycopg2 connection"""
@@ -102,10 +104,12 @@ class Server(abc.ABC):
         return psycopg2.connect(self.get_dsn(), connection_factory=psycopg2.extras.LogicalReplicationConnection)
 
     def get_slot_name(self) -> str:
-        database_name = urlparse(self.get_dsn()).path
-        assert database_name.startswith("/")
-        database_name = database_name[1:]
-        return f"popyka_{database_name}"
+        # database_name = urlparse(self.get_dsn()).path
+        # assert database_name.startswith("/")
+        # database_name = database_name[1:]
+        # return f"popyka_{database_name}"
+        # FIXME: remove ^^^
+        return self._config.database.slot_name
 
     def get_adaptor(self) -> ReplicationConsumerToProcessorAdaptor:
         return ReplicationConsumerToProcessorAdaptor(self.get_processors(), self.get_filters())

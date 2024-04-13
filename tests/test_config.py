@@ -1,6 +1,6 @@
 import pytest
 
-from popyka.config import ConfigError, FactoryMixin
+from popyka.config import ConfigError, FactoryMixin, PopykaConfig
 
 
 class BaseTestClass:
@@ -34,3 +34,8 @@ def test_get_class_from_fqn_fails_when_invalid_class():
 def test_get_class_from_fqn_fails_when_invalid_characters():
     with pytest.raises(ConfigError, match=r"^Invalid fully qualified class name"):
         FactoryMixin().get_class_from_fqn("nopoints", str)
+
+
+def test_default_config():
+    default_config = PopykaConfig.get_default_config()
+    assert default_config
