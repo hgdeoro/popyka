@@ -1,6 +1,5 @@
 import io
 import logging
-import os
 import subprocess
 import threading
 import time
@@ -9,14 +8,12 @@ logger = logging.getLogger(__name__)
 
 
 def _read_into_list(buffered_reader: io.BufferedReader, target_list: list[str]):
-    debug = os.environ.get("DEBUG_READ_INTO_LIST", "0") == 1
     while True:
         line: bytes = buffered_reader.readline()
         if line in ("", b""):
             return
         line: str = line.decode("utf-8", errors="replace").rstrip()
-        if debug:
-            print(f"> {line}")
+        logger.debug("> %s", line)
         target_list.append(line)
 
 
