@@ -20,8 +20,8 @@ def test_postgresql_version_used_by_server_with_default_config():
         match = re.fullmatch(r"^PostgreSQL\s+(\d+)\..+", results[0][0])
         assert match
 
-        major_version = match.group(1)
-        assert major_version == "16"
+        real_major_version = match.group(1)
+        assert real_major_version == EXPECTED_POSTGRESQL_MAJOR_VERSION
 
 
 def test_postgresql_version_used_by_fixture(conn: Connection):
@@ -32,5 +32,5 @@ def test_postgresql_version_used_by_fixture(conn: Connection):
         match = re.fullmatch(r"^PostgreSQL\s+(\d+)\..+", results[0][0])
         assert match
 
-        major_version = match.group(1)
-        assert major_version == "16"
+        real_major_version = match.group(1)
+        assert real_major_version == EXPECTED_POSTGRESQL_MAJOR_VERSION
