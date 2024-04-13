@@ -7,11 +7,6 @@ from popyka.core import Server
 logger = logging.getLogger(__name__)
 
 
-class PopykaConfigurationError(Exception):
-    # FIXME: remove this exception
-    pass
-
-
 class Main(Server):
     pass
 
