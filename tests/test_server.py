@@ -6,7 +6,8 @@ from unittest.mock import MagicMock
 from psycopg2.extensions import connection as Connection
 
 from popyka.config import PopykaConfig
-from popyka.core import Processor, Server, StopServer, Wal2JsonV2Change
+from popyka.core import Processor, Server, Wal2JsonV2Change
+from popyka.errors import StopServer
 from tests.utils import DbActivitySimulator
 
 logger = logging.getLogger(__name__)

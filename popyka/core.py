@@ -7,19 +7,13 @@ import psycopg2.extras
 from psycopg2.extensions import connection as Connection
 from psycopg2.extras import ReplicationCursor
 
+from popyka.errors import StopServer
+
 if TYPE_CHECKING:
     from popyka.config import PopykaConfig
 
 
 logger = logging.getLogger(__name__)
-
-
-class PopykaException(Exception):
-    pass
-
-
-class StopServer(PopykaException):
-    pass
 
 
 class Wal2JsonV2Change(dict):

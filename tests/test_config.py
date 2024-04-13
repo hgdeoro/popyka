@@ -1,6 +1,7 @@
 import pytest
 
-from popyka.config import ConfigError, FactoryMixin, PopykaConfig
+from popyka.config import FactoryMixin, PopykaConfig
+from popyka.errors import ConfigError
 
 
 class BaseTestClass:

@@ -4,12 +4,9 @@ import pathlib
 
 import yaml
 
-from popyka.core import Filter, PopykaException, Processor
+from popyka.core import Filter, Processor
+from popyka.errors import ConfigError
 from popyka.interpolation import Interpolator
-
-
-class ConfigError(PopykaException):
-    pass
 
 
 class FactoryMixin:
