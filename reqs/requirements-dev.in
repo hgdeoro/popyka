@@ -6,3 +6,5 @@ isort
 ipdb
 pre-commit
 hatch
+pytest-docker
+mechanize

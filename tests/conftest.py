@@ -1,6 +1,7 @@
 import logging
 import os
 import uuid
+from typing import Callable
 
 import psycopg2
 import psycopg2.extras
@@ -16,6 +17,10 @@ DSN_POSTGRES_WAL2JSON = f"postgresql://postgres:pass@localhost:{OVERRIDE_PORT}/p
 exploration_test = pytest.mark.skipif(
     os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored (EXPLORATION_TEST)"
 )
+
+system_test = pytest.mark.skipif(os.environ.get("SYSTEM_TEST", "0") == "0", reason="System tests ignored (SYSTEM_TEST)")
+
+slow_test = pytest.mark.skipif(os.environ.get("SLOW_TEST", "0") == "0", reason="Slow tests ignored (SLOW_TEST)")
 
 
 @pytest.fixture
@@ -38,14 +43,22 @@ def popyka_env_vars(dsn: str, table_name: str):
 
 
 @pytest.fixture
-def drop_slot(dsn: str):
-    with psycopg2.connect(dsn, connection_factory=psycopg2.extras.LogicalReplicationConnection) as cn:
-        with cn.cursor() as cur:
-            cur.execute("SELECT slot_name, slot_type, active FROM pg_replication_slots")
-            results = cur.fetchall()
-            for slot_name, slot_type, active in results:
-                logger.warning("Dropping replication slot %s", slot_name)
-                cur.execute("SELECT pg_drop_replication_slot(%s)", [slot_name])
+def drop_slot_fn():
+    def fn(dsn: str):
+        with psycopg2.connect(dsn, connection_factory=psycopg2.extras.LogicalReplicationConnection) as cn:
+            with cn.cursor() as cur:
+                cur.execute("SELECT slot_name, slot_type, active FROM pg_replication_slots")
+                results = cur.fetchall()
+                for slot_name, slot_type, active in results:
+                    logger.warning("Dropping replication slot %s", slot_name)
+                    cur.execute("SELECT pg_drop_replication_slot(%s)", [slot_name])
+
+    return fn
+
+
+@pytest.fixture
+def drop_slot(dsn: str, drop_slot_fn: Callable):
+    drop_slot_fn(dsn)
 
 
 @pytest.fixture

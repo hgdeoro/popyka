@@ -115,10 +115,18 @@ test:
 	$(VENVDIR)/bin/pytest -v
 
 test-all:
-	env EXPLORATION_TEST=1 $(VENVDIR)/bin/pytest -v
+	env EXPLORATION_TEST=1 SLOW_TEST=1 $(VENVDIR)/bin/pytest -v
 
 psql: ## connect to default test database
 	psql $(LOCAL_POPYKA_DB_DSN_SAMPLE_1)
+
+# ----------
+
+test-system-sample-django-admin:
+	docker compose --file samples/django-admin/docker-compose.yml build
+	env SYSTEM_TEST=1 $(VENVDIR)/bin/pytest -vvs tests/system_tests/test_sample_django_admin.py
+
+test-system: test-system-sample-django-admin
 
 # ----------
 
