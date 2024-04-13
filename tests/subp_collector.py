@@ -7,23 +7,24 @@ logger = logging.getLogger(__name__)
 
 
 def _read_into_list(buffered_reader: io.BufferedReader, target_list: list[str]):
-    try:
-        while True:
-            line = buffered_reader.readline()
-            print("READ: " + line)
-            target_list.append(line)
-    except:  # noqa: E722
-        logger.exception("Err")
+    while True:
+        line: bytes = buffered_reader.readline()
+        if line in ("", b""):
+            return
+        target_list.append(line.decode("utf-8", errors="replace").rstrip())
 
 
 class SubProcCollector:
     def __init__(self, args):
         self._args = args
-        self._proc = None
+        self._proc: subprocess.Popen = None
         self._stdout: list[str] = []
         self._stderr: list[str] = []
         self._thread_stdout = None
         self._thread_stderr = None
+
+    def poll(self) -> int | None:
+        return self._proc.poll()
 
     @property
     def stdout(self):
