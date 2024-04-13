@@ -2,11 +2,14 @@ import copy
 import typing
 from types import NoneType
 
+from expandvars import expand
+
 SupportedTypes = typing.Union[list, set, dict, str, bool, int, float, NoneType]
 
 
 class Interpolator:
     # FIXME: add to user doc the yaml data types that are supported
+    # FIXME: add to user doc how interpolation is implemented
     def __init__(self, environment: dict[str, str]):
         assert environment is not None
         self._environment = environment
@@ -25,9 +28,10 @@ class Interpolator:
 
     def _interpolate_str(self, element: str) -> str:
         assert isinstance(element, str)
-        for env_key, env_value in self._environment.items():
-            element = element.replace("${" + env_key + "}", env_value)
-        return element
+        # for env_key, env_value in self._environment.items():
+        #     element = element.replace("${" + env_key + "}", env_value)
+        # return element
+        return expand(element, environ=self._environment)
 
     def _interpolate(self, element: SupportedTypes) -> SupportedTypes:
         if isinstance(element, list):

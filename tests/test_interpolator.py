@@ -146,7 +146,7 @@ def test_environment_variable_does_not_exists():
 
     expected_config = {
         "key-1": "value-1",
-        "key-2": "${ENV_KEY_B}",
+        "key-2": "",
     }
 
     interpolator = Interpolator(environment=environment)
