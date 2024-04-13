@@ -30,10 +30,10 @@ class ServerTestImpl(Server, threading.Thread):
         super().__init__(config=config, daemon=True)
 
 
-def test_server(dsn: str, conn: Connection, conn2: Connection, drop_slot, table_name: str):
+def test_server(conn: Connection, conn2: Connection, drop_slot, table_name: str, popyka_env_vars):
     processors = [ProcessorImpl(max_changes=3, config_generic={})]
 
-    server = ServerTestImpl(config=PopykaConfig.get_default_config())
+    server = ServerTestImpl(config=PopykaConfig.get_default_config(environment=popyka_env_vars))
     server.get_filters = MagicMock()
     server.get_filters.return_value = []
     server.get_processors = MagicMock()

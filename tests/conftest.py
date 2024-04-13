@@ -30,6 +30,11 @@ def dsn():
 
 
 @pytest.fixture
+def popyka_env_vars(dsn: str):
+    return {"POPYKA_DB_DSN": dsn, "POPYKA_KAFKA_BOOTSTRAP_SERVERS": "localhost:9094"}
+
+
+@pytest.fixture
 def drop_slot(dsn: str):
     with psycopg2.connect(dsn, connection_factory=psycopg2.extras.LogicalReplicationConnection) as cn:
         with cn.cursor() as cur:

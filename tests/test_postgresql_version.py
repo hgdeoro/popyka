@@ -10,8 +10,8 @@ from popyka.core import Server
 EXPECTED_POSTGRESQL_MAJOR_VERSION = os.environ.get("EXPECTED_POSTGRESQL_MAJOR_VERSION", "16")
 
 
-def test_postgresql_version_used_by_server_with_default_config():
-    server = Server(config=PopykaConfig.get_default_config())
+def test_postgresql_version_used_by_server_with_default_config(popyka_env_vars):
+    server = Server(config=PopykaConfig.get_default_config(environment=popyka_env_vars))
     cx: Connection = server.get_connection()
     with cx.cursor() as cur:
         cur: ReplicationCursor
