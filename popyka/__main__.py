@@ -15,10 +15,6 @@ class PopykaConfigurationError(Exception):
 class Main(Server):
     pass
 
-    # This class used to use 2 environment variables:
-    # - POPYKA_DB_DSN
-    # - POPYKA_KAFKA_CONF_DICT
-
 
 if __name__ == "__main__":
     enable_debug = bool(os.environ.get("POPYKA_DEBUG", "").strip())
