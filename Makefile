@@ -124,7 +124,6 @@ psql: ## connect to default test database
 
 test-system-sample-django-admin:
 	docker compose --file samples/django-admin/docker-compose.yml build
-	docker compose --file samples/django-admin/docker-compose.yml --profile testing up -d
 	env SYSTEM_TEST=1 $(VENVDIR)/bin/pytest -vvs tests/system_tests/test_sample_django_admin.py
 
 test-system: test-system-sample-django-admin
