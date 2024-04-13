@@ -68,11 +68,16 @@ tox-docker-compose-wait: ## [tox] Busy-waits until the services required for run
  		sleep 0.5 ;\
 	done
 
+# Do nothing when target doesn't matches. Needed to make `$(filter-out $@,$(MAKECMDGOALS))` work
+# https://stackoverflow.com/questions/6273608/how-to-pass-argument-to-makefile-from-command-line
+%:
+    @:
+
 tox: tox-docker-compose-up tox-docker-compose-wait ## [tox] Run tox (run pytest on all supported combinations)
-	tox --result-json tox-result.json
+	tox --result-json tox-result.json -- $(filter-out $@,$(MAKECMDGOALS))
 
 tox-quick: tox-docker-compose-up tox-docker-compose-wait ## [tox] Run tox on oldest and newest Python/PostgreSql
-	tox -e py310-pg12,py312-pg16
+	tox -e py310-pg12,py312-pg16 -- $(filter-out $@,$(MAKECMDGOALS))
 
 # ----------
 
