@@ -28,5 +28,4 @@ processors:
         - "bootstrap.servers": "${POPYKA_KAFKA_BOOTSTRAP_SERVERS}"
         - "client.id": "${POPYKA_KAFKA_CLIENT_ID:-popyka-client}"
 
-# FIXME: create a better default (so far, this is replication default config of PoC)
 # FIXME: relax controls, make possible to not define empty configurations like `config: {}` or `filters: []`
