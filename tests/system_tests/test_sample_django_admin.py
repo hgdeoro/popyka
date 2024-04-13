@@ -1,8 +1,6 @@
 import json
 import logging
-import os
 import pathlib
-import random
 import time
 import uuid
 
@@ -57,14 +55,11 @@ def dc_deps() -> SubProcCollector:
 
     yield subp_collector
 
+    delete_all_topics()
+
 
 @pytest.fixture
 def dc_popyka(monkeypatch, drop_slot_fn) -> SubProcCollector:
-    slot_name = f"django_admin_demo_popyka_{random.randint(1, 999999999)}"
-    topic_name = f"django_admin_demo_popyka_{random.randint(1, 999999999)}"
-    monkeypatch.setenv("POPYKA_DB_SLOT_NAME", slot_name)
-    monkeypatch.setenv("POPYKA_KAFKA_TOPIC", topic_name)
-
     drop_slot_fn(DEMO_POSTGRESQL_DSN)
 
     dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
@@ -80,7 +75,7 @@ def dc_popyka(monkeypatch, drop_slot_fn) -> SubProcCollector:
     subp_collector = SubProcCollector(args=args).start()
 
     # Wait until Popyka started
-    subp_collector.wait_for(f"will start_replication() slot={slot_name}", timeout=5)
+    subp_collector.wait_for("will start_replication() slot=popyka", timeout=5)
     subp_collector.wait_for("will consume_stream() adaptor=", timeout=1)
 
     yield subp_collector
@@ -163,7 +158,7 @@ def test_e2e(dc_deps: SubProcCollector, dc_popyka: SubProcCollector):
     dc_popyka.wait_for('"table": "django_session"', timeout=5)
     dc_popyka.wait_for('"table": "auth_user"', timeout=5)
 
-    topic_name = os.environ["POPYKA_KAFKA_TOPIC"]  # set by fixture
+    topic_name = "popyka"
     consumer = KafkaConsumer(DEMO_KAFKA_BOOTSTRAP_SERVERS, topic_name)
     messages: list[confluent_kafka.Message] = consumer.wait_for_count(count=3, timeout=10)
 
