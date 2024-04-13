@@ -2,7 +2,9 @@ import copy
 import typing
 from types import NoneType
 
-from expandvars import expand
+from expandvars import UnboundVariable, expand
+
+from popyka.errors import ConfigError
 
 SupportedTypes = typing.Union[list, set, dict, str, bool, int, float, NoneType]
 
@@ -27,11 +29,12 @@ class Interpolator:
         return {key: self._interpolate(value) for key, value in element.items()}
 
     def _interpolate_str(self, element: str) -> str:
+        # FIXME: is it ok to use `nounset` and make a fatal error when referenced variables do not exist?
         assert isinstance(element, str)
-        # for env_key, env_value in self._environment.items():
-        #     element = element.replace("${" + env_key + "}", env_value)
-        # return element
-        return expand(element, environ=self._environment)
+        try:
+            return expand(element, environ=self._environment, nounset=True)
+        except UnboundVariable as err:
+            raise ConfigError(f"Failed to expand: '{element}'. Error: {err.args[0]}")
 
     def _interpolate(self, element: SupportedTypes) -> SupportedTypes:
         if isinstance(element, list):
