@@ -117,6 +117,9 @@ test:
 test-all:
 	env EXPLORATION_TEST=1 $(VENVDIR)/bin/pytest -v
 
+test-integration:
+	env INTEGRATION_TEST=1 $(VENVDIR)/bin/pytest -v tests/integration/
+
 psql: ## connect to default test database
 	psql $(LOCAL_POPYKA_DB_DSN_SAMPLE_1)
 

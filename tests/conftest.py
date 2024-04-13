@@ -17,6 +17,10 @@ exploration_test = pytest.mark.skipif(
     os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored (EXPLORATION_TEST)"
 )
 
+integration_test = pytest.mark.skipif(
+    os.environ.get("INTEGRATION_TEST", "0") == "0", reason="Integration tests ignored (INTEGRATION_TEST)"
+)
+
 
 @pytest.fixture
 def table_name() -> str:
