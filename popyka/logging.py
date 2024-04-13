@@ -1,4 +1,5 @@
 import json
+import pprint
 
 
 class LazyJson:
@@ -6,5 +7,7 @@ class LazyJson:
         self._instance = instance
 
     def __str__(self):
-        # FIXME: Implement fallback mechanism like pprint.pformat()
-        return json.dumps(self._instance, sort_keys=True, indent=4)
+        try:
+            return json.dumps(self._instance, sort_keys=True, indent=4)
+        except TypeError:
+            return pprint.pformat(self._instance, indent=4)

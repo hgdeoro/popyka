@@ -1,7 +1,5 @@
 from datetime import datetime
 
-import pytest
-
 from popyka.logging import LazyJson
 
 
@@ -12,11 +10,13 @@ def test_lazy_json_serializes_valid_instance():
 
 
 def test_lazy_json_with_invalid_instance():
-    instance = {"this", "is", "a", "set", datetime.now()}
+    instance = {"this-is", "a-set", datetime(2024, 4, 13, 13, 31, 31, 407204)}
 
     # Instantiation should work
     lazy_json = LazyJson(instance)
 
     # Serialization should fail
-    with pytest.raises(TypeError, match=r"Object of type set is not JSON serializable"):
-        str(lazy_json)
+    returned_str = str(lazy_json)
+    assert "datetime.datetime(2024, 4, 13, 13, 31, 31, 407204)" in returned_str
+    assert "this-is" in returned_str
+    assert "a-set" in returned_str
