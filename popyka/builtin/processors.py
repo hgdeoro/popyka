@@ -4,6 +4,7 @@ import logging
 from confluent_kafka import Producer
 
 from popyka.core import Processor, Wal2JsonV2Change
+from popyka.logging import LazyJson
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +17,7 @@ class LogChangeProcessor(Processor):
     """
 
     def process_change(self, change: Wal2JsonV2Change):
-        # FIXME: make json.dumps() lazy
-        logger.info("LogChangeProcessor: change: %s", json.dumps(change, indent=4, sort_keys=True))
+        logger.info("LogChangeProcessor: change: %s", LazyJson(change))
 
 
 class ProduceToKafkaProcessor(Processor):
