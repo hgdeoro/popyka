@@ -39,30 +39,34 @@ def test_interpolator_without_env():
 
 
 def test_interpolator_yaml_types():
-    # Standard YAML tags
-    # !!null 	None
-    # !!bool 	bool
-    # !!int 	int or long (int in Python 3)
-    # !!float 	float
-    # !!binary 	str (bytes in Python 3)
-    # !!timestamp   datetime.datetime
-    # !!omap, !!pairs 	list of pairs
-    # !!set     set
-    # !!str     str or unicode (str in Python 3)
-    # !!seq     list
-    # !!map     dict
+    """
+    --- supported types
+    !!bool 	bool
+    !!int 	int
+    !!float 	float
+    !!str     str
+    !!seq     list
+    !!map     dict
+    !!null 	None
+
+    --- NOT supported types
+    !!binary 	str (bytes in Python 3)
+    !!timestamp   datetime.datetime
+    !!omap, !!pairs 	list of pairs
+    !!set     set
+    """
+
     interpolator = Interpolator(environment={})
     yaml_path = pathlib.Path(__file__).parent / "all_yaml_types.yaml"
     config_yaml = yaml.safe_load(yaml_path.read_text())
-    # "string": "value"
-    # "integer": 123
-    # "float": 3.14
-    # "bool": true
     assert config_yaml == {
         "string": "value",
         "integer": 123,
         "float": 3.14,
         "bool": True,
+        "list": ["a", "b"],
+        "dict": {"k1": "v1"},
+        "null": None,
     }
     interpolator.interpolate(config=config_yaml)
 

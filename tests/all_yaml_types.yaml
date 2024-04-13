@@ -2,3 +2,9 @@
 "integer": 123
 "float": 3.14
 "bool": true
+"list":
+  - "a"
+  - "b"
+"dict":
+  "k1": "v1"
+"null": null

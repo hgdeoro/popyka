@@ -1,4 +1,8 @@
 import copy
+import typing
+from types import NoneType
+
+SupportedTypes = typing.Union[list, dict, str, bool, int, float, None]
 
 
 class Interpolator:
@@ -27,14 +31,14 @@ class Interpolator:
             element = element.replace("${" + env_key + "}", env_value)
         return element
 
-    def _interpolate(self, element: [list, dict, str, bool, int, float]) -> list | dict | str | bool | int | float:
+    def _interpolate(self, element: SupportedTypes) -> SupportedTypes:
         if isinstance(element, list):
             return self._interpolate_list(element)
         elif isinstance(element, dict):
             return self._interpolate_dict(element)
         elif isinstance(element, str):
             return self._interpolate_str(element)
-        elif isinstance(element, (bool, int, float)):
+        elif isinstance(element, (bool, int, float, NoneType)):
             return element
         else:
             raise NotImplementedError(f"Cannot do interpolation on element of type {type(element)}: {element}")
