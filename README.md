@@ -39,12 +39,13 @@ The MVP is under development on the `main` branch.
 
 TODO (the list is still changing):
 1. create mechanism to allow inclusion of user's Python code (processors)
-1. improve configuration mechanism to support real world scenarios
 1. _dev experience_: generate documentation of public API
-1. _dev experience_: create sample projects using popyka
 1. _ci/cd_: build image from release tag
 1. _ci/cd_: publish docker image to public repository
-1. ~~fix issues on MacOS (for local development, it requires `--network=host`)~~ **done**
+1. ~~implement e2e test~~ **DONE**
+1. ~~improve configuration mechanism to support real world scenarios~~ **DONE**
+1. ~~_dev experience_: create sample projects using popyka~~ *DONE**
+1. ~~fix issues on MacOS (for local development, it requires `--network=host`)~~ **DONE**
 1. ~~improve automated testing~~ **DONE**
 1. ~~define supported Python versions and run tests on all supported versions~~ **DONE**
 1. ~~implement semantic versioning~~ **DONE**
