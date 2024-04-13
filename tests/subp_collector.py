@@ -26,6 +26,9 @@ class SubProcCollector:
     def poll(self) -> int | None:
         return self._proc.poll()
 
+    def kill(self):
+        return self._proc.kill()
+
     @property
     def stdout(self):
         return self._stdout
