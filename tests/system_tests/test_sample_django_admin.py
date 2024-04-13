@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import pathlib
 import random
@@ -12,6 +13,9 @@ from confluent_kafka import Consumer
 
 from tests.conftest import system_test
 from tests.subp_collector import SubProcCollector
+
+logger = logging.getLogger(__name__)
+
 
 DEMO_DJANGO_ADMIN_PORT = 8081
 DEMO_POSTGRESQL_DSN = "postgresql://postgres:pass@localhost:54091/postgres"
@@ -76,7 +80,8 @@ def dc_popyka(monkeypatch, drop_slot_fn) -> SubProcCollector:
 
 
 class KafkaConsumer:
-    def __init__(self, bootstrap_servers: str, topic_name: str):
+    def __init__(self, bootstrap_servers: str, topic: str):
+        self._topic = topic
         self._consumed_msg: list[confluent_kafka.Message] = []
         self._consumer = Consumer(
             {
@@ -85,7 +90,7 @@ class KafkaConsumer:
                 "auto.offset.reset": "earliest",
             }
         )
-        self._consumer.subscribe([topic_name])
+        self._consumer.subscribe([topic])
 
     @property
     def consumed_msg(self) -> list[confluent_kafka.Message]:
@@ -95,9 +100,16 @@ class KafkaConsumer:
     #     self._consumed_msg = []
 
     def wait_for_count(self, count: int, timeout: float) -> list[confluent_kafka.Message]:
+        print(f"Waiting for {count} messages in topic {self._topic}")
         assert timeout > 0
         start = time.monotonic()
         while time.monotonic() - start < timeout and len(self._consumed_msg) < count:
+            logger.debug(
+                "Waiting for %s messages in topic %s. There are %s at the moment",
+                count,
+                self._topic,
+                len(self._consumed_msg),
+            )
             msg = self._consumer.poll(0.1)
             if msg is None:
                 continue
