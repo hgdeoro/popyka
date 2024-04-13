@@ -22,3 +22,6 @@ pip-compile-upgrade: ## Compiles dependencies (pip-tools) into requirements-*.tx
 
 pip-sync: ## Run pip-sync (pip-tools)
 	$(VENVDIR)/bin/pip-sync requirements.txt
+
+docker-compose-rm:
+	docker compose rm --force --stop --volumes
