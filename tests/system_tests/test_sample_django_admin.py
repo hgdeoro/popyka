@@ -1,37 +1,25 @@
-import json
 import logging
 import pathlib
-import time
-import uuid
 
 import confluent_kafka
 import mechanize
 import pytest
-from confluent_kafka import Consumer
-from confluent_kafka.admin import AdminClient, ClusterMetadata
 
 from tests.conftest import system_test
 from tests.subp_collector import SubProcCollector
+from tests.utils import KafkaAdmin, KafkaConsumer
 
 logger = logging.getLogger(__name__)
-
 
 DEMO_DJANGO_ADMIN_PORT = 8081
 DEMO_POSTGRESQL_DSN = "postgresql://postgres:pass@localhost:54091/postgres"
 DEMO_KAFKA_BOOTSTRAP_SERVERS = "localhost:54092"
 
 
-def delete_all_topics():
-    admin = AdminClient({"bootstrap.servers": DEMO_KAFKA_BOOTSTRAP_SERVERS})
-    cluster_meta: ClusterMetadata = admin.list_topics()
-    topics_to_delete = [_ for _ in cluster_meta.topics if not _.startswith("_")]
-    for topic in topics_to_delete:
-        print(f"Deleting topic {topic}")
-        admin.delete_topics(topics_to_delete, operation_timeout=3.0)
-
-
 @pytest.fixture
 def dc_deps() -> SubProcCollector:
+    kafka_admin = KafkaAdmin(DEMO_KAFKA_BOOTSTRAP_SERVERS)
+
     dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
     args = [
         "docker",
@@ -51,11 +39,13 @@ def dc_deps() -> SubProcCollector:
     subp_collector._thread_stdout.join()  # FIXME: protected attribute!
     subp_collector._thread_stderr.join()  # FIXME: protected attribute!
 
-    delete_all_topics()
+    # TODO: busy wait until all dependencies are up
+
+    kafka_admin.delete_all_topics()
 
     yield subp_collector
 
-    delete_all_topics()
+    kafka_admin.delete_all_topics()
 
 
 @pytest.fixture
@@ -84,58 +74,6 @@ def dc_popyka(monkeypatch, drop_slot_fn) -> SubProcCollector:
     subp_collector._proc.wait()  # FIXME: protected attribute!
     subp_collector._thread_stdout.join()  # FIXME: protected attribute!
     subp_collector._thread_stderr.join()  # FIXME: protected attribute!
-
-
-class KafkaConsumer:
-    def __init__(self, bootstrap_servers: str, topic: str):
-        self._topic = topic
-        self._consumed_msg: list[confluent_kafka.Message] = []
-        self._consumer = Consumer(
-            {
-                "bootstrap.servers": bootstrap_servers,
-                "group.id": str(uuid.uuid4().hex),
-                "auto.offset.reset": "earliest",
-            }
-        )
-        self._consumer.subscribe([topic])
-
-    @property
-    def consumed_msg(self) -> list[confluent_kafka.Message]:
-        return list(self._consumed_msg)
-
-    # def clean(self):
-    #     self._consumed_msg = []
-
-    def wait_for_count(self, count: int, timeout: float) -> list[confluent_kafka.Message]:
-        print(f"Waiting for {count} messages in topic {self._topic}")
-        assert timeout > 0
-        start = time.monotonic()
-        while time.monotonic() - start < timeout and len(self._consumed_msg) < count:
-            logger.debug(
-                "Waiting for %s messages in topic %s. There are %s at the moment",
-                count,
-                self._topic,
-                len(self._consumed_msg),
-            )
-            msg = self._consumer.poll(0.1)
-            if msg is None:
-                continue
-            assert not msg.error()
-
-            self._consumed_msg.append(msg)
-
-        # self._consumer.close()  # How can we know if client will try again :/
-
-        if len(self._consumed_msg) < count:
-            raise Exception(f"Timeout waiting for {count} messages. Got: only {len(self._consumed_msg)}")
-
-        return self._consumed_msg
-
-    @classmethod
-    def summarize(cls, messages: list[confluent_kafka.Message]):
-        changes_dict = [json.loads(_.value()) for _ in messages]
-        changes_summary = [(_["action"], _["table"]) for _ in changes_dict]
-        return changes_summary
 
 
 @system_test
