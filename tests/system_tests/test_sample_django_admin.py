@@ -7,7 +7,8 @@ import pytest
 from tests.conftest import system_test
 from tests.subp_collector import SubProcCollector
 
-# https://github.com/avast/pytest-docker
+DEMO_DJANGO_ADMIN_PORT = 8081
+DEMO_POSTGRESQL_DSN = "postgresql://postgres:pass@localhost:54091/postgres"
 
 
 @pytest.fixture
@@ -35,9 +36,13 @@ def dc_deps() -> SubProcCollector:
 
 
 @pytest.fixture
-def dc_popyka(monkeypatch) -> SubProcCollector:
+def dc_popyka(monkeypatch, drop_slot_fn) -> SubProcCollector:
     slot_name = f"django_admin_demo_popyka_{random.randint(1, 999999999)}"
+    topic_name = f"django_admin_demo_popyka_{random.randint(1, 999999999)}"
     monkeypatch.setenv("POPYKA_DB_SLOT_NAME", slot_name)
+    monkeypatch.setenv("POPYKA_KAFKA_TOPIC", topic_name)
+
+    drop_slot_fn(DEMO_POSTGRESQL_DSN)
 
     dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
     args = [
@@ -65,11 +70,10 @@ def dc_popyka(monkeypatch) -> SubProcCollector:
 
 @system_test
 def test_default_configuration(dc_deps: SubProcCollector, dc_popyka: SubProcCollector):
-    docker_ip, port = "localhost", "8081"
     br = mechanize.Browser()
     br.set_handle_robots(False)
 
-    br.open(f"http://{docker_ip}:{port}/admin/")
+    br.open(f"http://localhost:{DEMO_DJANGO_ADMIN_PORT}/admin/")
     assert br.response().code == 200
     assert br.title() == "Log in | Django site admin"
 
@@ -83,3 +87,5 @@ def test_default_configuration(dc_deps: SubProcCollector, dc_popyka: SubProcColl
 
     dc_popyka.wait_for('"table": "django_session"', timeout=5)
     dc_popyka.wait_for('"table": "auth_user"', timeout=5)
+
+    # topic_name = os.environ.get('POPYKA_KAFKA_TOPIC')  # set by fixture

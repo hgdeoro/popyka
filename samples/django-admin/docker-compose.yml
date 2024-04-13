@@ -18,7 +18,8 @@ services:
       - -c
       - max_replication_slots=10
     stop_grace_period: 1s
-    # stop_signal: SIGKILL
+    ports:
+      - 54091:5432
 
   demo-django-admin:
     build:
@@ -49,6 +50,7 @@ services:
       POPYKA_DB_DSN: "postgresql://postgres:pass@demo-db:5432/postgres"
       POPYKA_KAFKA_BOOTSTRAP_SERVERS: 'demo-kafka:9092'
       POPYKA_DB_SLOT_NAME: "${POPYKA_DB_SLOT_NAME:-popyka}"
+      POPYKA_KAFKA_TOPIC: "${POPYKA_KAFKA_TOPIC:-popyka}"
     stop_grace_period: 1s
     stop_signal: SIGKILL
 
