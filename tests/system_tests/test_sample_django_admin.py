@@ -44,6 +44,14 @@ def dc_deps(drop_slot_fn) -> SubProcCollector:
     kafka_admin.delete_all_topics()
     drop_slot_fn(DEMO_POSTGRESQL_DSN)
 
+    # To have a predictable environment, we can create new slot + topic (this was the initial approach): but...
+    #   1. there is a limited number of slots that can be created on postgresql... if slots are not dropped,
+    #      this cause problems when running tests many times.
+    #   2. a second test is needed to validate the demo app with the default configuration (default slot & topic)
+    #
+    # It's easier to just delete everything before the test run, this way the environment is predictable,
+    # and we're testing default configuration... If tests pass, the demo app should work as is.
+
     yield collector
 
     kafka_admin.delete_all_topics()
