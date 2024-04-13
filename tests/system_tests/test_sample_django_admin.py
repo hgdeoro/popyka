@@ -1,4 +1,5 @@
 import pathlib
+import random
 
 import mechanize
 import pytest
@@ -34,7 +35,10 @@ def dc_deps() -> SubProcCollector:
 
 
 @pytest.fixture
-def dc_popyka() -> SubProcCollector:
+def dc_popyka(monkeypatch) -> SubProcCollector:
+    slot_name = f"django_admin_demo_popyka_{random.randint(1, 999999999)}"
+    monkeypatch.setenv("POPYKA_DB_SLOT_NAME", slot_name)
+
     dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
     args = [
         "docker",
@@ -48,7 +52,8 @@ def dc_popyka() -> SubProcCollector:
     subp_collector = SubProcCollector(args=args).start()
 
     # Wait until Popyka started
-    subp_collector.wait_for("will consume_stream() adaptor=", timeout=5)
+    subp_collector.wait_for(f"will start_replication() slot={slot_name}", timeout=5)
+    subp_collector.wait_for("will consume_stream() adaptor=", timeout=1)
 
     yield subp_collector
 
@@ -59,7 +64,7 @@ def dc_popyka() -> SubProcCollector:
 
 
 @system_test
-def test(dc_deps, dc_popyka):
+def test(dc_deps: SubProcCollector, dc_popyka: SubProcCollector):
     docker_ip, port = "localhost", "8081"
     br = mechanize.Browser()
     br.set_handle_robots(False)
@@ -75,3 +80,6 @@ def test(dc_deps, dc_popyka):
 
     assert br.response().code == 200
     assert br.title() == "Site administration | Django site admin"
+
+    dc_popyka.wait_for('"table": "django_session"')
+    dc_popyka.wait_for('"table": "auth_user"')
