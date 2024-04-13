@@ -28,7 +28,7 @@ class Processor(abc.ABC):
 
     logger = logging.getLogger(f"{__name__}.Filter")
 
-    # TODO: Implement error handling, retries, etc.
+    # FIXME: Implement error handling, retries, etc.
 
     def __init__(self, config_generic: dict):
         self.logger.debug("Instantiating processor with config: %s", LazyToStr(config_generic))
