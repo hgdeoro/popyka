@@ -117,11 +117,16 @@ test:
 test-all:
 	env EXPLORATION_TEST=1 $(VENVDIR)/bin/pytest -v
 
-test-integration:
-	env INTEGRATION_TEST=1 $(VENVDIR)/bin/pytest -v tests/integration/
-
 psql: ## connect to default test database
 	psql $(LOCAL_POPYKA_DB_DSN_SAMPLE_1)
+
+# ----------
+
+test-integration-sample-django-admin:
+	docker compose --file samples/django-admin/docker-compose.yml build
+	env INTEGRATION_TEST=1 $(VENVDIR)/bin/pytest -v tests/integration/test_sample_django_admin.py
+
+test-integration: test-integration-sample-django-admin
 
 # ----------
 
