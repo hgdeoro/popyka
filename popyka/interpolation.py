@@ -34,7 +34,7 @@ class Interpolator:
         try:
             return expand(element, environ=self._environment, nounset=True)
         except UnboundVariable as err:
-            raise ConfigError(f"Failed to expand: '{element}'. Error: {err.args[0]}")
+            raise ConfigError(f"Failed to expand: '{element}': {err.args[0]}")
 
     def _interpolate(self, element: SupportedTypes) -> SupportedTypes:
         if isinstance(element, list):
