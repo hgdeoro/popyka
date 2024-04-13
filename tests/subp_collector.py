@@ -7,8 +7,13 @@ logger = logging.getLogger(__name__)
 
 
 def _read_into_list(buffered_reader: io.BufferedReader, target_list: list[str]):
-    while True:
-        target_list.append(buffered_reader.readline())
+    try:
+        while True:
+            line = buffered_reader.readline()
+            print("READ: " + line)
+            target_list.append(line)
+    except:  # noqa: E722
+        logger.exception("Err")
 
 
 class SubProcCollector:
