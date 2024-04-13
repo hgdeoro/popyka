@@ -81,5 +81,5 @@ def test(dc_deps: SubProcCollector, dc_popyka: SubProcCollector):
     assert br.response().code == 200
     assert br.title() == "Site administration | Django site admin"
 
-    dc_popyka.wait_for('"table": "django_session"')
-    dc_popyka.wait_for('"table": "auth_user"')
+    dc_popyka.wait_for('"table": "django_session"', timeout=5)
+    dc_popyka.wait_for('"table": "auth_user"', timeout=5)
