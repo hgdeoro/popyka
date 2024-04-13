@@ -17,7 +17,8 @@ services:
       - max_wal_senders=10
       - -c
       - max_replication_slots=10
-    stop_grace_period: 2s
+    stop_grace_period: 1s
+    # stop_signal: SIGKILL
 
   demo-django-admin:
     build:
@@ -31,10 +32,10 @@ services:
       - demo-db
     environment:
       DATABASE_URL: "postgresql://postgres:pass@demo-db:5432/postgres"
-    stop_grace_period: 1s
-    stop_signal: SIGKILL
     ports:
       - 8081:8080
+    stop_grace_period: 1s
+    stop_signal: SIGKILL
 
   demo-popyka:
     build:
@@ -44,9 +45,6 @@ services:
       context: ../../
     restart: no
     shm_size: 128mb
-    depends_on:
-      - demo-kafka
-      - demo-db
     environment:
       POPYKA_DB_DSN: "postgresql://postgres:pass@demo-db:5432/postgres"
       POPYKA_KAFKA_BOOTSTRAP_SERVERS: 'demo-kafka:9092'
@@ -63,6 +61,8 @@ services:
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://demo-kafka:9092
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    stop_grace_period: 2s
+    # stop_signal: SIGKILL
 
   demo-kowl:
     image: docker.redpanda.com/redpandadata/console:latest
@@ -70,3 +70,5 @@ services:
       - KAFKA_BROKERS=demo-kafka:9092
     ports:
       - 8082:8080
+    stop_grace_period: 1s
+    stop_signal: SIGKILL
