@@ -10,6 +10,7 @@ import confluent_kafka
 import mechanize
 import pytest
 from confluent_kafka import Consumer
+from confluent_kafka.admin import AdminClient, ClusterMetadata
 
 from tests.conftest import system_test
 from tests.subp_collector import SubProcCollector
@@ -20,6 +21,15 @@ logger = logging.getLogger(__name__)
 DEMO_DJANGO_ADMIN_PORT = 8081
 DEMO_POSTGRESQL_DSN = "postgresql://postgres:pass@localhost:54091/postgres"
 DEMO_KAFKA_BOOTSTRAP_SERVERS = "localhost:54092"
+
+
+def delete_all_topics():
+    admin = AdminClient({"bootstrap.servers": DEMO_KAFKA_BOOTSTRAP_SERVERS})
+    cluster_meta: ClusterMetadata = admin.list_topics()
+    topics_to_delete = [_ for _ in cluster_meta.topics if not _.startswith("_")]
+    for topic in topics_to_delete:
+        print(f"Deleting topic {topic}")
+        admin.delete_topics(topics_to_delete, operation_timeout=3.0)
 
 
 @pytest.fixture
@@ -42,6 +52,8 @@ def dc_deps() -> SubProcCollector:
     assert subp_collector._proc.wait() == 0  # Retry? Timeout?  # FIXME: protected attribute!
     subp_collector._thread_stdout.join()  # FIXME: protected attribute!
     subp_collector._thread_stderr.join()  # FIXME: protected attribute!
+
+    delete_all_topics()
 
     yield subp_collector
 
@@ -132,7 +144,7 @@ class KafkaConsumer:
 
 
 @system_test
-def test_default_configuration(dc_deps: SubProcCollector, dc_popyka: SubProcCollector):
+def test_e2e(dc_deps: SubProcCollector, dc_popyka: SubProcCollector):
     br = mechanize.Browser()
     br.set_handle_robots(False)
 
