@@ -38,7 +38,7 @@ def test_server(conn: Connection, conn2: Connection, drop_slot, table_name: str,
     server.get_filters.return_value = []
     server.get_processors = MagicMock()
     server.get_processors.return_value = processors
-    server.start_replication()  # It's important to start replication before activity is simulated
+    server.create_replication_slot()  # It's important to start replication before activity is simulated
     server.start()
 
     uuids = [str(uuid.uuid4()) for _ in range(4)]

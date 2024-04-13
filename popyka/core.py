@@ -123,10 +123,9 @@ class Server(abc.ABC):
     def get_adaptor(self) -> ReplicationConsumerToProcessorAdaptor:
         return ReplicationConsumerToProcessorAdaptor(self.get_processors(), self.get_filters())
 
-    def start_replication(self):
-        # FIXME: old and misleading! Rename to `create_replication_slot()` and update docstring.
+    def create_replication_slot(self):
         """
-        Start the replication. Can be called from main thread or a different one.
+        Creates the replication slot. Can be called from main thread or a different one.
 
         This step needs to be done before starting to consume.
         It's a different method because makes testing much easier with no major disadvantage.
