@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 DEMO_DJANGO_ADMIN_PORT = 8081
 DEMO_POSTGRESQL_DSN = "postgresql://postgres:pass@localhost:54091/postgres"
-DEMO_KAFKA_BOOTSTRAP_SERVERS = "localhost:19092"
+DEMO_KAFKA_BOOTSTRAP_SERVERS = "localhost:54092"
 
 
 @pytest.fixture
