@@ -2,7 +2,7 @@ import copy
 import typing
 from types import NoneType
 
-SupportedTypes = typing.Union[list, dict, str, bool, int, float, None]
+SupportedTypes = typing.Union[list, set, dict, str, bool, int, float, None]
 
 
 class Interpolator:
@@ -16,6 +16,13 @@ class Interpolator:
         for i in range(len(element)):
             element[i] = self._interpolate(element[i])
         return element
+
+    def _interpolate_set(self, element: set) -> set:
+        assert isinstance(element, set)
+        new_set: set = element.copy()
+        for _ in element:
+            new_set.add(self._interpolate(_))
+        return new_set
 
     def _interpolate_dict(self, element: dict) -> dict:
         assert isinstance(element, dict)
@@ -36,6 +43,8 @@ class Interpolator:
             return self._interpolate_list(element)
         elif isinstance(element, dict):
             return self._interpolate_dict(element)
+        elif isinstance(element, set):
+            return self._interpolate_set(element)
         elif isinstance(element, str):
             return self._interpolate_str(element)
         elif isinstance(element, (bool, int, float, NoneType)):

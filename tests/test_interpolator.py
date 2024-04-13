@@ -48,12 +48,12 @@ def test_interpolator_yaml_types():
     !!seq     list
     !!map     dict
     !!null 	None
+    !!set     set
 
     --- NOT supported types
-    !!binary 	str (bytes in Python 3)
+    !!binary 	bytes
     !!timestamp   datetime.datetime
     !!omap, !!pairs 	list of pairs
-    !!set     set
     """
 
     interpolator = Interpolator(environment={})
@@ -67,6 +67,7 @@ def test_interpolator_yaml_types():
         "list": ["a", "b"],
         "dict": {"k1": "v1"},
         "null": None,
+        "set": {"a", "b"},
     }
     interpolator.interpolate(config=config_yaml)
 
