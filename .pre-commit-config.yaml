@@ -23,3 +23,16 @@ repos:
       - id: ruff
         args: [ --fix ]
       - id: ruff-format
+#  - repo: local
+#    hooks:
+#      - id: pylint
+#        name: pylint
+#        entry: pylint
+#        language: system
+#        types: [ python ]
+#        args:
+#          - "--recursive=y"
+#          - "--output-format=colorized"
+#          - "--max-line-length=120"
+#          - "--disable=C0114,C0116,C0115,R0801"
+#          - "--ignore-paths=samples/"
