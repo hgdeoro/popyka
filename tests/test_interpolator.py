@@ -2,6 +2,7 @@ import json
 import pathlib
 import uuid
 
+import pytest
 import yaml
 
 from popyka.interpolation import Interpolator
@@ -125,6 +126,40 @@ def test_interpolator_with_env():
                 },
             ],
         },
+    }
+
+    interpolator = Interpolator(environment=environment)
+    config = interpolator.interpolate(config=original_config)
+    print(json.dumps(config, indent=4))
+    assert config is not original_config
+    assert config == expected_config
+
+
+@pytest.mark.skip
+def test_environment_variable_does_not_exists():
+    pass  # FIXME: implement
+
+
+def test_partial_interpolation():
+    environment: dict[str, str] = {
+        "ENV_KEY_A": "env-value-a",
+        "ENV_KEY_B": "env-value-b",
+        "ENV_KEY_C": "env-value-c",
+        "ENV_KEY_D": "env-value-d",
+    }
+
+    original_config = {
+        "full_interpolation": "${ENV_KEY_A}",
+        "variable_with_prefix": "prefix_${ENV_KEY_B}",
+        "variable_with_suffix": "${ENV_KEY_C}_suffix",
+        "variable_in_the_middle": "prefix_${ENV_KEY_D}_suffix",
+    }
+
+    expected_config = {
+        "full_interpolation": "env-value-a",
+        "variable_with_prefix": "prefix_env-value-b",
+        "variable_with_suffix": "env-value-c_suffix",
+        "variable_in_the_middle": "prefix_env-value-d_suffix",
     }
 
     interpolator = Interpolator(environment=environment)
