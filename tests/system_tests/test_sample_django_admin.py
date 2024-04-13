@@ -3,6 +3,10 @@ import pathlib
 
 import pytest
 
+from tests.conftest import system_test
+
+# https://github.com/avast/pytest-docker
+
 
 @pytest.fixture(scope="session")
 def docker_compose_file(pytestconfig):
@@ -16,11 +20,15 @@ def docker_compose_project_name(pytestconfig):
 
 
 def is_up(host, path):
-    conn = http.client.HTTPConnection(host)
-    conn.request("GET", path)
-    r1 = conn.getresponse()
-    print(r1.status, r1.reason)
-    return r1.status == 200
+    print(f"Checking if {host}{path} is up")
+    try:
+        conn = http.client.HTTPConnection(host)
+        conn.request("GET", path)
+        r1 = conn.getresponse()
+        print(r1.status, r1.reason)
+        return r1.status == 200
+    except ConnectionResetError:
+        return False
 
 
 @pytest.fixture(scope="session")
@@ -33,11 +41,12 @@ def django_admin_service(docker_ip, docker_services):
     return docker_ip, port
 
 
+@system_test
 def test_status_code(django_admin_service):
     docker_ip, port = django_admin_service
 
     conn = http.client.HTTPConnection(f"{docker_ip}:{port}")
-    conn.request("GET", "/admin/")
+    conn.request("GET", "/")
     r1 = conn.getresponse()
     print(r1.status, r1.reason)
     assert r1.status == 200
