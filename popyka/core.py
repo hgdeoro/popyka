@@ -8,7 +8,7 @@ from psycopg2.extensions import connection as Connection
 from psycopg2.extras import ReplicationCursor
 
 from popyka.errors import StopServer
-from popyka.logging import LazyJson
+from popyka.logging import LazyToStr
 
 if TYPE_CHECKING:
     from popyka.config import PopykaConfig
@@ -31,7 +31,7 @@ class Processor(abc.ABC):
     # TODO: Implement error handling, retries, etc.
 
     def __init__(self, config_generic: dict):
-        self.logger.debug("Instantiating processor with config: %s", LazyJson(config_generic))
+        self.logger.debug("Instantiating processor with config: %s", LazyToStr(config_generic))
         self._config_generic = config_generic
 
     # TODO: should we have a post_init()/setup()/init()/etc?
@@ -48,7 +48,7 @@ class Filter(abc.ABC):
     logger = logging.getLogger(f"{__name__}.Filter")
 
     def __init__(self, config_generic: dict):
-        self.logger.debug("Instantiating filter with config: %s", LazyJson(config_generic))
+        self.logger.debug("Instantiating filter with config: %s", LazyToStr(config_generic))
         self._config_generic = config_generic
 
     # TODO: should we have a post_init()/setup()/init()/etc?
@@ -80,7 +80,7 @@ class ReplicationConsumerToProcessorAdaptor:
         for a_filter in self._filters:
             if a_filter.ignore_change(change):
                 process_change = False
-                self.logger.debug("Ignoring change for change: %s", LazyJson(change))
+                self.logger.debug("Ignoring change for change: %s", LazyToStr(change))
                 break
 
         if process_change:
@@ -98,7 +98,7 @@ class Server(abc.ABC):
 
     def __init__(self, config: "PopykaConfig", *args, **kwargs):
         self._config = config
-        self.logger.debug("Instantiating Server with config: %s", LazyJson(config))
+        self.logger.debug("Instantiating Server with config: %s", LazyToStr(config))
         super().__init__(*args, **kwargs)
 
     def get_filters(self) -> list[Filter]:

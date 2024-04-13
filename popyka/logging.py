@@ -2,7 +2,7 @@ import json
 import pprint
 
 
-class LazyJson:
+class LazyToStr:
     def __init__(self, instance: object):
         self._instance = instance
 
