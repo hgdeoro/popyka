@@ -11,14 +11,17 @@ from tests.utils import KafkaAdmin, KafkaConsumer
 
 logger = logging.getLogger(__name__)
 
-DEMO_DJANGO_ADMIN_PORT = 8081
-DEMO_POSTGRESQL_DSN = "postgresql://postgres:pass@localhost:54091/postgres"
-DEMO_KAFKA_BOOTSTRAP_SERVERS = "localhost:54092"
+# These values are the one hardcoded in docker compose file, either the same, or the adapted for `localhost` use
+DOCKER_COMPOSE_DJANGO_ADMIN_PORT = 8081
+DOCKER_COMPOSE_POSTGRESQL_DSN = "postgresql://postgres:pass@localhost:54091/postgres"
+DOCKER_COMPOSE_KAFKA_BOOTSTRAP_SERVERS = "localhost:54092"
+DOCKER_COMPOSE_DB_SLOT_NAME = "popyka"
+DOCKER_COMPOSE_KAFKA_TOPIC = "popyka"
 
 
 @pytest.fixture
 def dc_deps(drop_slot_fn) -> SubProcCollector:
-    kafka_admin = KafkaAdmin(DEMO_KAFKA_BOOTSTRAP_SERVERS)
+    kafka_admin = KafkaAdmin(DOCKER_COMPOSE_KAFKA_BOOTSTRAP_SERVERS)
 
     dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
     args = [
@@ -42,7 +45,7 @@ def dc_deps(drop_slot_fn) -> SubProcCollector:
     # TODO: busy wait until all dependencies are up
 
     kafka_admin.delete_all_topics()
-    drop_slot_fn(DEMO_POSTGRESQL_DSN)
+    drop_slot_fn(DOCKER_COMPOSE_POSTGRESQL_DSN)
 
     # To have a predictable environment, we can create new slot + topic (this was the initial approach): but...
     #   1. there is a limited number of slots that can be created on postgresql... if slots are not dropped,
@@ -55,7 +58,7 @@ def dc_deps(drop_slot_fn) -> SubProcCollector:
     yield collector
 
     kafka_admin.delete_all_topics()
-    drop_slot_fn(DEMO_POSTGRESQL_DSN)
+    drop_slot_fn(DOCKER_COMPOSE_POSTGRESQL_DSN)
 
 
 @pytest.fixture
@@ -73,7 +76,7 @@ def dc_popyka(monkeypatch) -> SubProcCollector:
     collector = SubProcCollector(args=args).start()
 
     # Wait until Popyka started
-    collector.wait_for("will start_replication() slot=popyka", timeout=5)
+    collector.wait_for(f"will start_replication() slot={DOCKER_COMPOSE_DB_SLOT_NAME}", timeout=5)
     collector.wait_for("will consume_stream() adaptor=", timeout=1)
 
     yield collector
@@ -88,7 +91,7 @@ def test_e2e(dc_deps: SubProcCollector, dc_popyka: SubProcCollector):
     br = mechanize.Browser()
     br.set_handle_robots(False)
 
-    br.open(f"http://localhost:{DEMO_DJANGO_ADMIN_PORT}/admin/")
+    br.open(f"http://localhost:{DOCKER_COMPOSE_DJANGO_ADMIN_PORT}/admin/")
     assert br.response().code == 200
     assert br.title() == "Log in | Django site admin"
 
@@ -103,8 +106,7 @@ def test_e2e(dc_deps: SubProcCollector, dc_popyka: SubProcCollector):
     dc_popyka.wait_for('"table": "django_session"', timeout=5)
     dc_popyka.wait_for('"table": "auth_user"', timeout=5)
 
-    topic_name = "popyka"
-    consumer = KafkaConsumer(DEMO_KAFKA_BOOTSTRAP_SERVERS, topic_name)
+    consumer = KafkaConsumer(DOCKER_COMPOSE_KAFKA_BOOTSTRAP_SERVERS, DOCKER_COMPOSE_KAFKA_TOPIC)
     messages: list[confluent_kafka.Message] = consumer.wait_for_count(count=3, timeout=10)
 
     expected_summaries = sorted([("I", "django_session"), ("U", "auth_user"), ("U", "django_session")])
