@@ -8,7 +8,7 @@ SupportedTypes = typing.Union[list, set, dict, str, bool, int, float, None]
 class Interpolator:
     # FIXME: add to user doc the yaml data types that are supported
     def __init__(self, environment: dict[str, str]):
-        assert isinstance(environment, dict)
+        assert environment is not None
         self._environment = environment
 
     def _interpolate_list(self, element: list) -> list:
