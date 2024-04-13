@@ -1,10 +1,14 @@
+import json
 import os
 import pathlib
 import random
+import time
 import uuid
 
+import confluent_kafka
 import mechanize
 import pytest
+from confluent_kafka import Consumer
 
 from tests.conftest import system_test
 from tests.subp_collector import SubProcCollector
@@ -71,6 +75,44 @@ def dc_popyka(monkeypatch, drop_slot_fn) -> SubProcCollector:
     subp_collector._thread_stderr.join()  # FIXME: protected attribute!
 
 
+class KafkaConsumer:
+    def __init__(self, bootstrap_servers: str, topic_name: str):
+        self._consumed_msg: list[confluent_kafka.Message] = []
+        self._consumer = Consumer(
+            {
+                "bootstrap.servers": bootstrap_servers,
+                "group.id": str(uuid.uuid4().hex),
+                "auto.offset.reset": "earliest",
+            }
+        )
+        self._consumer.subscribe([topic_name])
+
+    @property
+    def consumed_msg(self) -> list[confluent_kafka.Message]:
+        return list(self._consumed_msg)
+
+    # def clean(self):
+    #     self._consumed_msg = []
+
+    def wait_for_count(self, count: int, timeout: float) -> list[confluent_kafka.Message]:
+        assert timeout > 0
+        start = time.monotonic()
+        while time.monotonic() - start < timeout and len(self._consumed_msg) < count:
+            msg = self._consumer.poll(0.1)
+            if msg is None:
+                continue
+            assert not msg.error()
+
+            self._consumed_msg.append(msg)
+
+        # self._consumer.close()  # How can we know if client will try again :/
+
+        if len(self._consumed_msg) < count:
+            raise Exception(f"Timeout waiting for {count} messages. Got: only {len(self._consumed_msg)}")
+
+        return self._consumed_msg
+
+
 @system_test
 def test_default_configuration(dc_deps: SubProcCollector, dc_popyka: SubProcCollector):
     br = mechanize.Browser()
@@ -92,25 +134,9 @@ def test_default_configuration(dc_deps: SubProcCollector, dc_popyka: SubProcColl
     dc_popyka.wait_for('"table": "auth_user"', timeout=5)
 
     topic_name = os.environ["POPYKA_KAFKA_TOPIC"]  # set by fixture
+    consumer = KafkaConsumer(DEMO_KAFKA_BOOTSTRAP_SERVERS, topic_name)
+    messages: list[confluent_kafka.Message] = consumer.wait_for_count(count=3, timeout=10)
 
-    from confluent_kafka import Consumer
-
-    consumer = Consumer(
-        {
-            "bootstrap.servers": DEMO_KAFKA_BOOTSTRAP_SERVERS,
-            "group.id": str(uuid.uuid4().hex),
-            "auto.offset.reset": "earliest",
-        }
-    )
-
-    consumer.subscribe([topic_name])
-    consumed_msg = []
-    while len(consumed_msg) < 3:
-        msg = consumer.poll(1.0)
-        if msg is None:
-            continue
-        assert not msg.error()
-
-        consumed_msg.append(msg)
-
-    consumer.close()
+    changes = [json.loads(_.value()) for _ in messages]
+    changes_summary = [(_["action"], _["table"]) for _ in changes]
+    assert sorted(changes_summary) == sorted([("I", "django_session"), ("U", "auth_user"), ("U", "django_session")])
