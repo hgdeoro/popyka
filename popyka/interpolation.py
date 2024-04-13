@@ -10,8 +10,7 @@ SupportedTypes = typing.Union[list, set, dict, str, bool, int, float, NoneType]
 
 
 class Interpolator:
-    # FIXME: add to user doc the yaml data types that are supported
-    # FIXME: add to user doc how interpolation is implemented
+    # FIXME: add to user doc the yaml data types that are supported and how interpolation is implemented
     def __init__(self, environment: dict[str, str]):
         assert environment is not None
         self._environment = environment
@@ -29,7 +28,6 @@ class Interpolator:
         return {key: self._interpolate(value) for key, value in element.items()}
 
     def _interpolate_str(self, element: str) -> str:
-        # FIXME: is it ok to use `nounset` and make a fatal error when referenced variables do not exist?
         assert isinstance(element, str)
         try:
             return expand(element, environ=self._environment, nounset=True)
