@@ -2,7 +2,7 @@ from popyka.config import ProcessorConfig
 
 
 def test_instantiate_builtin_processor_log_change_processor_works():
-    processor_config = ProcessorConfig.from_yaml(
+    processor_config = ProcessorConfig.from_dict(
         {
             "class": "popyka.builtin.processors.LogChangeProcessor",
             "filters": [],
@@ -14,7 +14,7 @@ def test_instantiate_builtin_processor_log_change_processor_works():
 
 
 def test_instantiate_builtin_processor_produce_to_kafka_processor_works():
-    processor_config = ProcessorConfig.from_yaml(
+    processor_config = ProcessorConfig.from_dict(
         {
             "class": "popyka.builtin.processors.ProduceToKafkaProcessor",
             "filters": [],

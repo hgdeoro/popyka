@@ -39,7 +39,7 @@ processors:
     assert parsed_config["filters"][0]["class"] == "popyka.builtin.filter.IncludeTable"
     assert parsed_config["filters"][0]["config"]["table_name_regex"] == "^django_.*"
 
-    config = PopykaConfig.from_yaml(parsed_config)
+    config = PopykaConfig.from_dict(parsed_config)
     assert config
     assert config.database.connect_url == "postgresql://postgres:pass@localhost:54016/popyka_test"
     assert config.database.slot_name == "some_psql_streaming_slot_name"

@@ -41,7 +41,7 @@ class DatabaseConfig:
     slot_name: str
 
     @classmethod
-    def from_yaml(cls, config: dict) -> "DatabaseConfig":
+    def from_dict(cls, config: dict) -> "DatabaseConfig":
         return DatabaseConfig(
             connect_url=config["connect_url"],
             slot_name=config["slot_name"],
@@ -54,7 +54,7 @@ class FilterConfig(FactoryMixin):
     config_generic: dict
 
     @classmethod
-    def from_yaml(cls, config: dict) -> "FilterConfig":
+    def from_dict(cls, config: dict) -> "FilterConfig":
         class_fqn = config["class"]
         config_generic = config["config"]
         assert isinstance(class_fqn, str)
@@ -80,9 +80,9 @@ class ProcessorConfig(FactoryMixin):
     config_generic: dict
 
     @classmethod
-    def from_yaml(cls, config: dict) -> "ProcessorConfig":
+    def from_dict(cls, config: dict) -> "ProcessorConfig":
         class_fqn = config["class"]
-        filters = [FilterConfig.from_yaml(_) for _ in config["filters"]]
+        filters = [FilterConfig.from_dict(_) for _ in config["filters"]]
         config_generic = config["config"]
         return ProcessorConfig(
             class_fqn=class_fqn,
@@ -106,12 +106,11 @@ class PopykaConfig:
     processors: list[ProcessorConfig]
 
     @classmethod
-    def from_yaml(cls, config: dict, environment: dict[str, str] = None) -> "PopykaConfig":
-        # FIXME: a better name would be 'from_dict()'
+    def from_dict(cls, config: dict, environment: dict[str, str] = None) -> "PopykaConfig":
         interpolated = Interpolator(environment=environment or {}).interpolate(config)
-        database_config = DatabaseConfig.from_yaml(interpolated["database"])
-        filters = [FilterConfig.from_yaml(_) for _ in interpolated["filters"]]
-        processors = [ProcessorConfig.from_yaml(_) for _ in interpolated["processors"]]
+        database_config = DatabaseConfig.from_dict(interpolated["database"])
+        filters = [FilterConfig.from_dict(_) for _ in interpolated["filters"]]
+        processors = [ProcessorConfig.from_dict(_) for _ in interpolated["processors"]]
         return PopykaConfig(
             database=database_config,
             filters=filters,
@@ -122,4 +121,4 @@ class PopykaConfig:
     def get_default_config(cls, environment=None) -> "PopykaConfig":
         config_path = pathlib.Path(__file__).parent / "popyka-default.yaml"
         config_dict = yaml.safe_load(config_path.read_text())
-        return PopykaConfig.from_yaml(config_dict, environment=environment)
+        return PopykaConfig.from_dict(config_dict, environment=environment)

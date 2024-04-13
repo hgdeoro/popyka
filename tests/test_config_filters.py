@@ -2,7 +2,7 @@ from popyka.config import FilterConfig
 
 
 def test_instantiate_builtin_ignore_tx_filter_works():
-    filter_config = FilterConfig.from_yaml(
+    filter_config = FilterConfig.from_dict(
         {
             "class": "popyka.builtin.filters.IgnoreTxFilter",
             "config": {},
