@@ -1,5 +1,9 @@
+import logging
+
 from popyka.core import Filter, Wal2JsonV2Change
 from popyka.errors import ConfigError
+
+logger = logging.getLogger(__name__)
 
 
 class IgnoreTxFilter(Filter):
@@ -13,6 +17,7 @@ class IgnoreTxFilter(Filter):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         if self._config_generic:
             raise ConfigError("IgnoreTxFilter filter does not accepts any configuration")
 
