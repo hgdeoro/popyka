@@ -49,7 +49,7 @@ services:
       - demo-db
     environment:
       POPYKA_DB_DSN: "postgresql://postgres:pass@demo-db:5432/postgres"
-      POPYKA_KAFKA_CONF_DICT: '{"bootstrap.servers": "demo-kafka:9092","client.id": "popyka-client"}'
+      POPYKA_KAFKA_BOOTSTRAP_SERVERS: 'demo-kafka:9092'
     stop_grace_period: 1s
     stop_signal: SIGKILL
 
