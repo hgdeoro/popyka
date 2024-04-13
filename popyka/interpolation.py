@@ -10,7 +10,7 @@ SupportedTypes = typing.Union[list, set, dict, str, bool, int, float, NoneType]
 
 
 class Interpolator:
-    # FIXME: add to user doc the yaml data types that are supported and how interpolation is implemented
+    # FIXME: DOC: add to user doc the yaml data types that are supported and how interpolation is implemented
     def __init__(self, environment: dict[str, str]):
         assert environment is not None
         self._environment = environment
