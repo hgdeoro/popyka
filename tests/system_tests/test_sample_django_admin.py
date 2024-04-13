@@ -17,7 +17,7 @@ DEMO_KAFKA_BOOTSTRAP_SERVERS = "localhost:54092"
 
 
 @pytest.fixture
-def dc_deps() -> SubProcCollector:
+def dc_deps(drop_slot_fn) -> SubProcCollector:
     kafka_admin = KafkaAdmin(DEMO_KAFKA_BOOTSTRAP_SERVERS)
 
     dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
@@ -42,16 +42,16 @@ def dc_deps() -> SubProcCollector:
     # TODO: busy wait until all dependencies are up
 
     kafka_admin.delete_all_topics()
+    drop_slot_fn(DEMO_POSTGRESQL_DSN)
 
     yield subp_collector
 
     kafka_admin.delete_all_topics()
+    drop_slot_fn(DEMO_POSTGRESQL_DSN)
 
 
 @pytest.fixture
-def dc_popyka(monkeypatch, drop_slot_fn) -> SubProcCollector:
-    drop_slot_fn(DEMO_POSTGRESQL_DSN)
-
+def dc_popyka(monkeypatch) -> SubProcCollector:
     dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
     args = [
         "docker",
