@@ -112,6 +112,12 @@ class KafkaConsumer:
 
         return self._consumed_msg
 
+    @classmethod
+    def summarize(cls, messages: list[confluent_kafka.Message]):
+        changes_dict = [json.loads(_.value()) for _ in messages]
+        changes_summary = [(_["action"], _["table"]) for _ in changes_dict]
+        return changes_summary
+
 
 @system_test
 def test_default_configuration(dc_deps: SubProcCollector, dc_popyka: SubProcCollector):
@@ -137,6 +143,5 @@ def test_default_configuration(dc_deps: SubProcCollector, dc_popyka: SubProcColl
     consumer = KafkaConsumer(DEMO_KAFKA_BOOTSTRAP_SERVERS, topic_name)
     messages: list[confluent_kafka.Message] = consumer.wait_for_count(count=3, timeout=10)
 
-    changes = [json.loads(_.value()) for _ in messages]
-    changes_summary = [(_["action"], _["table"]) for _ in changes]
-    assert sorted(changes_summary) == sorted([("I", "django_session"), ("U", "auth_user"), ("U", "django_session")])
+    expected_summaries = sorted([("I", "django_session"), ("U", "auth_user"), ("U", "django_session")])
+    assert sorted(KafkaConsumer.summarize(messages)) == expected_summaries
