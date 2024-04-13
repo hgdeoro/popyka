@@ -64,7 +64,7 @@ def dc_popyka(monkeypatch) -> SubProcCollector:
 
 
 @system_test
-def test(dc_deps: SubProcCollector, dc_popyka: SubProcCollector):
+def test_default_configuration(dc_deps: SubProcCollector, dc_popyka: SubProcCollector):
     docker_ip, port = "localhost", "8081"
     br = mechanize.Browser()
     br.set_handle_robots(False)
