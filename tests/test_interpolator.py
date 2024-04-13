@@ -1,7 +1,7 @@
 import json
 import uuid
 
-from popyka.config import Interpolator
+from popyka.interpolation import Interpolator
 
 # FIXME: test with all yaml data types (int, bool, etc.)
 
