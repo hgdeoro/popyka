@@ -1,8 +1,10 @@
 import time
 
+from tests.conftest import slow_test
 from tests.subp_collector import SubProcCollector
 
 
+@slow_test
 def test_short():
     sp = SubProcCollector(args=["vmstat", "1", "2"])
     sp.start()
@@ -12,6 +14,7 @@ def test_short():
         time.sleep(0.1)
 
 
+@slow_test
 def test_long():
     sp = SubProcCollector(args=["vmstat", "1", "120"])
     sp.start()

@@ -115,7 +115,7 @@ test:
 	$(VENVDIR)/bin/pytest -v
 
 test-all:
-	env EXPLORATION_TEST=1 $(VENVDIR)/bin/pytest -v
+	env EXPLORATION_TEST=1 SLOW_TEST=1 $(VENVDIR)/bin/pytest -v
 
 psql: ## connect to default test database
 	psql $(LOCAL_POPYKA_DB_DSN_SAMPLE_1)
