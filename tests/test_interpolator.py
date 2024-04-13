@@ -1,5 +1,8 @@
 import json
+import pathlib
 import uuid
+
+import yaml
 
 from popyka.interpolation import Interpolator
 
@@ -33,6 +36,35 @@ def test_interpolator_without_env():
     config = interpolator.interpolate(config=original_config)
     assert config is not original_config
     assert config == original_config
+
+
+def test_interpolator_yaml_types():
+    # Standard YAML tags
+    # !!null 	None
+    # !!bool 	bool
+    # !!int 	int or long (int in Python 3)
+    # !!float 	float
+    # !!binary 	str (bytes in Python 3)
+    # !!timestamp   datetime.datetime
+    # !!omap, !!pairs 	list of pairs
+    # !!set     set
+    # !!str     str or unicode (str in Python 3)
+    # !!seq     list
+    # !!map     dict
+    interpolator = Interpolator(environment={})
+    yaml_path = pathlib.Path(__file__).parent / "all_yaml_types.yaml"
+    config_yaml = yaml.safe_load(yaml_path.read_text())
+    # "string": "value"
+    # "integer": 123
+    # "float": 3.14
+    # "bool": true
+    assert config_yaml == {
+        "string": "value",
+        "integer": 123,
+        "float": 3.14,
+        "bool": True,
+    }
+    interpolator.interpolate(config=config_yaml)
 
 
 def test_interpolator_with_env():

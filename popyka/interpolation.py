@@ -2,6 +2,7 @@ import copy
 
 
 class Interpolator:
+    # FIXME: add to user doc the yaml data types that are supported
     def __init__(self, environment: dict[str, str]):
         assert isinstance(environment, dict)
         self._environment = environment
@@ -26,14 +27,14 @@ class Interpolator:
             element = element.replace("${" + env_key + "}", env_value)
         return element
 
-    def _interpolate(self, element: [list, dict, str, bool, int]) -> list | dict | str | bool | int:
+    def _interpolate(self, element: [list, dict, str, bool, int, float]) -> list | dict | str | bool | int | float:
         if isinstance(element, list):
             return self._interpolate_list(element)
         elif isinstance(element, dict):
             return self._interpolate_dict(element)
         elif isinstance(element, str):
             return self._interpolate_str(element)
-        elif isinstance(element, (bool, int)):
+        elif isinstance(element, (bool, int, float)):
             return element
         else:
             raise NotImplementedError(f"Cannot do interpolation on element of type {type(element)}: {element}")
