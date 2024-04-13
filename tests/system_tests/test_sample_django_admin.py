@@ -35,17 +35,16 @@ def dc_deps(drop_slot_fn) -> SubProcCollector:
         "demo-django-admin",
         "demo-kafka",
     ]
-    subp_collector = SubProcCollector(args=args).start()
-    assert subp_collector._proc.wait() == 0  # Retry? Timeout?  # FIXME: protected attribute!
-    subp_collector._thread_stdout.join()  # FIXME: protected attribute!
-    subp_collector._thread_stderr.join()  # FIXME: protected attribute!
+    collector = SubProcCollector(args=args).start()
+    assert collector.wait(timeout=20) == 0
+    collector.join_threads()
 
     # TODO: busy wait until all dependencies are up
 
     kafka_admin.delete_all_topics()
     drop_slot_fn(DEMO_POSTGRESQL_DSN)
 
-    yield subp_collector
+    yield collector
 
     kafka_admin.delete_all_topics()
     drop_slot_fn(DEMO_POSTGRESQL_DSN)
@@ -63,18 +62,17 @@ def dc_popyka(monkeypatch) -> SubProcCollector:
         "--build",
         "demo-popyka",
     ]
-    subp_collector = SubProcCollector(args=args).start()
+    collector = SubProcCollector(args=args).start()
 
     # Wait until Popyka started
-    subp_collector.wait_for("will start_replication() slot=popyka", timeout=5)
-    subp_collector.wait_for("will consume_stream() adaptor=", timeout=1)
+    collector.wait_for("will start_replication() slot=popyka", timeout=5)
+    collector.wait_for("will consume_stream() adaptor=", timeout=1)
 
-    yield subp_collector
+    yield collector
 
-    subp_collector.kill()
-    subp_collector._proc.wait()  # FIXME: protected attribute!
-    subp_collector._thread_stdout.join()  # FIXME: protected attribute!
-    subp_collector._thread_stderr.join()  # FIXME: protected attribute!
+    collector.kill()
+    collector.wait(timeout=20)
+    collector.join_threads()
 
 
 @system_test

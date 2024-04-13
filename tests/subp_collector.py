@@ -20,17 +20,20 @@ def _read_into_list(buffered_reader: io.BufferedReader, target_list: list[str]):
 class SubProcCollector:
     def __init__(self, args):
         self._args = args
-        self._proc: subprocess.Popen = None
+        self._proc: subprocess.Popen | None = None
         self._stdout: list[str] = []
         self._stderr: list[str] = []
-        self._thread_stdout = None
-        self._thread_stderr = None
+        self._thread_stdout: threading.Thread | None = None
+        self._thread_stderr: threading.Thread | None = None
 
     def poll(self) -> int | None:
         return self._proc.poll()
 
     def kill(self):
         return self._proc.kill()
+
+    def wait(self, timeout=None):
+        return self._proc.wait(timeout=timeout)
 
     @property
     def stdout(self):
@@ -39,6 +42,10 @@ class SubProcCollector:
     @property
     def stderr(self):
         return self._stderr
+
+    def join_threads(self):
+        self._thread_stdout.join()
+        self._thread_stderr.join()
 
     def wait_for(self, text: str, timeout=None):
         start_time = time.monotonic()
