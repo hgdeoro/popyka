@@ -1,5 +1,7 @@
+import os
 import pathlib
 import random
+import uuid
 
 import mechanize
 import pytest
@@ -9,6 +11,7 @@ from tests.subp_collector import SubProcCollector
 
 DEMO_DJANGO_ADMIN_PORT = 8081
 DEMO_POSTGRESQL_DSN = "postgresql://postgres:pass@localhost:54091/postgres"
+DEMO_KAFKA_BOOTSTRAP_SERVERS = "localhost:19092"
 
 
 @pytest.fixture
@@ -88,4 +91,26 @@ def test_default_configuration(dc_deps: SubProcCollector, dc_popyka: SubProcColl
     dc_popyka.wait_for('"table": "django_session"', timeout=5)
     dc_popyka.wait_for('"table": "auth_user"', timeout=5)
 
-    # topic_name = os.environ.get('POPYKA_KAFKA_TOPIC')  # set by fixture
+    topic_name = os.environ["POPYKA_KAFKA_TOPIC"]  # set by fixture
+
+    from confluent_kafka import Consumer
+
+    consumer = Consumer(
+        {
+            "bootstrap.servers": DEMO_KAFKA_BOOTSTRAP_SERVERS,
+            "group.id": str(uuid.uuid4().hex),
+            "auto.offset.reset": "earliest",
+        }
+    )
+
+    consumer.subscribe([topic_name])
+    consumed_msg = []
+    while len(consumed_msg) < 3:
+        msg = consumer.poll(1.0)
+        if msg is None:
+            continue
+        assert not msg.error()
+
+        consumed_msg.append(msg)
+
+    consumer.close()
