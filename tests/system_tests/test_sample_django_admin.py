@@ -1,6 +1,7 @@
 import http.client
 import pathlib
 
+import mechanize
 import pytest
 
 from tests.conftest import system_test
@@ -50,3 +51,19 @@ def test_status_code(django_admin_service):
     r1 = conn.getresponse()
     print(r1.status, r1.reason)
     assert r1.status == 200
+
+
+def test():
+    docker_ip, port = "localhost", "8081"
+    br = mechanize.Browser()
+    br.open(f"http://{docker_ip}:{port}/admin/")
+    assert br.response().code == 200
+    assert br.title() == "Log in | Django site admin"
+
+    br.select_form(nr=0)
+    br["username"] = "admin"
+    br["password"] = "admin"
+    br.submit()
+
+    assert br.response().code == 200
+    assert br.title() == "Site administration | Django site admin"
