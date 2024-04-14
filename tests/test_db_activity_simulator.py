@@ -1,4 +1,6 @@
 import logging
+import random
+import uuid
 
 from psycopg2.extensions import connection as Connection
 
@@ -7,11 +9,11 @@ from tests.utils import DbActivitySimulator
 logger = logging.getLogger(__name__)
 
 
-def test_db_activity_simulator(conn: Connection, conn2: Connection, table_name: str):
+def test_db_activity_simulator_full_statements(conn: Connection, conn2: Connection, table_name: str):
     statements = (
-        ("INSERT INTO {table_name} (NAME) VALUES (md5(random()::text))", []),
-        ("INSERT INTO {table_name} (NAME) VALUES (md5(random()::text))", []),
-        ("INSERT INTO {table_name} (NAME) VALUES (md5(random()::text))", []),
+        ("INSERT INTO {table_name} (NAME) VALUES (%s)", [str(uuid.uuid4().hex)]),
+        ("INSERT INTO {table_name} (NAME) VALUES (%s)", [str(uuid.uuid4().hex)]),
+        ("INSERT INTO {table_name} (NAME) VALUES (%s)", [str(uuid.uuid4().hex)]),
     )
     db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
     db_activity_simulator.start()
@@ -47,26 +49,25 @@ def test_db_activity_simulator_magic_table_name(conn: Connection, conn2: Connect
 
 
 def test_db_activity_simulator_custom_tables(conn: Connection, conn2: Connection, table_name: str):
-    class CustomDbActivitySimulator(DbActivitySimulator):
-        def _create_table(self, cur):
-            cur.execute(f"DROP TABLE IF EXISTS {self._table_name}_a")
-            cur.execute(f"DROP TABLE IF EXISTS {self._table_name}_b")
-            self._cn.commit()
+    suffix_a = f"_a_{random.randint(1, 99999999)}"
+    suffix_b = f"_b_{random.randint(1, 99999999)}"
 
-            cur.execute(f"CREATE TABLE {self._table_name}_a (NAME_A VARCHAR)")
-            cur.execute(f"CREATE TABLE {self._table_name}_b (NAME_B VARCHAR)")
-            self._cn.commit()
-
+    ddl = f"""
+    DROP TABLE IF EXISTS {table_name}{suffix_a};
+    DROP TABLE IF EXISTS {table_name}{suffix_b};
+    CREATE TABLE {table_name}{suffix_a} (NAME_A VARCHAR);
+    CREATE TABLE {table_name}{suffix_b} (NAME_B VARCHAR);
+    """
     statements = (
-        ("INSERT INTO {table_name}_a (NAME_a) VALUES (md5(random()::text))", []),
-        ("INSERT INTO {table_name}_b (NAME_b) VALUES (md5(random()::text))", []),
+        f"INSERT INTO {{table_name}}{suffix_a} (NAME_a) VALUES (md5(random()::text))",
+        f"INSERT INTO {{table_name}}{suffix_b} (NAME_b) VALUES (md5(random()::text))",
     )
-    db_activity_simulator = CustomDbActivitySimulator(conn, table_name, statements)
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements, create_table_ddl=ddl)
     db_activity_simulator.start()
     db_activity_simulator.join()
 
-    assert db_activity_simulator.sql_count_all(conn2, table_name_suffix="_a") == 1
-    assert db_activity_simulator.sql_count_all(conn2, table_name_suffix="_b") == 1
+    assert db_activity_simulator.sql_count_all(conn2, table_name_suffix=suffix_a) == 1
+    assert db_activity_simulator.sql_count_all(conn2, table_name_suffix=suffix_b) == 1
 
 
 def test_magic_end_of_test_statement(conn: Connection, conn2: Connection, table_name: str):
