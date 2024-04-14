@@ -1,6 +1,7 @@
 import abc
 import json
 import logging
+from enum import Enum
 from typing import TYPE_CHECKING
 
 import psycopg2.extras
@@ -72,6 +73,16 @@ class Processor(abc.ABC, Configurable):
 class Filter(abc.ABC, Configurable):
     """Base class for change filters"""
 
+    class Result(Enum):
+        PROCESS = "PROCESS"
+        """Immediately accept the change. Other filters are not evaluated."""
+
+        IGNORE = "IGNORE"
+        """Immediately ignore the change. Other filters are not evaluated."""
+
+        CONTINUE = "CONTINUE"
+        """Don't decide. Other filters will evaluate this change."""
+
     logger = logging.getLogger(f"{__name__}.Filter")
 
     def __init__(self, config_generic: dict):
@@ -84,12 +95,14 @@ class Filter(abc.ABC, Configurable):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def ignore_change(self, change: Wal2JsonV2Change) -> bool:
+    def filter(self, change: Wal2JsonV2Change) -> Result:
         """
-        Receives a change and returns True if should be ignored.
-        Ignored changes won't reach the processors.
+        Receives a change and returns a `Result`:
+
+        * `PROCESS`: the change is "accepted", any other filters are not evaluated.
+        * `IGNORE`: the change is "ignored", any other filters are not evaluated.
+        * `CONTINUE`: there's no decision regarding this change, other filters WILL be evaluated.
         """
-        # FIXME: is `ignore_change()` a good API? Wouldn't be better `should_process()` or something like that?
         raise NotImplementedError()
 
 

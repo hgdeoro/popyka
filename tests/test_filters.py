@@ -19,7 +19,7 @@ class TestIgnoreTxFilterAllScenarios:
         filter_config = FilterConfig.from_dict(DEFAULT_DICT_CONFIG_IGNORE_TX_FILTER)
         filter_instance: Filter = filter_config.instantiate()
         for change in all_scenarios.expected:
-            filter_instance.ignore_change(change)
+            filter_instance.filter(change)
 
     def test_tx_are_filtered_out(self, all_scenarios: AllScenarios):
         filter_config = FilterConfig.from_dict(DEFAULT_DICT_CONFIG_IGNORE_TX_FILTER)
@@ -27,6 +27,6 @@ class TestIgnoreTxFilterAllScenarios:
         actions_before_filter = {_["action"] for _ in all_scenarios.expected}
         assert actions_before_filter == {"B", "C", "I", "U", "D", "T", "M"}
 
-        actions_after_filter = {_["action"] for _ in all_scenarios.expected if not flt.ignore_change(_)}
+        actions_after_filter = {_["action"] for _ in all_scenarios.expected if flt.filter(_) != Filter.Result.IGNORE}
 
         assert actions_after_filter == {"I", "U", "D", "T", "M"}
