@@ -83,8 +83,23 @@ class DbActivitySimulator(threading.Thread):
         super().__init__(daemon=True)
         self._cn = cn
         self._table_name: str = table_name
-        self._statements: typing.Iterable[tuple[str, list]] = statements
+        self._statements: typing.Iterable[tuple[str, list]] = self._fix_statements(statements)
         self._create_table_ddl = create_table_ddl or f"CREATE TABLE {self._table_name} (NAME VARCHAR)"
+
+    @staticmethod
+    def _fix_statements(statements):
+        assert isinstance(statements, (list, tuple))
+        fixed_statements = []
+        for a_statement in statements:
+            if isinstance(a_statement, (list, tuple)):
+                assert len(a_statement) == 2
+                fixed_statements.append(a_statement)
+            elif isinstance(a_statement, str):
+                fixed_statements.append((a_statement, []))
+            else:
+                raise Exception(f"Invalid type {type(a_statement)}. Statement: '{a_statement}'")
+
+        return fixed_statements
 
     #  pg_logical_emit_message ( transactional boolean, prefix text, content text ) → pg_lsn
     MAGIC_END_OF_TEST_PREFIX = "popyka_pytest"

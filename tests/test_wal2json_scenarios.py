@@ -16,12 +16,12 @@ logger = logging.getLogger(__name__)
 
 def test_crud_on_table_without_pk(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     statements = [
-        ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')", []),
-        ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-2')", []),
-        ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-3')", []),
-        ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-4')", []),
-        ("UPDATE {table_name} SET NAME = 'this-is-the-value-4-new' WHERE NAME = 'this-is-the-value-4'", []),
-        ("DELETE FROM {table_name} WHERE NAME = 'this-is-the-value-4-new'", []),
+        "INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')",
+        "INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-2')",
+        "INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-3')",
+        "INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-4')",
+        "UPDATE {table_name} SET NAME = 'this-is-the-value-4-new' WHERE NAME = 'this-is-the-value-4'",
+        "DELETE FROM {table_name} WHERE NAME = 'this-is-the-value-4-new'",
     ]
     # https://github.com/eulerto/wal2json?tab=readme-ov-file
     options = {"format-version": "2"}
@@ -89,12 +89,12 @@ def test_crud_on_table_without_pk(conn: Connection, conn2: Connection, drop_slot
 
 def test_crud_on_table_with_pk(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     statements = [
-        ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')", []),
-        ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-2')", []),
-        ("INSERT INTO {table_name} (PK, NAME) VALUES (98, 'this-is-the-value-3')", []),
-        ("INSERT INTO {table_name} (PK, NAME) VALUES (99, 'this-is-the-value-4')", []),
-        ("UPDATE {table_name} SET NAME = 'this-is-the-value-3-new' WHERE PK = 98", []),
-        ("UPDATE {table_name} SET NAME = 'this-is-the-value-4-new' WHERE NAME = 'this-is-the-value-4'", []),
+        "INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')",
+        "INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-2')",
+        "INSERT INTO {table_name} (PK, NAME) VALUES (98, 'this-is-the-value-3')",
+        "INSERT INTO {table_name} (PK, NAME) VALUES (99, 'this-is-the-value-4')",
+        "UPDATE {table_name} SET NAME = 'this-is-the-value-3-new' WHERE PK = 98",
+        "UPDATE {table_name} SET NAME = 'this-is-the-value-4-new' WHERE NAME = 'this-is-the-value-4'",
     ]
     # https://github.com/eulerto/wal2json?tab=readme-ov-file
     options = {"format-version": "2"}
@@ -195,12 +195,12 @@ def test_crud_on_table_with_pk(conn: Connection, conn2: Connection, drop_slot, t
 
 def test_crud_on_table_with_composite_key(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     statements = [
-        ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')", []),
-        ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-2')", []),
-        ("INSERT INTO {table_name} (ID_1, ID_2, NAME) VALUES (98, 98, 'this-is-the-value-3')", []),
-        ("INSERT INTO {table_name} (ID_1, ID_2, NAME) VALUES (99, 99, 'this-is-the-value-4')", []),
-        ("UPDATE {table_name} SET NAME = 'this-is-the-value-3-new' WHERE ID_1 = 98 AND ID_2 = 98", []),
-        ("UPDATE {table_name} SET NAME = 'this-is-the-value-4-new' WHERE NAME = 'this-is-the-value-4'", []),
+        "INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')",
+        "INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-2')",
+        "INSERT INTO {table_name} (ID_1, ID_2, NAME) VALUES (98, 98, 'this-is-the-value-3')",
+        "INSERT INTO {table_name} (ID_1, ID_2, NAME) VALUES (99, 99, 'this-is-the-value-4')",
+        "UPDATE {table_name} SET NAME = 'this-is-the-value-3-new' WHERE ID_1 = 98 AND ID_2 = 98",
+        "UPDATE {table_name} SET NAME = 'this-is-the-value-4-new' WHERE NAME = 'this-is-the-value-4'",
     ]
     # https://github.com/eulerto/wal2json?tab=readme-ov-file
     options = {"format-version": "2"}
@@ -315,11 +315,11 @@ def test_crud_on_table_with_composite_key(conn: Connection, conn2: Connection, d
 
 def test_truncate_table(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     statements = [
-        ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')", []),
-        ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-2')", []),
-        ("TRUNCATE TABLE {table_name}", []),
-        ("INSERT INTO {table_name} (NAME) VALUES ('after-truncate')", []),
-        ("DELETE FROM {table_name}", []),
+        "INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')",
+        "INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-2')",
+        "TRUNCATE TABLE {table_name}",
+        "INSERT INTO {table_name} (NAME) VALUES ('after-truncate')",
+        "DELETE FROM {table_name}",
     ]
     # https://github.com/eulerto/wal2json?tab=readme-ov-file
     options = {"format-version": "2"}
