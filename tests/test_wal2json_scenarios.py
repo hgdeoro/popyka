@@ -506,8 +506,12 @@ def test_pg_logical_emit_message_outside_tx(conn: Connection, conn2: Connection,
     * The `content` parameter is the content of the message, given either in text or binary form.
     """
     statements = [
-        "SELECT 1",
-        "SELECT * FROM pg_logical_emit_message(FALSE, 'this-is-prefix', 'this-is-context')",
+        "BEGIN",
+        "SELECT * FROM pg_logical_emit_message(FALSE, 'this-is-prefix', 'content-1')",
+        "ROLLBACK",
+        "BEGIN",
+        "SELECT * FROM pg_logical_emit_message(FALSE, 'this-is-prefix', 'content-2')",
+        "COMMIT",
     ]
     # https://github.com/eulerto/wal2json?tab=readme-ov-file
     options = {"format-version": "2"}
@@ -526,7 +530,8 @@ def test_pg_logical_emit_message_outside_tx(conn: Connection, conn2: Connection,
     expected = [
         {"action": "B"},
         {"action": "C"},
-        {"action": "M", "content": "this-is-context", "prefix": "this-is-prefix", "transactional": False},
+        {"action": "M", "content": "content-1", "prefix": "this-is-prefix", "transactional": False},
+        {"action": "M", "content": "content-2", "prefix": "this-is-prefix", "transactional": False},
     ]
 
     assert db_stream_consumer.payloads_parsed == expected
