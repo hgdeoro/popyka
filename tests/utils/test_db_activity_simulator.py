@@ -4,7 +4,7 @@ import uuid
 
 from psycopg2.extensions import connection as Connection
 
-from tests.utils import DbActivitySimulator
+from tests.utils.db_activity_simulator import DbActivitySimulator
 
 logger = logging.getLogger(__name__)
 

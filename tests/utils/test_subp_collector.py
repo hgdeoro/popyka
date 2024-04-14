@@ -1,7 +1,7 @@
 import time
 
 from tests.conftest import slow_test
-from tests.subp_collector import SubProcCollector
+from tests.utils.subp_collector import SubProcCollector
 
 
 @slow_test

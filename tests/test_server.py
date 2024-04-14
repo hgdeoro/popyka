@@ -8,7 +8,7 @@ from psycopg2.extensions import connection as Connection
 from popyka.config import PopykaConfig
 from popyka.core import Processor, Server, Wal2JsonV2Change
 from popyka.errors import StopServer
-from tests.utils import DbActivitySimulator
+from tests.utils.db_activity_simulator import DbActivitySimulator
 
 logger = logging.getLogger(__name__)
 

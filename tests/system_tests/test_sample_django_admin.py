@@ -6,8 +6,8 @@ import mechanize
 import pytest
 
 from tests.conftest import system_test
-from tests.subp_collector import SubProcCollector
-from tests.utils import KafkaAdmin, KafkaConsumer
+from tests.utils.kafka import KafkaAdmin, KafkaConsumer
+from tests.utils.subp_collector import SubProcCollector
 
 logger = logging.getLogger(__name__)
 

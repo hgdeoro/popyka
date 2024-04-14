@@ -9,7 +9,7 @@ from pprint import pprint
 
 from psycopg2.extensions import connection as Connection
 
-from tests.utils import DbActivitySimulator, DbStreamConsumer
+from tests.utils.db_activity_simulator import DbActivitySimulator, DbStreamConsumer
 
 logger = logging.getLogger(__name__)
 
