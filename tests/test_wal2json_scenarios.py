@@ -21,6 +21,7 @@ def test_crud_on_table_without_pk(conn: Connection, conn2: Connection, drop_slot
         ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-3')", []),
         ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-4')", []),
         ("UPDATE {table_name} SET NAME = 'this-is-the-value-4-new' WHERE NAME = 'this-is-the-value-4'", []),
+        ("DELETE FROM {table_name} WHERE NAME = 'this-is-the-value-4-new'", []),
     ]
     # https://github.com/eulerto/wal2json?tab=readme-ov-file
     options = {"format-version": "2"}
@@ -76,6 +77,8 @@ def test_crud_on_table_without_pk(conn: Connection, conn2: Connection, drop_slot
             "schema": "public",
             "table": table_name.lower(),
         },
+        {"action": "C"},
+        {"action": "B"},
         {"action": "C"},
         {"action": "B"},
         {"action": "C"},
