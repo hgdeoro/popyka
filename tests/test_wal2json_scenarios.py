@@ -506,7 +506,7 @@ class TestPgLogicalEmitMessage:
     * The `content` parameter is the content of the message, given either in text or binary form.
     """
 
-    def test_outside_tx(self, conn: Connection, conn2: Connection, drop_slot, table_name: str):
+    def test_emit_non_transactional(self, conn: Connection, conn2: Connection, drop_slot, table_name: str):
         statements = [
             "BEGIN",
             "SELECT * FROM pg_logical_emit_message(FALSE, 'this-is-prefix', 'content-1')",
@@ -534,6 +534,39 @@ class TestPgLogicalEmitMessage:
             {"action": "C"},
             {"action": "M", "content": "content-1", "prefix": "this-is-prefix", "transactional": False},
             {"action": "M", "content": "content-2", "prefix": "this-is-prefix", "transactional": False},
+        ]
+
+        assert db_stream_consumer.payloads_parsed == expected
+
+    def test_emit_transactional(self, conn: Connection, conn2: Connection, drop_slot, table_name: str):
+        statements = [
+            "BEGIN",
+            "SELECT * FROM pg_logical_emit_message(TRUE, 'this-is-prefix', 'content-1')",
+            "ROLLBACK",
+            "BEGIN",
+            "SELECT * FROM pg_logical_emit_message(TRUE, 'this-is-prefix', 'content-2')",
+            "COMMIT",
+        ]
+        # https://github.com/eulerto/wal2json?tab=readme-ov-file
+        options = {"format-version": "2"}
+
+        db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
+        db_stream_consumer = DbStreamConsumer(conn2, options=options)
+
+        db_stream_consumer.start_replication().start()
+        db_activity_simulator.start()
+        db_activity_simulator.join_or_fail(timeout=3)
+
+        db_stream_consumer.join_or_fail(timeout=3)
+
+        pprint(db_stream_consumer.payloads_parsed, indent=4, sort_dicts=True, compact=False)
+
+        expected = [
+            {"action": "B"},
+            {"action": "C"},
+            {"action": "B"},
+            {"action": "M", "content": "content-2", "prefix": "this-is-prefix", "transactional": True},
+            {"action": "C"},
         ]
 
         assert db_stream_consumer.payloads_parsed == expected
