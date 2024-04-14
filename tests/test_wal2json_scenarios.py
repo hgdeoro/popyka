@@ -632,7 +632,7 @@ def all_scenarios() -> AllScenarios:
         f"INSERT INTO {table_name_pk} (PK, NAME) VALUES (99, 'this-is-the-value-4')",
         f"UPDATE {table_name_pk} SET NAME = 'this-is-the-value-3-new' WHERE PK = 98",
         f"UPDATE {table_name_pk} SET NAME = 'this-is-the-value-4-new' WHERE NAME = 'this-is-the-value-4'",
-        # FIXME: DELETE!
+        f"DELETE FROM {table_name_pk} WHERE PK IN (2, 98)",
         # --- truncate
         f"TRUNCATE TABLE {table_name_no_pk}",
         f"TRUNCATE TABLE {table_name_pk}",
@@ -779,6 +779,20 @@ def all_scenarios() -> AllScenarios:
                 {"name": "name", "type": "character varying", "value": "this-is-the-value-4-new"},
             ],
             "identity": [{"name": "pk", "type": "integer", "value": 99}],
+            "schema": "public",
+            "table": table_name_pk.lower(),
+        },
+        {"action": "C"},
+        {"action": "B"},
+        {
+            "action": "D",
+            "identity": [{"name": "pk", "type": "integer", "value": 2}],
+            "schema": "public",
+            "table": table_name_pk.lower(),
+        },
+        {
+            "action": "D",
+            "identity": [{"name": "pk", "type": "integer", "value": 98}],
             "schema": "public",
             "table": table_name_pk.lower(),
         },
