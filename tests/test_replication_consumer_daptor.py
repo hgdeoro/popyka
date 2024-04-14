@@ -100,6 +100,13 @@ class ReplicationMessageMock:
 
 class TestAllScenarios:
     def test_doesnt_fails(self, all_scenarios: AllScenarios):
+        adaptor = ReplicationConsumerToProcessorAdaptor(
+            [MemoryStoreProcessorImpl(config_generic={})], [CycleFilterImpl(config_generic={})]
+        )
+        for a_change in all_scenarios.expected:
+            adaptor(ReplicationMessageMock.from_dict(a_change))
+
+    def test_dummy_filter_and_processor(self, all_scenarios: AllScenarios):
         a_processor = MemoryStoreProcessorImpl(config_generic={})
         a_filter = CycleFilterImpl(config_generic={})
 
