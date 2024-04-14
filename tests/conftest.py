@@ -8,6 +8,8 @@ import psycopg2.extras
 import pytest
 from psycopg2.extensions import connection as Connection
 
+from tests import conftest_all_scenarios
+
 logger = logging.getLogger(__name__)
 
 OVERRIDE_PORT = os.environ.get("OVERRIDE_PORT", "54016")
@@ -21,6 +23,8 @@ exploration_test = pytest.mark.skipif(
 system_test = pytest.mark.skipif(os.environ.get("SYSTEM_TEST", "0") == "0", reason="System tests ignored (SYSTEM_TEST)")
 
 slow_test = pytest.mark.skipif(os.environ.get("SLOW_TEST", "0") == "0", reason="Slow tests ignored (SLOW_TEST)")
+
+all_scenarios = conftest_all_scenarios.all_scenarios  # imported fixture
 
 
 @pytest.fixture
