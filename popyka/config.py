@@ -81,7 +81,7 @@ class ProcessorConfig(FactoryMixin):
     @classmethod
     def from_dict(cls, config: dict) -> "ProcessorConfig":
         class_fqn = config["class"]
-        filters = [FilterConfig.from_dict(_) for _ in config["filters"]]
+        filters = [FilterConfig.from_dict(_) for _ in config.get("filters", []) or []]
         config_generic = config["config"]
         return ProcessorConfig(
             class_fqn=class_fqn,
@@ -106,9 +106,17 @@ class PopykaConfig:
     @classmethod
     def from_dict(cls, config: dict, environment: dict[str, str] = None) -> "PopykaConfig":
         interpolated = Interpolator(environment=environment or {}).interpolate(config)
-        database_config = DatabaseConfig.from_dict(interpolated["database"])
-        filters = [FilterConfig.from_dict(_) for _ in interpolated["filters"]]
-        processors = [ProcessorConfig.from_dict(_) for _ in interpolated["processors"]]
+        database_config = DatabaseConfig.from_dict(interpolated.get("database", None))
+        filters = [FilterConfig.from_dict(_) for _ in interpolated.get("filters", []) or []]
+        processors = [ProcessorConfig.from_dict(_) for _ in interpolated.get("processors", []) or []]
+
+        if database_config is None:
+            raise ConfigError("Invalid config: `database` is required")
+
+        if not processors:
+            # TODO: is there any situation when running without processors is ok?
+            raise ConfigError("Invalid config: refuse to run without any processor. Check `processors` in config.")
+
         return PopykaConfig(
             database=database_config,
             filters=filters,
