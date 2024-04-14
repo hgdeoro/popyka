@@ -123,11 +123,11 @@ class ReplicationConsumerToProcessorAdaptor:
             match a_filter.filter(change):
                 case Filter.Result.IGNORE:
                     self.logger.debug("Ignoring change for change: %s", LazyToStr(change))
-                    return
+                    return  # ignore this message
                 case Filter.Result.PROCESS:
-                    raise NotImplementedError("Result.PROCESS is not implemented yet")
+                    break  # stop filtering
                 case Filter.Result.CONTINUE:
-                    pass
+                    continue  # continue, evaluate other filters
                 case _:
                     raise PopykaException("Filter.filter() returned invalid value")
 

@@ -37,8 +37,7 @@ class MemoryStoreProcessorImpl(Processor):
 class CycleFilterImpl(Filter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # self.cycle_result = itertools.cycle([Filter.Result.CONTINUE, Filter.Result.IGNORE, Filter.Result.PROCESS])
-        self._cycle_result = itertools.cycle([Filter.Result.CONTINUE, Filter.Result.IGNORE])
+        self._cycle_result = itertools.cycle([Filter.Result.CONTINUE, Filter.Result.IGNORE, Filter.Result.PROCESS])
         self._changes: dict[Filter.Result, list] = defaultdict(list)
 
     def setup(self):
@@ -114,6 +113,9 @@ class TestAllScenarios:
 
         assert a_processor.changes
         assert a_filter.count
+        assert a_filter.count_ignore
+        assert a_filter.count_process
+        assert a_filter.count_continue
 
         assert len(all_scenarios.expected) == a_filter.count
         assert a_processor.count == a_filter.count_process + a_filter.count_continue
