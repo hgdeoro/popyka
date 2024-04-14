@@ -643,7 +643,7 @@ def all_scenarios() -> AllScenarios:
         f"INSERT INTO {table_name_composite_key} (ID_1, ID_2, NAME) VALUES (99, 99, 'this-is-the-value-4')",
         f"UPDATE {table_name_composite_key} SET NAME = 'this-is-the-value-3-new' WHERE ID_1 = 98 AND ID_2 = 98",
         f"UPDATE {table_name_composite_key} SET NAME = 'this-is-the-value-4-new' WHERE NAME = 'this-is-the-value-4'",
-        # FIXME: DELETE!
+        f"DELETE FROM {table_name_composite_key} WHERE ID_1 = 98 AND ID_2 = 98",
         # --- pg_logical_emit_message() non-tx
         "BEGIN",
         "SELECT * FROM pg_logical_emit_message(FALSE, 'this-is-prefix', 'content-1')",
@@ -878,6 +878,17 @@ def all_scenarios() -> AllScenarios:
             "identity": [
                 {"name": "id_1", "type": "integer", "value": 99},
                 {"name": "id_2", "type": "integer", "value": 99},
+            ],
+            "schema": "public",
+            "table": table_name_composite_key.lower(),
+        },
+        {"action": "C"},
+        {"action": "B"},
+        {
+            "action": "D",
+            "identity": [
+                {"name": "id_1", "type": "integer", "value": 98},
+                {"name": "id_2", "type": "integer", "value": 98},
             ],
             "schema": "public",
             "table": table_name_composite_key.lower(),
