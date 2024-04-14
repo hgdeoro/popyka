@@ -77,27 +77,33 @@ class DbActivitySimulator(threading.Thread):
         self,
         cn: Connection,
         table_name: str,
-        statements: typing.Iterable[tuple[str, list]],
+        statements: typing.Iterable[tuple[str, list]] | typing.Iterable[str],
         create_table_ddl: str | None = None,
     ):
         super().__init__(daemon=True)
         self._cn = cn
         self._table_name: str = table_name
-        self._statements: typing.Iterable[tuple[str, list]] = self._fix_statements(statements)
+        self._statements: typing.Iterable[tuple[str, list]] = self._fix_statements(statements, self._table_name)
         self._create_table_ddl = create_table_ddl or f"CREATE TABLE {self._table_name} (NAME VARCHAR)"
 
     @staticmethod
-    def _fix_statements(statements):
+    def _fix_statements(statements, table_name: str):
         assert isinstance(statements, (list, tuple))
         fixed_statements = []
-        for a_statement in statements:
-            if isinstance(a_statement, (list, tuple)):
-                assert len(a_statement) == 2
-                fixed_statements.append(a_statement)
-            elif isinstance(a_statement, str):
-                fixed_statements.append((a_statement, []))
+
+        for item in statements:
+            if isinstance(item, (list, tuple)):
+                assert len(item) == 2
+                statement, params = item
+            elif isinstance(item, str):
+                statement, params = item, []
             else:
-                raise Exception(f"Invalid type {type(a_statement)}. Statement: '{a_statement}'")
+                raise Exception(f"Invalid type {type(item)}. Statement: '{item}'")
+
+            assert isinstance(statement, str)
+            assert isinstance(params, list)
+            statement = statement.replace("__table_name__", table_name)
+            fixed_statements.append((statement, params))
 
         return fixed_statements
 

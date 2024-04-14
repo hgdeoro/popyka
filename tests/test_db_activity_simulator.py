@@ -20,6 +20,32 @@ def test_db_activity_simulator(conn: Connection, conn2: Connection, table_name: 
     assert db_activity_simulator.sql_count_all(conn2) == 3
 
 
+def test_db_activity_simulator_simplified_statements(conn: Connection, conn2: Connection, table_name: str):
+    statements = (
+        "INSERT INTO {table_name} (NAME) VALUES (md5(random()::text))",
+        "INSERT INTO {table_name} (NAME) VALUES (md5(random()::text))",
+        "INSERT INTO {table_name} (NAME) VALUES (md5(random()::text))",
+    )
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
+    db_activity_simulator.start()
+    db_activity_simulator.join()
+
+    assert db_activity_simulator.sql_count_all(conn2) == 3
+
+
+def test_db_activity_simulator_magic_table_name(conn: Connection, conn2: Connection, table_name: str):
+    statements = (
+        "INSERT INTO __table_name__ (NAME) VALUES (md5(random()::text))",
+        "INSERT INTO __table_name__ (NAME) VALUES (md5(random()::text))",
+        "INSERT INTO __table_name__ (NAME) VALUES (md5(random()::text))",
+    )
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
+    db_activity_simulator.start()
+    db_activity_simulator.join()
+
+    assert db_activity_simulator.sql_count_all(conn2) == 3
+
+
 def test_db_activity_simulator_custom_tables(conn: Connection, conn2: Connection, table_name: str):
     class CustomDbActivitySimulator(DbActivitySimulator):
         def _create_table(self, cur):
