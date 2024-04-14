@@ -394,6 +394,81 @@ def test_truncate_table(conn: Connection, conn2: Connection, drop_slot, table_na
     assert db_stream_consumer.payloads_parsed == expected
 
 
+def test_manual_transaction_handling(conn: Connection, conn2: Connection, drop_slot, table_name: str):
+    """
+    This not only tests wal2json, but also tx handling done by DbActivitySimulator.
+    """
+    statements = [
+        "BEGIN",
+        "INSERT INTO __table_name__ (NAME) VALUES ('this-is-the-value-1')",
+        "INSERT INTO __table_name__ (NAME) VALUES ('this-is-the-value-2')",
+        "COMMIT",
+        "BEGIN",
+        "INSERT INTO __table_name__ (NAME) VALUES ('this-is-the-value-3')",
+        "INSERT INTO __table_name__ (NAME) VALUES ('this-is-the-value-4')",
+        "ROLLBACK",
+        "INSERT INTO __table_name__ (NAME) VALUES ('this-is-the-value-5')",
+    ]
+    # https://github.com/eulerto/wal2json?tab=readme-ov-file
+    options = {"format-version": "2"}
+
+    create_table = f"""
+    CREATE TABLE {table_name} (
+        pk serial not null primary key,
+        name varchar not null
+    )
+    """
+
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements, create_table_ddl=create_table)
+    db_stream_consumer = DbStreamConsumer(conn2, options=options)
+
+    db_stream_consumer.start_replication().start()
+    db_activity_simulator.start()
+    db_activity_simulator.join_or_fail(timeout=3)
+
+    db_stream_consumer.join_or_fail(timeout=3)
+
+    pprint(db_stream_consumer.payloads_parsed, indent=4, sort_dicts=True, compact=False)
+
+    expected = [
+        {"action": "B"},
+        {"action": "C"},
+        {"action": "B"},
+        {
+            "action": "I",
+            "columns": [
+                {"name": "pk", "type": "integer", "value": 1},
+                {"name": "name", "type": "character varying", "value": "this-is-the-value-1"},
+            ],
+            "schema": "public",
+            "table": table_name.lower(),
+        },
+        {
+            "action": "I",
+            "columns": [
+                {"name": "pk", "type": "integer", "value": 2},
+                {"name": "name", "type": "character varying", "value": "this-is-the-value-2"},
+            ],
+            "schema": "public",
+            "table": table_name.lower(),
+        },
+        {"action": "C"},
+        {"action": "B"},
+        {
+            "action": "I",
+            "columns": [
+                {"name": "pk", "type": "integer", "value": 5},
+                {"name": "name", "type": "character varying", "value": "this-is-the-value-5"},
+            ],
+            "schema": "public",
+            "table": table_name.lower(),
+        },
+        {"action": "C"},
+    ]
+
+    assert db_stream_consumer.payloads_parsed == expected
+
+
 def test_no_db_activity(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     statements = ["SELECT 1"]
     # https://github.com/eulerto/wal2json?tab=readme-ov-file
