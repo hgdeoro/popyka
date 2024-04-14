@@ -106,6 +106,7 @@ def test_json_for_default_options(conn: Connection, conn2: Connection, drop_slot
     ]
 
 
+@exploration_test
 def test_format_version_2(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     statements = [
         ("INSERT INTO {table_name} (NAME) VALUES ('this-is-the-value-1')", []),
