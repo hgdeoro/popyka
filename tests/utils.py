@@ -78,11 +78,13 @@ class DbActivitySimulator(threading.Thread):
         cn: Connection,
         table_name: str,
         statements: typing.Iterable[tuple[str, list]],
+        create_table_ddl: str | None = None,
     ):
         super().__init__(daemon=True)
         self._cn = cn
         self._table_name: str = table_name
         self._statements: typing.Iterable[tuple[str, list]] = statements
+        self._create_table_ddl = create_table_ddl or f"CREATE TABLE {self._table_name} (NAME VARCHAR)"
 
     #  pg_logical_emit_message ( transactional boolean, prefix text, content text ) → pg_lsn
     MAGIC_END_OF_TEST_PREFIX = "popyka_pytest"
@@ -137,11 +139,14 @@ class DbActivitySimulator(threading.Thread):
     def table_name(self) -> str:
         return self._table_name
 
+    def _get_create_table_ddl(self) -> str:
+        return self._create_table_ddl
+
     def _create_table(self, cur):
         cur.execute(f"DROP TABLE IF EXISTS {self._table_name}")
         self._cn.commit()
 
-        cur.execute(f"CREATE TABLE {self._table_name} (NAME VARCHAR)")
+        cur.execute(self._get_create_table_ddl())
         self._cn.commit()
         return self
 
