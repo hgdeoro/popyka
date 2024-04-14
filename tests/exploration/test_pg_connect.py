@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 @exploration_test
-def test_connect_to_template1(conn: Connection):
+def test_connect_works(conn: Connection):
     with conn.cursor() as cur:
         cur.execute("SELECT 1")
         records = cur.fetchall()
@@ -18,28 +18,28 @@ def test_connect_to_template1(conn: Connection):
 
 
 @exploration_test
-def test_start_without_replication_slots(conn: Connection, drop_slot):
+def test_drop_slot(conn: Connection, drop_slot):
     with conn.cursor() as cur:
         cur.execute("SELECT slot_name, slot_type, active FROM pg_replication_slots")
         assert cur.fetchall() == []
 
 
 @exploration_test
-def test_fails_with_invalid_output_plugin(conn: Connection, drop_slot):
+def test_create_replication_slot_fails_with_invalid_output_plugin(conn: Connection, drop_slot):
     with conn.cursor() as cur:
         with pytest.raises(psycopg2.errors.UndefinedFile):
             cur.create_replication_slot("pytest_logical", output_plugin="invalid_output_plugin")
 
 
 @exploration_test
-def test_start_replication_plugin_test_decoding(conn: Connection, drop_slot):
+def test_start_replication_with_plugin_test_decoding(conn: Connection, drop_slot):
     with conn.cursor() as cur:
         cur.create_replication_slot("pytest_logical", output_plugin="test_decoding")
         cur.start_replication(slot_name="pytest_logical", decode=True)
 
 
 @exploration_test
-def test_start_replication_plugin_pgoutput(conn: Connection, drop_slot):
+def test_start_replication_with_plugin_pgoutput(conn: Connection, drop_slot):
     with conn.cursor() as cur:
         cur.create_replication_slot("pytest_logical", output_plugin="pgoutput")
         with pytest.raises(psycopg2.errors.FeatureNotSupported):
