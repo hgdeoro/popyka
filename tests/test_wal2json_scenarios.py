@@ -96,7 +96,8 @@ def test_crud_on_table_with_pk(conn: Connection, conn2: Connection, drop_slot, t
         "INSERT INTO __table_name__ (PK, NAME) VALUES (99, 'this-is-the-value-4')",
         "UPDATE __table_name__ SET NAME = 'this-is-the-value-3-new' WHERE PK = 98",
         "UPDATE __table_name__ SET NAME = 'this-is-the-value-4-new' WHERE NAME = 'this-is-the-value-4'",
-        # FIXME: DELETE!
+        "DELETE FROM __table_name__ WHERE PK = 98",
+        "DELETE FROM __table_name__ WHERE NAME = 'this-is-the-value-4-new'",
     ]
 
     create_table = f"""
@@ -188,6 +189,22 @@ def test_crud_on_table_with_pk(conn: Connection, conn2: Connection, drop_slot, t
             "table": table_name.lower(),
         },
         {"action": "C"},
+        {"action": "B"},
+        {
+            "action": "D",
+            "identity": [{"name": "pk", "type": "integer", "value": 98}],
+            "schema": "public",
+            "table": table_name.lower(),
+        },
+        {"action": "C"},
+        {"action": "B"},
+        {
+            "action": "D",
+            "identity": [{"name": "pk", "type": "integer", "value": 99}],
+            "schema": "public",
+            "table": table_name.lower(),
+        },
+        {"action": "C"},
     ]
 
     assert db_stream_consumer.payloads_parsed == expected
@@ -201,7 +218,8 @@ def test_crud_on_table_with_composite_key(conn: Connection, conn2: Connection, d
         "INSERT INTO __table_name__ (ID_1, ID_2, NAME) VALUES (99, 99, 'this-is-the-value-4')",
         "UPDATE __table_name__ SET NAME = 'this-is-the-value-3-new' WHERE ID_1 = 98 AND ID_2 = 98",
         "UPDATE __table_name__ SET NAME = 'this-is-the-value-4-new' WHERE NAME = 'this-is-the-value-4'",
-        # FIXME: delete!
+        "DELETE FROM __table_name__ WHERE ID_1 = 98 AND ID_2 = 98",
+        "DELETE FROM __table_name__ WHERE NAME = 'this-is-the-value-4-new'",
     ]
 
     create_table = f"""
@@ -299,6 +317,28 @@ def test_crud_on_table_with_composite_key(conn: Connection, conn2: Connection, d
                 {"name": "id_2", "type": "integer", "value": 99},
                 {"name": "name", "type": "character varying", "value": "this-is-the-value-4-new"},
             ],
+            "identity": [
+                {"name": "id_1", "type": "integer", "value": 99},
+                {"name": "id_2", "type": "integer", "value": 99},
+            ],
+            "schema": "public",
+            "table": table_name.lower(),
+        },
+        {"action": "C"},
+        {"action": "B"},
+        {
+            "action": "D",
+            "identity": [
+                {"name": "id_1", "type": "integer", "value": 98},
+                {"name": "id_2", "type": "integer", "value": 98},
+            ],
+            "schema": "public",
+            "table": table_name.lower(),
+        },
+        {"action": "C"},
+        {"action": "B"},
+        {
+            "action": "D",
             "identity": [
                 {"name": "id_1", "type": "integer", "value": 99},
                 {"name": "id_2", "type": "integer", "value": 99},
