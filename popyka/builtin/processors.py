@@ -1,6 +1,7 @@
 import json
 import logging
 import pathlib
+import time
 
 from confluent_kafka import Producer
 
@@ -94,6 +95,7 @@ class DumpToFileProcessor(Processor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._target_directory: pathlib.Path | None = None
+        self._run_id: int = int(time.time())
         self._serial: int = 0
 
     def setup(self):
@@ -109,7 +111,8 @@ class DumpToFileProcessor(Processor):
 
     def process_change(self, change: Wal2JsonV2Change):
         assert self._target_directory is not None
-        target_file = self._target_directory / f"popyka-dump-{self._serial:08d}.json"
-        assert not target_file.exists()  # FIXME: this needs to be addressed in a better way
+        target_file = self._target_directory / f"popyka-dump-{self._run_id}-{self._serial:08d}.json"
+        assert not target_file.exists()  # Since each time we have a different `self._run_id`, file shouldn't exist
+        logger.info("Wringing message to %s", target_file)
         target_file.write_text(json.dumps(change, indent=4, sort_keys=True))
         self._serial += 1
