@@ -16,11 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 class DbStreamConsumer(threading.Thread):
-    def __init__(self, cn: Connection, options=None):
+    def __init__(self, cn: Connection):
         super().__init__(daemon=True)
         self._cn = cn
         self._payloads = []
-        self._options = options or {}
         self._cursor = self._cn.cursor()
 
     def start_replication(self) -> "DbStreamConsumer":
@@ -32,7 +31,7 @@ class DbStreamConsumer(threading.Thread):
         consumer.start_replication().start()
         """
         self._cursor.create_replication_slot("pytest_logical", output_plugin="wal2json")
-        self._cursor.start_replication(slot_name="pytest_logical", decode=True, options=self._options)
+        self._cursor.start_replication(slot_name="pytest_logical", decode=True, options={"format-version": "2"})
         return self
 
     @property
@@ -57,8 +56,6 @@ class DbStreamConsumer(threading.Thread):
 
                 if DbActivitySimulator.is_magic_end_of_test_change(json.loads(msg.payload)):
                     raise psycopg2.extras.StopReplication()
-
-                # FIXME: ^^^ maybe we should add also the payload from the "magic" statement?
 
                 _payloads.append(msg.payload)
 
@@ -117,44 +114,11 @@ class DbActivitySimulator(threading.Thread):
 
     @classmethod
     def is_magic_end_of_test_change(cls, change: dict):
-        # v1
-        # {
-        #     "change": [
-        #         {
-        #             "kind": "message",
-        #             "transactional": false,
-        #             "prefix": "popyka_pytest",
-        #             "content": "742cad81-3416-4dc8-9f7a-d667b54c98cf"
-        #         }
-        #     ]
-        # }
-        if "change" in change:
-            for a_change in change["change"]:
-                if (
-                    a_change.get("kind") == "message"
-                    and a_change.get("prefix") == DbActivitySimulator.MAGIC_END_OF_TEST_PREFIX
-                    and a_change.get("content") == DbActivitySimulator.MAGIC_END_OF_TEST_CONTENT
-                ):
-                    return True
-            return False
-
-        # v2
-        # {
-        #     "action": "M",
-        #     "transactional": false,
-        #     "prefix": "popyka_pytest",
-        #     "content": "742cad81-3416-4dc8-9f7a-d667b54c98cf"
-        # }
-        if "action" in change:
-            return (
-                change.get("action") == "M"
-                and change.get("prefix") == DbActivitySimulator.MAGIC_END_OF_TEST_PREFIX
-                and change.get("content") == DbActivitySimulator.MAGIC_END_OF_TEST_CONTENT
-            )
-            return False
-
-        print(json.dumps(change, indent=4))
-        raise NotImplementedError("Unknown payload version. Payload: " + json.dumps(change, indent=4))
+        return (
+            change.get("action") == "M"
+            and change.get("prefix") == DbActivitySimulator.MAGIC_END_OF_TEST_PREFIX
+            and change.get("content") == DbActivitySimulator.MAGIC_END_OF_TEST_CONTENT
+        )
 
     @property
     def table_name(self) -> str:

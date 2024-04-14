@@ -23,8 +23,6 @@ def test_crud_on_table_without_pk(conn: Connection, conn2: Connection, drop_slot
         "UPDATE __table_name__ SET NAME = 'this-is-the-value-4-new' WHERE NAME = 'this-is-the-value-4'",
         "DELETE FROM __table_name__ WHERE NAME = 'this-is-the-value-4-new'",
     ]
-    # https://github.com/eulerto/wal2json?tab=readme-ov-file
-    options = {"format-version": "2"}
 
     create_table = f"""
     CREATE TABLE {table_name} (
@@ -33,7 +31,7 @@ def test_crud_on_table_without_pk(conn: Connection, conn2: Connection, drop_slot
     """
 
     db_activity_simulator = DbActivitySimulator(conn, table_name, statements, create_table_ddl=create_table)
-    db_stream_consumer = DbStreamConsumer(conn2, options=options)
+    db_stream_consumer = DbStreamConsumer(conn2)
 
     db_stream_consumer.start_replication().start()
     db_activity_simulator.start()
@@ -96,8 +94,6 @@ def test_crud_on_table_with_pk(conn: Connection, conn2: Connection, drop_slot, t
         "UPDATE __table_name__ SET NAME = 'this-is-the-value-3-new' WHERE PK = 98",
         "UPDATE __table_name__ SET NAME = 'this-is-the-value-4-new' WHERE NAME = 'this-is-the-value-4'",
     ]
-    # https://github.com/eulerto/wal2json?tab=readme-ov-file
-    options = {"format-version": "2"}
 
     create_table = f"""
     CREATE TABLE {table_name} (
@@ -107,7 +103,7 @@ def test_crud_on_table_with_pk(conn: Connection, conn2: Connection, drop_slot, t
     """
 
     db_activity_simulator = DbActivitySimulator(conn, table_name, statements, create_table_ddl=create_table)
-    db_stream_consumer = DbStreamConsumer(conn2, options=options)
+    db_stream_consumer = DbStreamConsumer(conn2)
 
     db_stream_consumer.start_replication().start()
     db_activity_simulator.start()
@@ -202,8 +198,6 @@ def test_crud_on_table_with_composite_key(conn: Connection, conn2: Connection, d
         "UPDATE __table_name__ SET NAME = 'this-is-the-value-3-new' WHERE ID_1 = 98 AND ID_2 = 98",
         "UPDATE __table_name__ SET NAME = 'this-is-the-value-4-new' WHERE NAME = 'this-is-the-value-4'",
     ]
-    # https://github.com/eulerto/wal2json?tab=readme-ov-file
-    options = {"format-version": "2"}
 
     create_table = f"""
     CREATE TABLE {table_name} (
@@ -215,7 +209,7 @@ def test_crud_on_table_with_composite_key(conn: Connection, conn2: Connection, d
     """
 
     db_activity_simulator = DbActivitySimulator(conn, table_name, statements, create_table_ddl=create_table)
-    db_stream_consumer = DbStreamConsumer(conn2, options=options)
+    db_stream_consumer = DbStreamConsumer(conn2)
 
     db_stream_consumer.start_replication().start()
     db_activity_simulator.start()
@@ -321,8 +315,6 @@ def test_truncate_table(conn: Connection, conn2: Connection, drop_slot, table_na
         "INSERT INTO __table_name__ (NAME) VALUES ('after-truncate')",
         "DELETE FROM __table_name__",
     ]
-    # https://github.com/eulerto/wal2json?tab=readme-ov-file
-    options = {"format-version": "2"}
 
     create_table = f"""
     CREATE TABLE {table_name} (
@@ -332,7 +324,7 @@ def test_truncate_table(conn: Connection, conn2: Connection, drop_slot, table_na
     """
 
     db_activity_simulator = DbActivitySimulator(conn, table_name, statements, create_table_ddl=create_table)
-    db_stream_consumer = DbStreamConsumer(conn2, options=options)
+    db_stream_consumer = DbStreamConsumer(conn2)
 
     db_stream_consumer.start_replication().start()
     db_activity_simulator.start()
@@ -409,8 +401,6 @@ def test_manual_transaction_handling(conn: Connection, conn2: Connection, drop_s
         "ROLLBACK",
         "INSERT INTO __table_name__ (NAME) VALUES ('this-is-the-value-5')",
     ]
-    # https://github.com/eulerto/wal2json?tab=readme-ov-file
-    options = {"format-version": "2"}
 
     create_table = f"""
     CREATE TABLE {table_name} (
@@ -420,7 +410,7 @@ def test_manual_transaction_handling(conn: Connection, conn2: Connection, drop_s
     """
 
     db_activity_simulator = DbActivitySimulator(conn, table_name, statements, create_table_ddl=create_table)
-    db_stream_consumer = DbStreamConsumer(conn2, options=options)
+    db_stream_consumer = DbStreamConsumer(conn2)
 
     db_stream_consumer.start_replication().start()
     db_activity_simulator.start()
@@ -471,11 +461,9 @@ def test_manual_transaction_handling(conn: Connection, conn2: Connection, drop_s
 
 def test_no_db_activity(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     statements = ["SELECT 1"]
-    # https://github.com/eulerto/wal2json?tab=readme-ov-file
-    options = {"format-version": "2"}
 
     db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
-    db_stream_consumer = DbStreamConsumer(conn2, options=options)
+    db_stream_consumer = DbStreamConsumer(conn2)
 
     db_stream_consumer.start_replication().start()
     db_activity_simulator.start()
@@ -515,11 +503,9 @@ class TestPgLogicalEmitMessage:
             "SELECT * FROM pg_logical_emit_message(FALSE, 'this-is-prefix', 'content-2')",
             "COMMIT",
         ]
-        # https://github.com/eulerto/wal2json?tab=readme-ov-file
-        options = {"format-version": "2"}
 
         db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
-        db_stream_consumer = DbStreamConsumer(conn2, options=options)
+        db_stream_consumer = DbStreamConsumer(conn2)
 
         db_stream_consumer.start_replication().start()
         db_activity_simulator.start()
@@ -547,11 +533,9 @@ class TestPgLogicalEmitMessage:
             "SELECT * FROM pg_logical_emit_message(TRUE, 'this-is-prefix', 'content-2')",
             "COMMIT",
         ]
-        # https://github.com/eulerto/wal2json?tab=readme-ov-file
-        options = {"format-version": "2"}
 
         db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
-        db_stream_consumer = DbStreamConsumer(conn2, options=options)
+        db_stream_consumer = DbStreamConsumer(conn2)
 
         db_stream_consumer.start_replication().start()
         db_activity_simulator.start()
