@@ -392,3 +392,66 @@ def test_truncate_table(conn: Connection, conn2: Connection, drop_slot, table_na
     ]
 
     assert db_stream_consumer.payloads_parsed == expected
+
+
+def test_no_db_activity(conn: Connection, conn2: Connection, drop_slot, table_name: str):
+    statements = ["SELECT 1"]
+    # https://github.com/eulerto/wal2json?tab=readme-ov-file
+    options = {"format-version": "2"}
+
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
+    db_stream_consumer = DbStreamConsumer(conn2, options=options)
+
+    db_stream_consumer.start_replication().start()
+    db_activity_simulator.start()
+    db_activity_simulator.join_or_fail(timeout=3)
+
+    db_stream_consumer.join_or_fail(timeout=3)
+
+    pprint(db_stream_consumer.payloads_parsed, indent=4, sort_dicts=True, compact=False)
+
+    expected = [{"action": "B"}, {"action": "C"}]
+
+    assert db_stream_consumer.payloads_parsed == expected
+
+
+def test_pg_logical_emit_message_outside_tx(conn: Connection, conn2: Connection, drop_slot, table_name: str):
+    """
+    About `pg_logical_emit_message ( transactional boolean, prefix text, content text ) → pg_lsn`:
+
+    Emits a logical decoding message.
+    This can be used to pass generic messages to logical decoding plugins through WAL.
+
+    * The `transactional` parameter specifies if the message should be part of the current transaction,
+    or if it should be written immediately and decoded as soon as the logical decoder reads the record.
+
+    * The `prefix` parameter is a textual prefix that can be used by logical decoding plugins to
+    easily recognize messages that are interesting for them.
+
+    * The `content` parameter is the content of the message, given either in text or binary form.
+    """
+    statements = [
+        "SELECT 1",
+        "SELECT * FROM pg_logical_emit_message(FALSE, 'this-is-prefix', 'this-is-context')",
+    ]
+    # https://github.com/eulerto/wal2json?tab=readme-ov-file
+    options = {"format-version": "2"}
+
+    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
+    db_stream_consumer = DbStreamConsumer(conn2, options=options)
+
+    db_stream_consumer.start_replication().start()
+    db_activity_simulator.start()
+    db_activity_simulator.join_or_fail(timeout=3)
+
+    db_stream_consumer.join_or_fail(timeout=3)
+
+    pprint(db_stream_consumer.payloads_parsed, indent=4, sort_dicts=True, compact=False)
+
+    expected = [
+        {"action": "B"},
+        {"action": "C"},
+        {"action": "M", "content": "this-is-context", "prefix": "this-is-prefix", "transactional": False},
+    ]
+
+    assert db_stream_consumer.payloads_parsed == expected
