@@ -10,6 +10,8 @@ from popyka.interpolation import Interpolator
 
 
 class FactoryMixin:
+    """Mixin for components that needs to create instances of classes"""
+
     @classmethod
     def get_class_from_fqn(cls, fqn: str, expected_type: type):
         split_result = fqn.rsplit(".", maxsplit=1)

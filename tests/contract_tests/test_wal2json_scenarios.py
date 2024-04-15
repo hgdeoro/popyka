@@ -5,19 +5,17 @@ This is run by tox in all combinations of supported python and postgresql versio
 """
 
 import logging
-import uuid
 from pprint import pprint
 
 from psycopg2.extensions import connection as Connection
 
-from tests.conftest import exploration_test
-from tests.conftest_all_scenarios import AllScenarios
+from tests.conftest import contract_test
 from tests.utils.db_activity_simulator import DbActivitySimulator, DbStreamConsumer
 
 logger = logging.getLogger(__name__)
 
 
-@exploration_test
+@contract_test
 def test_crud_on_table_without_pk(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     statements = [
         "INSERT INTO __table_name__ (NAME) VALUES ('this-is-the-value-1')",
@@ -89,7 +87,7 @@ def test_crud_on_table_without_pk(conn: Connection, conn2: Connection, drop_slot
     assert db_stream_consumer.payloads_parsed == expected
 
 
-@exploration_test
+@contract_test
 def test_crud_on_table_with_pk(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     statements = [
         "INSERT INTO __table_name__ (NAME) VALUES ('this-is-the-value-1')",
@@ -212,7 +210,7 @@ def test_crud_on_table_with_pk(conn: Connection, conn2: Connection, drop_slot, t
     assert db_stream_consumer.payloads_parsed == expected
 
 
-@exploration_test
+@contract_test
 def test_crud_on_table_with_composite_key(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     statements = [
         "INSERT INTO __table_name__ (NAME) VALUES ('this-is-the-value-1')",
@@ -355,7 +353,7 @@ def test_crud_on_table_with_composite_key(conn: Connection, conn2: Connection, d
     assert db_stream_consumer.payloads_parsed == expected
 
 
-@exploration_test
+@contract_test
 def test_truncate_table(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     statements = [
         "INSERT INTO __table_name__ (NAME) VALUES ('this-is-the-value-1')",
@@ -435,7 +433,7 @@ def test_truncate_table(conn: Connection, conn2: Connection, drop_slot, table_na
     assert db_stream_consumer.payloads_parsed == expected
 
 
-@exploration_test
+@contract_test
 def test_manual_transaction_handling(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     """
     This not only tests wal2json, but also tx handling done by DbActivitySimulator.
@@ -509,7 +507,7 @@ def test_manual_transaction_handling(conn: Connection, conn2: Connection, drop_s
     assert db_stream_consumer.payloads_parsed == expected
 
 
-@exploration_test
+@contract_test
 def test_no_db_activity(conn: Connection, conn2: Connection, drop_slot, table_name: str):
     statements = ["SELECT 1"]
 
@@ -529,7 +527,7 @@ def test_no_db_activity(conn: Connection, conn2: Connection, drop_slot, table_na
     assert db_stream_consumer.payloads_parsed == expected
 
 
-@exploration_test
+@contract_test
 class TestPgLogicalEmitMessage:
     """
     About `pg_logical_emit_message ( transactional boolean, prefix text, content text ) → pg_lsn`:
@@ -606,18 +604,3 @@ class TestPgLogicalEmitMessage:
         ]
 
         assert db_stream_consumer.payloads_parsed == expected
-
-
-def test_all(conn: Connection, conn2: Connection, drop_slot, all_scenarios: AllScenarios):
-    db_activity_simulator = DbActivitySimulator(
-        conn, f"ignore_{uuid.uuid4().hex}", all_scenarios.statements, create_table_ddl=all_scenarios.create_table_ddl
-    )
-    db_stream_consumer = DbStreamConsumer(conn2)
-    db_stream_consumer.start_replication().start()
-    db_activity_simulator.start()
-    db_activity_simulator.join_or_fail(timeout=3)
-    db_stream_consumer.join_or_fail(timeout=3)
-
-    pprint(db_stream_consumer.payloads_parsed, indent=4, sort_dicts=True, compact=False)
-
-    assert db_stream_consumer.payloads_parsed == all_scenarios.expected

@@ -20,7 +20,7 @@ def test_default_config_without_fixture():
 
 
 def test_default_config_instantiate(popyka_env_vars):
-    default_config_file = pathlib.Path(__file__).parent.parent / "popyka" / "popyka-default.yaml"
+    default_config_file = pathlib.Path(__file__).parent.parent.parent / "popyka" / "popyka-default.yaml"
     parsed_config = yaml.safe_load(default_config_file.read_text())
     config = PopykaConfig.from_dict(parsed_config, environment=popyka_env_vars)
 

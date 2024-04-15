@@ -22,6 +22,10 @@ exploration_test = pytest.mark.skipif(
 
 system_test = pytest.mark.skipif(os.environ.get("SYSTEM_TEST", "0") == "0", reason="System tests ignored (SYSTEM_TEST)")
 
+contract_test = pytest.mark.skipif(
+    os.environ.get("CONTRACT_TEST", "0") == "0", reason="Contract tests ignored (CONTRACT_TEST)"
+)
+
 slow_test = pytest.mark.skipif(os.environ.get("SLOW_TEST", "0") == "0", reason="Slow tests ignored (SLOW_TEST)")
 
 all_scenarios = conftest_all_scenarios.all_scenarios  # imported fixture
