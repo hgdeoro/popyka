@@ -14,14 +14,14 @@ class SampleImplClass(BaseTestClass):
 
 def test_get_class_from_fqn_works():
     class_instance = FactoryMixin().get_class_from_fqn(
-        "tests.unit_tests.test_config_factory_mixin.SampleImplClass", BaseTestClass
+        "tests.unit_tests.test_factory_mixin.SampleImplClass", BaseTestClass
     )
     assert class_instance is SampleImplClass
 
 
 def test_get_class_from_fqn_fails_when_invalid_type():
     with pytest.raises(ConfigError, match=r".*is not a subclass of.*"):
-        FactoryMixin().get_class_from_fqn("tests.unit_tests.test_config_factory_mixin.SampleImplClass", str)
+        FactoryMixin().get_class_from_fqn("tests.unit_tests.test_factory_mixin.SampleImplClass", str)
 
 
 def test_get_class_from_fqn_fails_when_invalid_module():
@@ -31,7 +31,7 @@ def test_get_class_from_fqn_fails_when_invalid_module():
 
 def test_get_class_from_fqn_fails_when_invalid_class():
     with pytest.raises(ConfigError, match=r"^Class not found"):
-        FactoryMixin().get_class_from_fqn("tests.unit_tests.test_config_factory_mixin.ThisClassDoesNotExists", str)
+        FactoryMixin().get_class_from_fqn("tests.unit_tests.test_factory_mixin.ThisClassDoesNotExists", str)
 
 
 def test_get_class_from_fqn_fails_when_invalid_characters():
