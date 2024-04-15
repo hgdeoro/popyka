@@ -314,7 +314,37 @@ def test_dc_popyka_valid_custom_config(
     dc_popyka_valid_custom_config: SubProcCollector,
     consumer: KafkaThreadedConsumer,
 ):
-    dc_popyka_valid_custom_config.wait_for(
+    collector = dc_popyka_valid_custom_config
+
+    # Check custom config was loaded
+    collector.wait_for(
         ":popyka.config:Using custom config file. POPYKA_CONFIG=/popyka-config/popyka-config-ignore-tables.yaml",
         timeout=10,
     )
+
+    # Wait until Popyka started
+    collector.wait_for(f"will start_replication() slot={DOCKER_COMPOSE_DB_SLOT_NAME}", timeout=5)
+    collector.wait_for("will consume_stream() adaptor=", timeout=1)
+
+    br = mechanize.Browser()
+    br.set_handle_robots(False)
+
+    br.open(f"http://localhost:{DOCKER_COMPOSE_DJANGO_ADMIN_PORT}/admin/")
+    assert br.response().code == 200
+    assert br.title() == "Log in | Django site admin"
+
+    br.select_form(nr=0)
+    br["username"] = "admin"
+    br["password"] = "admin"
+    br.submit()
+
+    assert br.response().code == 200
+    assert br.title() == "Site administration | Django site admin"
+
+    # collector.wait_for_change(timeout=5).assert_insert().assert_table("django_session")
+    collector.wait_for_change(timeout=5).assert_update().assert_table("auth_user")
+    # collector.wait_for_change(timeout=5).assert_update().assert_table("django_session")
+
+    expected_summaries = sorted([("U", "auth_user")])
+    messages: list[confluent_kafka.Message] = consumer.wait_for_count(count=1, timeout=10)
+    assert sorted(KafkaThreadedConsumer.summarize(messages)) == expected_summaries
