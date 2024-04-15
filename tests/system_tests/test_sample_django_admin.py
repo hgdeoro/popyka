@@ -97,6 +97,23 @@ def docker_compose_deps(kill_popyka, clean_data) -> SubProcCollector:
     yield collector
 
 
+def django_admin_login():
+    br = mechanize.Browser()
+    br.set_handle_robots(False)
+
+    br.open(f"http://localhost:{DOCKER_COMPOSE_DJANGO_ADMIN_PORT}/admin/")
+    assert br.response().code == 200
+    assert br.title() == "Log in | Django site admin"
+
+    br.select_form(nr=0)
+    br["username"] = "admin"
+    br["password"] = "admin"
+    br.submit()
+
+    assert br.response().code == 200
+    assert br.title() == "Site administration | Django site admin"
+
+
 class PopykaDockerComposeLauncher:
     def __init__(self, extra_envs: list[str] | None = None):
         self._collector: SubProcCollector | None = None
@@ -173,20 +190,7 @@ def dc_popyka_default_config() -> SubProcCollector:
 def test_django_admin_login_with_default_config(
     docker_compose_deps: SubProcCollector, dc_popyka_default_config: SubProcCollector, consumer: KafkaThreadedConsumer
 ):
-    br = mechanize.Browser()
-    br.set_handle_robots(False)
-
-    br.open(f"http://localhost:{DOCKER_COMPOSE_DJANGO_ADMIN_PORT}/admin/")
-    assert br.response().code == 200
-    assert br.title() == "Log in | Django site admin"
-
-    br.select_form(nr=0)
-    br["username"] = "admin"
-    br["password"] = "admin"
-    br.submit()
-
-    assert br.response().code == 200
-    assert br.title() == "Site administration | Django site admin"
+    django_admin_login()
 
     dc_popyka_default_config.wait_for_change(timeout=5).assert_insert().assert_table("django_session")
     dc_popyka_default_config.wait_for_change(timeout=5).assert_update().assert_table("auth_user")
@@ -258,26 +262,9 @@ def test_dc_popyka_valid_custom_config(
     dc_popyka_valid_custom_config: SubProcCollector,
     consumer: KafkaThreadedConsumer,
 ):
-    collector = dc_popyka_valid_custom_config
+    django_admin_login()
 
-    br = mechanize.Browser()
-    br.set_handle_robots(False)
-
-    br.open(f"http://localhost:{DOCKER_COMPOSE_DJANGO_ADMIN_PORT}/admin/")
-    assert br.response().code == 200
-    assert br.title() == "Log in | Django site admin"
-
-    br.select_form(nr=0)
-    br["username"] = "admin"
-    br["password"] = "admin"
-    br.submit()
-
-    assert br.response().code == 200
-    assert br.title() == "Site administration | Django site admin"
-
-    # collector.wait_for_change(timeout=5).assert_insert().assert_table("django_session")
-    collector.wait_for_change(timeout=5).assert_update().assert_table("auth_user")
-    # collector.wait_for_change(timeout=5).assert_update().assert_table("django_session")
+    dc_popyka_valid_custom_config.wait_for_change(timeout=5).assert_update().assert_table("auth_user")
 
     expected_summaries = sorted([("U", "auth_user")])
     messages: list[confluent_kafka.Message] = consumer.wait_for_count(count=1, timeout=10)
