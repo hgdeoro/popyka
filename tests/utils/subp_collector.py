@@ -7,8 +7,6 @@ import threading
 import time
 from functools import cached_property
 
-from popyka.builtin.processors import LogChangeProcessor
-
 logger = logging.getLogger(__name__)
 
 logger_stdout_to_list = logging.getLogger("STDOUT")
@@ -71,14 +69,15 @@ class SubProcCollector:
 
     @cached_property
     def _change_regex(self):
-        fqcn = f"{LogChangeProcessor.__module__}.{LogChangeProcessor.__qualname__}"
-        pattern = r"^[a-zA-Z+]+:" + fqcn + r":.*({.*})$"
+        pattern = r"^INFO:popyka.builtin.processors.LogChangeProcessor:Change received: ({.*})$"
         return re.compile(pattern)
 
     def _get_change(self, line: str) -> dict | None:
         matched = self._change_regex.fullmatch(line)
         if matched:
-            return json.loads(matched.group(1))
+            matched_str = matched.group(1)
+            logger.debug("_get_change(): matched: '%s'", matched_str)
+            return json.loads(matched_str)
 
     def wait_for_change(self, timeout=30.0, from_beginning=False):
         assert timeout is not None
