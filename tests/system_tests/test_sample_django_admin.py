@@ -28,10 +28,20 @@ def kill_popyka():
 
 
 @pytest.fixture
-def clean_data(drop_slot_fn):
-    kafka_admin = KafkaAdmin(DOCKER_COMPOSE_KAFKA_BOOTSTRAP_SERVERS)
+def clean_data(drop_slot_fn, kafka_admin):
     kafka_admin.delete_all_topics()
     drop_slot_fn(DOCKER_COMPOSE_POSTGRESQL_DSN)
+
+
+@pytest.fixture()
+def kafka_admin() -> KafkaAdmin:
+    return KafkaAdmin(DOCKER_COMPOSE_KAFKA_BOOTSTRAP_SERVERS)
+
+
+@pytest.fixture()
+def consumer(clean_data, kafka_admin) -> KafkaConsumer:
+    kafka_admin.create_topic(DOCKER_COMPOSE_KAFKA_TOPIC)
+    return KafkaConsumer(DOCKER_COMPOSE_KAFKA_BOOTSTRAP_SERVERS, DOCKER_COMPOSE_KAFKA_TOPIC)
 
 
 @pytest.fixture
@@ -123,7 +133,7 @@ def dc_popyka() -> SubProcCollector:
 
 
 @system_test
-def test_e2e(docker_compose_deps: SubProcCollector, dc_popyka: SubProcCollector):
+def test_e2e(docker_compose_deps: SubProcCollector, dc_popyka: SubProcCollector, consumer: KafkaConsumer):
     br = mechanize.Browser()
     br.set_handle_robots(False)
 
@@ -143,8 +153,6 @@ def test_e2e(docker_compose_deps: SubProcCollector, dc_popyka: SubProcCollector)
     dc_popyka.wait_for_change(timeout=5).assert_update().assert_table("auth_user")
     dc_popyka.wait_for_change(timeout=5).assert_update().assert_table("django_session")
 
-    consumer = KafkaConsumer(DOCKER_COMPOSE_KAFKA_BOOTSTRAP_SERVERS, DOCKER_COMPOSE_KAFKA_TOPIC)
-    messages: list[confluent_kafka.Message] = consumer.wait_for_count(count=3, timeout=10)
-
     expected_summaries = sorted([("I", "django_session"), ("U", "auth_user"), ("U", "django_session")])
+    messages: list[confluent_kafka.Message] = consumer.wait_for_count(count=3, timeout=10)
     assert sorted(KafkaConsumer.summarize(messages)) == expected_summaries

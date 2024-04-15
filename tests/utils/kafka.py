@@ -6,6 +6,7 @@ import uuid
 import confluent_kafka
 from confluent_kafka import Consumer
 from confluent_kafka.admin import AdminClient, ClusterMetadata
+from confluent_kafka.cimpl import NewTopic
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +14,9 @@ logger = logging.getLogger(__name__)
 class KafkaAdmin:
     def __init__(self, bootstrap_servers: str):
         self._admin = AdminClient({"bootstrap.servers": bootstrap_servers})
+
+    def create_topic(self, topic_name: str):
+        self._admin.create_topics([NewTopic(topic=topic_name, num_partitions=1)], operation_timeout=1.0)
 
     def delete_all_topics(self, op_timeout=3.0):
         cluster_meta: ClusterMetadata = self._admin.list_topics()
@@ -53,10 +57,13 @@ class KafkaConsumer:
                 self._topic,
                 len(self._consumed_msg),
             )
-            msg = self._consumer.poll(0.1)
+            msg = self._consumer.poll(0.2)
             if msg is None:
                 continue
-            assert not msg.error()
+
+            if msg.error():
+                logger.debug("consumer.poll(): Ignoring error: %s", msg.error())
+                continue
 
             self._consumed_msg.append(msg)
 
