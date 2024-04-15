@@ -97,47 +97,64 @@ def docker_compose_deps(kill_popyka, clean_data) -> SubProcCollector:
     yield collector
 
 
+class PopykaDockerComposeLauncher:
+    def __init__(self):
+        self._collector: SubProcCollector | None = None
+
+    @property
+    def collector(self) -> SubProcCollector:
+        assert self._collector is not None
+        return self._collector
+
+    def start(self):
+        dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
+
+        # Build
+        args = [
+            "docker",
+            "compose",
+            "--file",
+            str(dc_file.absolute()),
+            "build",
+            "--quiet",
+            "demo-popyka",
+        ]
+        subprocess.run(args=args, check=True)
+
+        # Up
+        args = [
+            "env",
+            "LAZYTOSTR_COMPACT=1",
+            "docker",
+            "compose",
+            "--file",
+            str(dc_file.absolute()),
+            "up",
+            "--no-log-prefix",
+            "demo-popyka",
+        ]
+        self._collector = SubProcCollector(args=args).start()
+
+        # Wait until Popyka started
+        self._collector.wait_for(f"will start_replication() slot={DOCKER_COMPOSE_DB_SLOT_NAME}", timeout=5)
+        self._collector.wait_for("will consume_stream() adaptor=", timeout=1)
+
+    def stop(self):
+        assert self._collector is not None
+        self._collector.kill()
+        self._collector.wait(timeout=20)
+        self._collector.join_threads()
+
+
 # ---------- default config --------------------------------------------------------------------------------
 
 
 @pytest.fixture
 def dc_popyka_default_config() -> SubProcCollector:
-    dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
-    # Build
-    args = [
-        "docker",
-        "compose",
-        "--file",
-        str(dc_file.absolute()),
-        "build",
-        "--quiet",
-        "demo-popyka",
-    ]
-    subprocess.run(args=args, check=True)
-
-    # Up
-    args = [
-        "env",
-        "LAZYTOSTR_COMPACT=1",
-        "docker",
-        "compose",
-        "--file",
-        str(dc_file.absolute()),
-        "up",
-        "--no-log-prefix",
-        "demo-popyka",
-    ]
-    collector = SubProcCollector(args=args).start()
-
-    # Wait until Popyka started
-    collector.wait_for(f"will start_replication() slot={DOCKER_COMPOSE_DB_SLOT_NAME}", timeout=5)
-    collector.wait_for("will consume_stream() adaptor=", timeout=1)
-
-    yield collector
-
-    collector.kill()
-    collector.wait(timeout=20)
-    collector.join_threads()
+    runner = PopykaDockerComposeLauncher()
+    runner.start()
+    yield runner.collector
+    runner.stop()
 
 
 @system_test
