@@ -93,8 +93,6 @@ lcp = LogChangeProcessor(config_generic={})
 lcp.process_change(change={"key": "value"})
 """
 
-ROOT_DIR = pathlib.Path(__file__)
-
 
 class TestParseLogChangeProcessorOutput:
     def test_use_lcp_directly(self):
@@ -125,3 +123,23 @@ class TestParseLogChangeProcessorOutput:
         print(sp.stdout)
         print(sp.stderr)
         sp.wait_for("INFO:popyka.builtin.processors.LogChangeProcessor:LogChangeProcessor", timeout=0.5)
+
+
+PYTHON_CODE_STDOUT_STDERR = """
+import sys
+print("this-is-stdout")
+print("this-is-stderr", file=sys.stderr)
+"""
+
+
+def test_stdout_stderr(tmp_path: pathlib.Path):
+    python_script = tmp_path / "sample.py"
+    python_script.write_text(PYTHON_CODE_STDOUT_STDERR)
+
+    sp = SubProcCollector(args=["python3", str(python_script.absolute())])
+    sp.start()
+    sp.wait(timeout=1)
+    print(sp.stdout)
+    print(sp.stderr)
+    sp.wait_for("this-is-stdout", timeout=0.5)
+    sp.wait_for("this-is-stderr", timeout=0.5)
