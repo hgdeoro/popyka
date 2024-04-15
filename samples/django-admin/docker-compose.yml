@@ -47,6 +47,7 @@ services:
     restart: no
     shm_size: 128mb
     environment:
+      POPYKA_CONFIG: "${POPYKA_CONFIG:-}"
       POPYKA_DB_DSN: "postgresql://postgres:pass@demo-db:5432/postgres"
       POPYKA_KAFKA_BOOTSTRAP_SERVERS: 'demo-kafka:9092'
       POPYKA_DB_SLOT_NAME: "popyka"
@@ -54,6 +55,8 @@ services:
       LAZYTOSTR_COMPACT: "${LAZYTOSTR_COMPACT:-0}"
     stop_grace_period: 1s
     stop_signal: SIGKILL
+    volumes:
+      - ./popyka-config:/popyka-config
 
   demo-kafka:
     image: 'bitnami/kafka:3.5'

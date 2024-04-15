@@ -1,0 +1,45 @@
+#
+# Based on default configuration, tailored for Django.
+#
+# What's different compared to default config:
+# - we need to ignore changes from some django tables.
+#
+# Django creates these tables:
+#
+#                          List of relations
+#   Schema |               Name                |   Type   |  Owner
+#  --------+-----------------------------------+----------+----------
+#   public | auth_group                        | table    | postgres
+#   public | auth_group_permissions            | table    | postgres
+#   public | auth_permission                   | table    | postgres
+#   public | auth_user                         | table    | postgres
+#   public | auth_user_groups                  | table    | postgres
+#   public | auth_user_user_permissions        | table    | postgres
+#   public | django_admin_log                  | table    | postgres
+#   public | django_content_type               | table    | postgres
+#   public | django_migrations                 | table    | postgres
+#   public | django_session                    | table    | postgres
+#
+# Changes in `auth_*` table are important to capture, but we don't need
+# `django_admin_log`, `django_content_type`, `django_migrations` and `django_session`
+#
+database:
+    connect_url: "${POPYKA_DB_DSN}"
+    slot_name: "${POPYKA_DB_SLOT_NAME:-popyka}"
+filters:
+    - class: popyka.builtin.filters.IgnoreTxFilter
+      config: {}
+    - class: popyka.builtin.filters.TableNameIgnoreFilter
+      config:
+        ignore_regex: "^django_.*$"
+processors:
+    - class: popyka.builtin.processors.LogChangeProcessor
+      filters: []
+      config: {}
+    - class: popyka.builtin.processors.ProduceToKafkaProcessor
+      filters: []
+      config:
+        topic: "${POPYKA_KAFKA_TOPIC:-popyka}"
+        producer_config:
+          "bootstrap.servers": "${POPYKA_KAFKA_BOOTSTRAP_SERVERS}"
+          "client.id": "${POPYKA_KAFKA_CLIENT_ID:-popyka-client}"

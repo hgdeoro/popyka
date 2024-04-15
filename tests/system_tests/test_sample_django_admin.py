@@ -94,8 +94,11 @@ def docker_compose_deps(kill_popyka, clean_data) -> SubProcCollector:
     yield collector
 
 
+# ---------- default config --------------------------------------------------------------------------------
+
+
 @pytest.fixture
-def dc_popyka() -> SubProcCollector:
+def dc_popyka_default_config() -> SubProcCollector:
     dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
     # Build
     args = [
@@ -135,7 +138,9 @@ def dc_popyka() -> SubProcCollector:
 
 
 @system_test
-def test_e2e(docker_compose_deps: SubProcCollector, dc_popyka: SubProcCollector, consumer: KafkaThreadedConsumer):
+def test_django_admin_login_with_default_config(
+    docker_compose_deps: SubProcCollector, dc_popyka_default_config: SubProcCollector, consumer: KafkaThreadedConsumer
+):
     br = mechanize.Browser()
     br.set_handle_robots(False)
 
@@ -151,10 +156,162 @@ def test_e2e(docker_compose_deps: SubProcCollector, dc_popyka: SubProcCollector,
     assert br.response().code == 200
     assert br.title() == "Site administration | Django site admin"
 
-    dc_popyka.wait_for_change(timeout=5).assert_insert().assert_table("django_session")
-    dc_popyka.wait_for_change(timeout=5).assert_update().assert_table("auth_user")
-    dc_popyka.wait_for_change(timeout=5).assert_update().assert_table("django_session")
+    dc_popyka_default_config.wait_for_change(timeout=5).assert_insert().assert_table("django_session")
+    dc_popyka_default_config.wait_for_change(timeout=5).assert_update().assert_table("auth_user")
+    dc_popyka_default_config.wait_for_change(timeout=5).assert_update().assert_table("django_session")
 
     expected_summaries = sorted([("I", "django_session"), ("U", "auth_user"), ("U", "django_session")])
     messages: list[confluent_kafka.Message] = consumer.wait_for_count(count=3, timeout=10)
     assert sorted(KafkaThreadedConsumer.summarize(messages)) == expected_summaries
+
+
+# ---------- invalid config is directory ----------------------------------------------------------------------
+
+
+@pytest.fixture
+def dc_popyka_invalid_config_is_directory() -> SubProcCollector:
+    dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
+    # Build
+    args = [
+        "docker",
+        "compose",
+        "--file",
+        str(dc_file.absolute()),
+        "build",
+        "--quiet",
+        "demo-popyka",
+    ]
+    subprocess.run(args=args, check=True)
+
+    # Up
+    args = [
+        "env",
+        "LAZYTOSTR_COMPACT=1",
+        "POPYKA_CONFIG=/",  # this is wrong and should make start fail
+        "docker",
+        "compose",
+        "--file",
+        str(dc_file.absolute()),
+        "up",
+        "--no-log-prefix",
+        "demo-popyka",
+    ]
+    collector = SubProcCollector(args=args).start()
+
+    yield collector
+
+    collector.kill()
+    collector.wait(timeout=20)
+    collector.join_threads()
+
+
+@system_test
+def test_dc_popyka_invalid_config_is_directory(
+    docker_compose_deps: SubProcCollector,
+    dc_popyka_invalid_config_is_directory: SubProcCollector,
+    consumer: KafkaThreadedConsumer,
+):
+    dc_popyka_invalid_config_is_directory.wait_for(
+        "popyka.errors.ConfigError: Invalid config: / (POPYKA_CONFIG) is a directory", timeout=10
+    )
+
+
+# ---------- invalid config: valid yaml, invalid config ------------------------------------------------------------
+
+
+@pytest.fixture
+def dc_popyka_invalid_config() -> SubProcCollector:
+    dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
+    # Build
+    args = [
+        "docker",
+        "compose",
+        "--file",
+        str(dc_file.absolute()),
+        "build",
+        "--quiet",
+        "demo-popyka",
+    ]
+    subprocess.run(args=args, check=True)
+
+    # Up
+    args = [
+        "env",
+        "LAZYTOSTR_COMPACT=1",
+        "POPYKA_CONFIG=/popyka-config/popyka-invalid-config.yaml",
+        "docker",
+        "compose",
+        "--file",
+        str(dc_file.absolute()),
+        "up",
+        "--no-log-prefix",
+        "demo-popyka",
+    ]
+    collector = SubProcCollector(args=args).start()
+
+    yield collector
+
+    collector.kill()
+    collector.wait(timeout=20)
+    collector.join_threads()
+
+
+@system_test
+def test_dc_popyka_invalid_config(
+    docker_compose_deps: SubProcCollector, dc_popyka_invalid_config: SubProcCollector, consumer: KafkaThreadedConsumer
+):
+    dc_popyka_invalid_config.wait_for(
+        "popyka.errors.ConfigError: LogChangeProcessor filter does not accepts any configuration", timeout=10
+    )
+
+
+# ---------- valid custom config --------------------------------------------------------------------------------
+
+
+@pytest.fixture
+def dc_popyka_valid_custom_config() -> SubProcCollector:
+    dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
+    # Build
+    args = [
+        "docker",
+        "compose",
+        "--file",
+        str(dc_file.absolute()),
+        "build",
+        "--quiet",
+        "demo-popyka",
+    ]
+    subprocess.run(args=args, check=True)
+
+    # Up
+    args = [
+        "env",
+        "LAZYTOSTR_COMPACT=1",
+        "POPYKA_CONFIG=/popyka-config/popyka-config-ignore-tables.yaml",
+        "docker",
+        "compose",
+        "--file",
+        str(dc_file.absolute()),
+        "up",
+        "--no-log-prefix",
+        "demo-popyka",
+    ]
+    collector = SubProcCollector(args=args).start()
+
+    yield collector
+
+    collector.kill()
+    collector.wait(timeout=20)
+    collector.join_threads()
+
+
+@system_test
+def test_dc_popyka_valid_custom_config(
+    docker_compose_deps: SubProcCollector,
+    dc_popyka_valid_custom_config: SubProcCollector,
+    consumer: KafkaThreadedConsumer,
+):
+    dc_popyka_valid_custom_config.wait_for(
+        ":popyka.config:Using custom config file. POPYKA_CONFIG=/popyka-config/popyka-config-ignore-tables.yaml",
+        timeout=10,
+    )
