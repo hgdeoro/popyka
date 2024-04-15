@@ -1,7 +1,5 @@
 import json
 import logging
-import pathlib
-import time
 
 from confluent_kafka import Producer
 
@@ -74,49 +72,3 @@ class ProduceToKafkaProcessor(Processor):
         self._producer.produce(topic=self._topic, value=json.dumps(change))
         self._producer.flush()
         self.logger.debug("Message produced to Kafka was flush()'ed")
-
-
-class DumpToFileProcessor(Processor):
-    """
-    This processor write a JSON file in the local filesystem.
-
-    This processor **requires** configuration:
-    * `target_directory`: absolute path to directory where to store the JSON files. Directory needs to exist.
-
-    Sample configuration:
-    ```
-    processors:
-        - class: builtin.ProduceToKafkaProcessor
-          config:
-            target_directory: "/tmp"
-    ```
-    """
-
-    logger = logging.getLogger(f"{__name__}.DumpToFileProcessor")
-
-    # FIXME: DOC: document required configuration
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._target_directory: pathlib.Path | None = None
-        self._run_id: int = int(time.time())
-        self._serial: int = 0
-
-    def setup(self):
-        target_dir = self._get_config(self.config_generic, "target_directory", str, clean=lambda v: v.strip())
-        if not target_dir:
-            raise ConfigError("Invalid config: `target_directory` is required")
-
-        self._target_directory = pathlib.Path(target_dir)
-        if not self._target_directory.is_absolute():
-            raise ConfigError("Invalid config: `target_directory` is not an absolute path")
-        if not self._target_directory.exists():
-            raise ConfigError("Invalid config: `target_directory` is valid path but does not exists")
-
-    def process_change(self, change: Wal2JsonV2Change):
-        assert self._target_directory is not None
-        target_file = self._target_directory / f"popyka-dump-{self._run_id}-{self._serial:08d}.json"
-        assert not target_file.exists()  # Since each time we have a different `self._run_id`, file shouldn't exist
-        self.logger.info("Wringing message to %s", target_file)
-        target_file.write_text(json.dumps(change, indent=4, sort_keys=True))
-        self._serial += 1

@@ -60,18 +60,3 @@ def test_instantiate_builtin_processor_produce_to_kafka_processor_without_bootst
     )
     with pytest.raises(ConfigError):
         processor_config.instantiate()
-
-
-def test_instantiate_builtin_processor_dump_to_file_works():
-    processor_config = ProcessorConfig.from_dict(
-        {
-            "class": "popyka.builtin.processors.DumpToFileProcessor",
-            "filters": [],
-            "config": {
-                "target_directory": "/tmp",
-            },
-        }
-    )
-    assert processor_config.config_generic["target_directory"] == "/tmp"
-    instance = processor_config.instantiate()
-    assert str(instance.__class__) == "<class 'popyka.builtin.processors.DumpToFileProcessor'>"
