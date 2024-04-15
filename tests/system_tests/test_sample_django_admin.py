@@ -37,13 +37,26 @@ def clean_data(drop_slot_fn):
 @pytest.fixture
 def docker_compose_deps(kill_popyka, clean_data) -> SubProcCollector:
     dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
+
+    # Build
+    args = [
+        "docker",
+        "compose",
+        "--file",
+        str(dc_file.absolute()),
+        "build",
+        "demo-db",
+        "demo-django-admin",
+    ]
+    subprocess.run(args=args, check=True)
+
+    # Run
     args = [
         "docker",
         "compose",
         "--file",
         str(dc_file.absolute()),
         "up",
-        "--build",
         "--wait",
         "--remove-orphans",
         "--detach",
@@ -71,13 +84,24 @@ def docker_compose_deps(kill_popyka, clean_data) -> SubProcCollector:
 @pytest.fixture
 def dc_popyka() -> SubProcCollector:
     dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
+    # Build
+    args = [
+        "docker",
+        "compose",
+        "--file",
+        str(dc_file.absolute()),
+        "build",
+        "demo-popyka",
+    ]
+    subprocess.run(args=args, check=True)
+
+    # Up
     args = [
         "docker",
         "compose",
         "--file",
         str(dc_file.absolute()),
         "up",
-        "--build",
         "demo-popyka",
     ]
     collector = SubProcCollector(args=args).start()
