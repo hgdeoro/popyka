@@ -217,39 +217,10 @@ def test_dc_popyka_invalid_config_is_directory(
 
 @pytest.fixture
 def dc_popyka_invalid_config() -> SubProcCollector:
-    dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
-    # Build
-    args = [
-        "docker",
-        "compose",
-        "--file",
-        str(dc_file.absolute()),
-        "build",
-        "--quiet",
-        "demo-popyka",
-    ]
-    subprocess.run(args=args, check=True)
-
-    # Up
-    args = [
-        "env",
-        "LAZYTOSTR_COMPACT=1",
-        "POPYKA_CONFIG=/popyka-config/popyka-invalid-config.yaml",
-        "docker",
-        "compose",
-        "--file",
-        str(dc_file.absolute()),
-        "up",
-        "--no-log-prefix",
-        "demo-popyka",
-    ]
-    collector = SubProcCollector(args=args).start()
-
-    yield collector
-
-    collector.kill()
-    collector.wait(timeout=20)
-    collector.join_threads()
+    launcher = PopykaDockerComposeLauncher(extra_envs=["POPYKA_CONFIG=/popyka-config/popyka-invalid-config.yaml"])
+    launcher.start()
+    yield launcher.collector
+    launcher.stop()
 
 
 @system_test
