@@ -117,6 +117,13 @@ test:
 test-all:
 	env EXPLORATION_TEST=1 SLOW_TEST=1 $(VENVDIR)/bin/pytest -v
 
+coverage:
+	coverage run --branch --source='popyka' $(VENVDIR)/bin/pytest -v
+	coverage report --skip-empty
+	coverage html --skip-empty
+
+# ----------
+
 psql: ## connect to default test database
 	psql $(LOCAL_POPYKA_DB_DSN_SAMPLE_1)
 

@@ -5,3 +5,4 @@ popyka.egg-info/
 dist/
 .tox/
 tox-result.json
+.coverage
