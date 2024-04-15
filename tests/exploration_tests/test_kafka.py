@@ -5,6 +5,8 @@ import uuid
 import pytest
 from confluent_kafka import Consumer
 
+from tests.conftest import exploration_test
+
 """
 docker exec -ti popyka-kafka-1 /bin/bash -c 'echo "HELLO WORLD" | \
     kafka-console-producer.sh --topic popyka --bootstrap-server localhost:9092'
@@ -12,6 +14,7 @@ docker exec -ti popyka-kafka-1 /bin/bash -c 'echo "HELLO WORLD" | \
 
 
 @pytest.mark.skip
+@exploration_test
 def test_debug_consume_one(kafka_bootstrap_servers):
     config = {
         "bootstrap.servers": kafka_bootstrap_servers,
@@ -30,6 +33,7 @@ def test_debug_consume_one(kafka_bootstrap_servers):
 
 
 @pytest.mark.skip
+@exploration_test
 def test_wait_after_subscribe(kafka_bootstrap_servers):
     config = {
         "bootstrap.servers": kafka_bootstrap_servers,
@@ -84,6 +88,7 @@ class LoopConsumer(threading.Thread):
 
 
 @pytest.mark.skip
+@exploration_test
 def test_join_group_in_thread(kafka_bootstrap_servers):
     loop_consumer = LoopConsumer(bootstrap_servers=kafka_bootstrap_servers)
     loop_consumer.start()
