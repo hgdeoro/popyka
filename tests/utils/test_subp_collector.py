@@ -14,7 +14,6 @@ def test_short():
     sp.start()
     while sp.poll() is None:
         print(f"STDOUT: {len(sp.stdout)}")
-        print(f"STDERR: {len(sp.stderr)}")
         time.sleep(0.1)
 
 
@@ -24,7 +23,6 @@ def test_long():
     sp.start()
     while sp.poll() is None:
         print(f"STDOUT: {len(sp.stdout)}")
-        print(f"STDERR: {len(sp.stderr)}")
 
         if len(sp.stdout) >= 4:
             sp.kill()
@@ -107,7 +105,6 @@ class TestParseLogChangeProcessorOutput:
         sp.start()
         sp.wait(timeout=1)
         print(sp.stdout)
-        print(sp.stderr)
         sp.wait_for("HELLO", timeout=0.5)
         sp.wait_for("WORLD", timeout=0.5)
 
@@ -121,7 +118,6 @@ class TestParseLogChangeProcessorOutput:
         sp.start()
         sp.wait(timeout=1)
         print(sp.stdout)
-        print(sp.stderr)
         sp.wait_for("INFO:popyka.builtin.processors.LogChangeProcessor:LogChangeProcessor", timeout=0.5)
 
 
@@ -140,6 +136,5 @@ def test_stdout_stderr(tmp_path: pathlib.Path):
     sp.start()
     sp.wait(timeout=1)
     print(sp.stdout)
-    print(sp.stderr)
-    sp.wait_for("this-is-stdout", timeout=0.5)
-    sp.wait_for("this-is-stderr", timeout=0.5)
+    sp.wait_for("this-is-stdout", timeout=0.5, from_beginning=True)
+    sp.wait_for("this-is-stderr", timeout=0.5, from_beginning=True)
