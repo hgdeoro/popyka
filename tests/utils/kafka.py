@@ -35,6 +35,8 @@ class KafkaConsumer:
                 "bootstrap.servers": bootstrap_servers,
                 "group.id": str(uuid.uuid4().hex),
                 "auto.offset.reset": "earliest",
+                "enable.auto.commit": False,
+                "debug": "all",
             }
         )
         self._consumer.subscribe([topic])
