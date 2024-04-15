@@ -7,7 +7,7 @@ import mechanize
 import pytest
 
 from tests.conftest import system_test
-from tests.utils.kafka import KafkaAdmin, KafkaConsumer
+from tests.utils.kafka import KafkaAdmin, KafkaThreadedConsumer
 from tests.utils.subp_collector import SubProcCollector
 
 logger = logging.getLogger(__name__)
@@ -39,9 +39,11 @@ def kafka_admin() -> KafkaAdmin:
 
 
 @pytest.fixture()
-def consumer(clean_data, kafka_admin) -> KafkaConsumer:
+def consumer(clean_data, kafka_admin) -> KafkaThreadedConsumer:
     kafka_admin.create_topic(DOCKER_COMPOSE_KAFKA_TOPIC)
-    return KafkaConsumer(DOCKER_COMPOSE_KAFKA_BOOTSTRAP_SERVERS, DOCKER_COMPOSE_KAFKA_TOPIC)
+    consumer = KafkaThreadedConsumer(DOCKER_COMPOSE_KAFKA_BOOTSTRAP_SERVERS, DOCKER_COMPOSE_KAFKA_TOPIC)
+    consumer.start()
+    return consumer
 
 
 @pytest.fixture
@@ -133,7 +135,7 @@ def dc_popyka() -> SubProcCollector:
 
 
 @system_test
-def test_e2e(docker_compose_deps: SubProcCollector, dc_popyka: SubProcCollector, consumer: KafkaConsumer):
+def test_e2e(docker_compose_deps: SubProcCollector, dc_popyka: SubProcCollector, consumer: KafkaThreadedConsumer):
     br = mechanize.Browser()
     br.set_handle_robots(False)
 
@@ -155,4 +157,4 @@ def test_e2e(docker_compose_deps: SubProcCollector, dc_popyka: SubProcCollector,
 
     expected_summaries = sorted([("I", "django_session"), ("U", "auth_user"), ("U", "django_session")])
     messages: list[confluent_kafka.Message] = consumer.wait_for_count(count=3, timeout=10)
-    assert sorted(KafkaConsumer.summarize(messages)) == expected_summaries
+    assert sorted(KafkaThreadedConsumer.summarize(messages)) == expected_summaries

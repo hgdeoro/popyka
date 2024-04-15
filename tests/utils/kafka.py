@@ -1,5 +1,6 @@
 import json
 import logging
+import threading
 import time
 import uuid
 
@@ -26,58 +27,60 @@ class KafkaAdmin:
             self._admin.delete_topics(topics_to_delete, operation_timeout=op_timeout)
 
 
-class KafkaConsumer:
+class KafkaThreadedConsumer(threading.Thread):
     def __init__(self, bootstrap_servers: str, topic: str):
+        super().__init__(daemon=True)
+        self._stopped = False
         self._topic = topic
-        self._consumed_msg: list[confluent_kafka.Message] = []
-        self._consumer = Consumer(
-            {
-                "bootstrap.servers": bootstrap_servers,
-                "group.id": str(uuid.uuid4().hex),
-                "auto.offset.reset": "earliest",
-                "enable.auto.commit": False,
-                "debug": "all",
-            }
-        )
-        self._consumer.subscribe([topic])
+        self._messages: list = []
+        self._config = {
+            "bootstrap.servers": bootstrap_servers,
+            "group.id": str(uuid.uuid4().hex),
+            "auto.offset.reset": "earliest",
+            "enable.auto.commit": False,
+            # "debug": "all",
+        }
+
+    def stop(self):
+        self._stopped = True
 
     @property
-    def consumed_msg(self) -> list[confluent_kafka.Message]:
-        return list(self._consumed_msg)
+    def messages(self) -> list:
+        return list(self._messages)
 
-    # def clean(self):
-    #     self._consumed_msg = []
+    def run(self):
+        consumer = Consumer(self._config)
+        consumer.subscribe([self._topic])
+
+        while not self._stopped:
+            msg = consumer.poll(timeout=0.5)
+            if msg:
+                logger.debug("Messages consumed: %s", msg)
+                if msg.error():
+                    logger.debug("consumer.poll(): Ignoring error: %s", msg.error())
+                    continue
+                self._messages.append(msg.value())
 
     def wait_for_count(self, count: int, timeout: float) -> list[confluent_kafka.Message]:
-        print(f"Waiting for {count} messages in topic {self._topic}")
         assert timeout > 0
+        print(f"Waiting for {count} messages in topic {self._topic}")
         start = time.monotonic()
-        while time.monotonic() - start < timeout and len(self._consumed_msg) < count:
+        while time.monotonic() - start < timeout and len(self._messages) < count:
             logger.debug(
                 "Waiting for %s messages in topic %s. There are %s at the moment",
                 count,
                 self._topic,
-                len(self._consumed_msg),
+                len(self._messages),
             )
-            msg = self._consumer.poll(0.2)
-            if msg is None:
-                continue
+            time.sleep(0.1)
 
-            if msg.error():
-                logger.debug("consumer.poll(): Ignoring error: %s", msg.error())
-                continue
+        if len(self._messages) < count:
+            raise Exception(f"Timeout waiting for {count} messages. Got: only {len(self._messages)}")
 
-            self._consumed_msg.append(msg)
-
-        # self._consumer.close()  # How can we know if client will try again :/
-
-        if len(self._consumed_msg) < count:
-            raise Exception(f"Timeout waiting for {count} messages. Got: only {len(self._consumed_msg)}")
-
-        return self._consumed_msg
+        return self._messages
 
     @classmethod
-    def summarize(cls, messages: list[confluent_kafka.Message]):
-        changes_dict = [json.loads(_.value()) for _ in messages]
+    def summarize(cls, messages: list):
+        changes_dict = [json.loads(_) for _ in messages]
         changes_summary = [(_["action"], _["table"]) for _ in changes_dict]
         return changes_summary
