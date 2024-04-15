@@ -117,6 +117,11 @@ test:  ## Run most important and fast tests
 test-all:  ## Run all tests (except for system-tests)
 	env EXPLORATION_TEST=1 SLOW_TEST=1 CONTRACT_TEST=1 $(VENVDIR)/bin/pytest -v
 
+coverage-unittest:
+	coverage run --branch --source='popyka' $(VENVDIR)/bin/pytest -v tests/unit_tests/
+	coverage report --skip-empty
+	coverage html --skip-empty
+
 coverage:
 	coverage run --branch --source='popyka' $(VENVDIR)/bin/pytest -v
 	coverage report --skip-empty
