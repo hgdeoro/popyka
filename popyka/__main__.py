@@ -14,6 +14,6 @@ class Main(Server):
 if __name__ == "__main__":
     enable_debug = bool(os.environ.get("POPYKA_DEBUG", "").strip())
     logging.basicConfig(level=logging.DEBUG if enable_debug else logging.INFO)
-    main = Main(config=PopykaConfig.get_default_config(environment=os.environ))
+    main = Main(config=PopykaConfig.get_config(environment=os.environ))
     main.create_replication_slot()
     main.run()

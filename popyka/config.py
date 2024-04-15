@@ -126,7 +126,7 @@ class PopykaConfig:
         )
 
     @classmethod
-    def get_default_config(cls, environment=None) -> "PopykaConfig":
+    def get_config(cls, environment=None) -> "PopykaConfig":
         config_path = pathlib.Path(__file__).parent / "popyka-default.yaml"
         config_dict = yaml.safe_load(config_path.read_text())
         return PopykaConfig.from_dict(config_dict, environment=environment)
