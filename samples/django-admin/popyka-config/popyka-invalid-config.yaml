@@ -1,0 +1,12 @@
+# This configuration is invalid and should fail
+database:
+    connect_url: "${POPYKA_DB_DSN}"
+    slot_name: "${POPYKA_DB_SLOT_NAME:-popyka}"
+filters:
+    - class: popyka.builtin.filters.IgnoreTxFilter
+      config: {}
+processors:
+    - class: popyka.builtin.processors.LogChangeProcessor
+      filters: []
+      config:
+        this: "is not supported"

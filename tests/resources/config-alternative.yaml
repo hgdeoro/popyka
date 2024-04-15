@@ -1,0 +1,10 @@
+database:
+    connect_url: "config-alternative"
+    slot_name: "config-alternative"
+filters:
+    - class: config-alternative.Filter
+      config: {}
+processors:
+    - class: config-alternative.Processor
+      filters: []
+      config: {}

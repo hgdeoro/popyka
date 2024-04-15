@@ -8,7 +8,7 @@ from psycopg2.extensions import connection as Connection
 from popyka.config import PopykaConfig
 from popyka.core import Processor, Server, Wal2JsonV2Change
 from popyka.errors import StopServer
-from tests.utils import DbActivitySimulator
+from tests.utils.db_activity_simulator import DbActivitySimulator
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class ServerTestImpl(Server, threading.Thread):
 def test_server(conn: Connection, conn2: Connection, drop_slot, table_name: str, popyka_env_vars):
     processors = [ProcessorImpl(max_changes=3, config_generic={})]
 
-    server = ServerTestImpl(config=PopykaConfig.get_default_config(environment=popyka_env_vars))
+    server = ServerTestImpl(config=PopykaConfig.get_config(environment=popyka_env_vars))
     server.get_filters = MagicMock()
     server.get_filters.return_value = []
     server.get_processors = MagicMock()

@@ -59,7 +59,7 @@ def test_interpolator_yaml_types():
     """
 
     interpolator = Interpolator(environment={})
-    yaml_path = pathlib.Path(__file__).parent / "all_yaml_types.yaml"
+    yaml_path = pathlib.Path(__file__).parent.parent / "resources" / "all_yaml_types.yaml"
     config_yaml = yaml.safe_load(yaml_path.read_text())
     assert config_yaml == {
         "string": "value",

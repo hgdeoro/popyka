@@ -1,13 +1,14 @@
 import abc
 import json
 import logging
+from enum import Enum
 from typing import TYPE_CHECKING
 
 import psycopg2.extras
 from psycopg2.extensions import connection as Connection
 from psycopg2.extras import ReplicationCursor
 
-from popyka.errors import ConfigError, StopServer
+from popyka.errors import ConfigError, PopykaException, StopServer
 from popyka.logging import LazyToStr
 
 if TYPE_CHECKING:
@@ -72,6 +73,16 @@ class Processor(abc.ABC, Configurable):
 class Filter(abc.ABC, Configurable):
     """Base class for change filters"""
 
+    class Result(Enum):
+        PROCESS = "PROCESS"
+        """Immediately accept the change. Other filters are not evaluated."""
+
+        IGNORE = "IGNORE"
+        """Immediately ignore the change. Other filters are not evaluated."""
+
+        CONTINUE = "CONTINUE"
+        """Don't decide. Other filters will evaluate this change."""
+
     logger = logging.getLogger(f"{__name__}.Filter")
 
     def __init__(self, config_generic: dict):
@@ -84,12 +95,14 @@ class Filter(abc.ABC, Configurable):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def ignore_change(self, change: Wal2JsonV2Change) -> bool:
+    def filter(self, change: Wal2JsonV2Change) -> Result:
         """
-        Receives a change and returns True if should be ignored.
-        Ignored changes won't reach the processors.
+        Receives a change and returns a `Result`:
+
+        * `PROCESS`: the change is "accepted", any other filters are not evaluated.
+        * `IGNORE`: the change is "ignored", any other filters are not evaluated.
+        * `CONTINUE`: there's no decision regarding this change, other filters WILL be evaluated.
         """
-        # FIXME: is `ignore_change()` a good API? Wouldn't be better `should_process()` or something like that?
         raise NotImplementedError()
 
 
@@ -102,21 +115,32 @@ class ReplicationConsumerToProcessorAdaptor:
         self._processors = processors
         self._filters = filters
 
-    def __call__(self, msg: psycopg2.extras.ReplicationMessage):
-        self.logger.debug("ReplicationConsumerToProcessorAdaptor: received payload: %s", msg)
-        change = Wal2JsonV2Change(json.loads(msg.payload))
-
+    def _handle_payload(self, payload: bytes):
+        change = Wal2JsonV2Change(json.loads(payload))
         process_change = True
+
         for a_filter in self._filters:
-            if a_filter.ignore_change(change):
-                process_change = False
-                self.logger.debug("Ignoring change for change: %s", LazyToStr(change))
-                break
+            match a_filter.filter(change):
+                case Filter.Result.IGNORE:
+                    self.logger.debug("Ignoring change for change: %s", LazyToStr(change))
+                    return  # ignore this message
+                case Filter.Result.PROCESS:
+                    break  # stop filtering
+                case Filter.Result.CONTINUE:
+                    continue  # continue, evaluate other filters
+                case _:
+                    raise PopykaException("Filter.filter() returned invalid value")
 
         if process_change:
             for processor in self._processors:
                 self.logger.debug("Starting processing with processor: %s", processor)
                 processor.process_change(change)
+
+    def __call__(self, msg: psycopg2.extras.ReplicationMessage):
+        self.logger.debug("ReplicationConsumerToProcessorAdaptor: received payload: %s", msg)
+
+        # Handle the payload
+        self._handle_payload(msg.payload)
 
         # Flush after every message is successfully processed
         self.logger.debug("send_feedback() flush_lsn=%s", msg.data_start)

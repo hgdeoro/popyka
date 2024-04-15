@@ -7,8 +7,6 @@ from popyka.core import Processor, Wal2JsonV2Change
 from popyka.errors import ConfigError
 from popyka.logging import LazyToStr
 
-logger = logging.getLogger(__name__)
-
 
 class LogChangeProcessor(Processor):
     """
@@ -17,12 +15,14 @@ class LogChangeProcessor(Processor):
     This processor does not accept any configuration.
     """
 
+    logger = logging.getLogger(f"{__name__}.LogChangeProcessor")
+
     def setup(self):
         if self.config_generic:
             raise ConfigError("LogChangeProcessor filter does not accepts any configuration")
 
     def process_change(self, change: Wal2JsonV2Change):
-        logger.info("LogChangeProcessor: change: %s", LazyToStr(change))
+        self.logger.info("Change received: %s", LazyToStr(change))
 
 
 class ProduceToKafkaProcessor(Processor):
@@ -32,6 +32,8 @@ class ProduceToKafkaProcessor(Processor):
     This processor **requires** configuration:
     * `config.topic`: topic where to write changes.
     * `config.producer_config`: dictionary to configure the `confluent_kafka.Producer` instance (passed as is).
+
+    Sample configuration:
     ```
     processors:
         - class: builtin.ProduceToKafkaProcessor
@@ -42,6 +44,8 @@ class ProduceToKafkaProcessor(Processor):
             - "client.id": client
     ```
     """
+
+    logger = logging.getLogger(f"{__name__}.ProduceToKafkaProcessor")
 
     # FIXME: DOC: document required configuration
 
@@ -67,4 +71,4 @@ class ProduceToKafkaProcessor(Processor):
         assert self._producer is not None
         self._producer.produce(topic=self._topic, value=json.dumps(change))
         self._producer.flush()
-        logger.debug("Message produced to Kafka was flush()'ed")
+        self.logger.debug("Message produced to Kafka was flush()'ed")

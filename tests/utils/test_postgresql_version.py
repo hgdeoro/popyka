@@ -11,7 +11,7 @@ EXPECTED_POSTGRESQL_MAJOR_VERSION = os.environ.get("EXPECTED_POSTGRESQL_MAJOR_VE
 
 
 def test_postgresql_version_used_by_server_with_default_config(popyka_env_vars):
-    server = Server(config=PopykaConfig.get_default_config(environment=popyka_env_vars))
+    server = Server(config=PopykaConfig.get_config(environment=popyka_env_vars))
     cx: Connection = server.get_connection()
     with cx.cursor() as cur:
         cur: ReplicationCursor

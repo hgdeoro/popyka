@@ -8,11 +8,15 @@ import psycopg2.extras
 import pytest
 from psycopg2.extensions import connection as Connection
 
+from tests import conftest_all_scenarios
+
 logger = logging.getLogger(__name__)
 
 OVERRIDE_PORT = os.environ.get("OVERRIDE_PORT", "54016")
 
 DSN_POSTGRES_WAL2JSON = f"postgresql://postgres:pass@localhost:{OVERRIDE_PORT}/popyka_test"
+
+KAFKA_BOOTSTRAP_SERVERS = "localhost:9094"
 
 exploration_test = pytest.mark.skipif(
     os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored (EXPLORATION_TEST)"
@@ -20,7 +24,14 @@ exploration_test = pytest.mark.skipif(
 
 system_test = pytest.mark.skipif(os.environ.get("SYSTEM_TEST", "0") == "0", reason="System tests ignored (SYSTEM_TEST)")
 
+contract_test = pytest.mark.skipif(
+    os.environ.get("CONTRACT_TEST", "0") == "0", reason="Contract tests ignored (CONTRACT_TEST)"
+)
+
 slow_test = pytest.mark.skipif(os.environ.get("SLOW_TEST", "0") == "0", reason="Slow tests ignored (SLOW_TEST)")
+
+all_scenarios = conftest_all_scenarios.all_scenarios  # imported fixture
+all_scenarios_predictable = conftest_all_scenarios.all_scenarios_predictable  # imported fixture
 
 
 @pytest.fixture
@@ -31,6 +42,11 @@ def table_name() -> str:
 @pytest.fixture
 def dsn():
     return DSN_POSTGRES_WAL2JSON
+
+
+@pytest.fixture
+def kafka_bootstrap_servers():
+    return KAFKA_BOOTSTRAP_SERVERS
 
 
 @pytest.fixture

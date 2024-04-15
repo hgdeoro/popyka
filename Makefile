@@ -89,13 +89,13 @@ LOCAL_POPYKA_KAFKA_CONF_DICT = '{"bootstrap.servers": "localhost:9094","client.i
 
 # ----------
 
-# FIXME: test this target! It's intended to new users, this should work.
-docker-popyka-run-gitlab:
-	# `popyka_default` is the network name created by docker compose # TODO: use predictable network name
-	docker run --rm -ti --network popyka_default \
-		-e POPYKA_DB_DSN=$(DOCKER_COMPOSE_POPYKA_DB_DSN_SAMPLE_1) \
-		-e POPYKA_KAFKA_CONF_DICT=$(DOCKER_COMPOSE_POPYKA_KAFKA_CONF_DICT) \
-			registry.gitlab.com/hgdeoro/popyka/test
+# FIXME: test this target! It's intended to let new users easily try Popyka, this needs to work well.
+#docker-popyka-run-gitlab:
+#	# `popyka_default` is the network name created by docker compose # TODO: use predictable network name
+#	docker run --rm -ti --network popyka_default \
+#		-e POPYKA_DB_DSN=$(DOCKER_COMPOSE_POPYKA_DB_DSN_SAMPLE_1) \
+#		-e POPYKA_KAFKA_CONF_DICT=$(DOCKER_COMPOSE_POPYKA_KAFKA_CONF_DICT) \
+#			registry.gitlab.com/hgdeoro/popyka/test
 
 # ----------
 
@@ -111,11 +111,18 @@ local-run:
 		POPYKA_KAFKA_CONF_DICT=$(LOCAL_POPYKA_KAFKA_CONF_DICT) \
 			./venv/bin/python3 -m popyka
 
-test:
+test:  ## Run most important and fast tests
 	$(VENVDIR)/bin/pytest -v
 
-test-all:
-	env EXPLORATION_TEST=1 SLOW_TEST=1 $(VENVDIR)/bin/pytest -v
+test-all:  ## Run all tests (except for system-tests)
+	env EXPLORATION_TEST=1 SLOW_TEST=1 CONTRACT_TEST=1 $(VENVDIR)/bin/pytest -v
+
+coverage:
+	coverage run --branch --source='popyka' $(VENVDIR)/bin/pytest -v
+	coverage report --skip-empty
+	coverage html --skip-empty
+
+# ----------
 
 psql: ## connect to default test database
 	psql $(LOCAL_POPYKA_DB_DSN_SAMPLE_1)
@@ -123,10 +130,12 @@ psql: ## connect to default test database
 # ----------
 
 test-system-sample-django-admin:
-	docker compose --file samples/django-admin/docker-compose.yml build
+	docker compose --file samples/django-admin/docker-compose.yml build --quiet
 	env SYSTEM_TEST=1 $(VENVDIR)/bin/pytest -vvs tests/system_tests/test_sample_django_admin.py
 
-test-system: test-system-sample-django-admin
+test-system-sample-django-admin-debug:
+	docker compose --file samples/django-admin/docker-compose.yml build --quiet
+	env SYSTEM_TEST=1 $(VENVDIR)/bin/pytest -vvs tests/system_tests/test_sample_django_admin.py --log-cli-level=DEBUG
 
 # ----------
 
