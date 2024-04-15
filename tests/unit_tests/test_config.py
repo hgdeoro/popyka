@@ -40,3 +40,12 @@ class TestCustomConfig:
         popyka_env_vars["POPYKA_CONFIG"] = "/"
         with pytest.raises(ConfigError, match="Invalid config:.*POPYKA_CONFIG.*is a directory"):
             PopykaConfig.get_config(environment=popyka_env_vars)
+
+    def test_load_alternative(self, popyka_env_vars):
+        popyka_env_vars["POPYKA_CONFIG"] = (
+            pathlib.Path(__file__).parent.parent / "resources" / "config-alternative.yaml"
+        )
+        config = PopykaConfig.get_config(environment=popyka_env_vars)
+
+        assert config.database.connect_url == "config-alternative"
+        assert config.database.slot_name == "config-alternative"
