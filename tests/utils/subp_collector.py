@@ -25,6 +25,8 @@ class SubProcCollector:
         self._stderr: list[str] = []
         self._thread_stdout: threading.Thread | None = None
         self._thread_stderr: threading.Thread | None = None
+        self._stdout_line_last_found: int = 0
+        self._stderr_line_last_found: int = 0
 
     def poll(self) -> int | None:
         return self._proc.poll()
@@ -47,18 +49,25 @@ class SubProcCollector:
         self._thread_stdout.join()
         self._thread_stderr.join()
 
-    def wait_for(self, text: str, timeout=None):
+    def wait_for(self, text: str, timeout=30.0):
+        assert timeout is not None
+        timeout = float(timeout)
         start_time = time.monotonic()
         print(f"Waiting for: '{text}'")
-        while timeout is None or time.monotonic() - start_time < timeout:
-            for line in self._stdout:
+        while time.monotonic() - start_time < timeout:
+            for line_num in range(self._stdout_line_last_found, len(self._stdout)):
+                self._stdout_line_last_found = line_num
+                line = self._stdout[line_num]
                 if text in line:
-                    return
-            for line in self._stderr:
+                    return line
+
+            for line_num in range(self._stderr_line_last_found, len(self._stderr)):
+                self._stderr_line_last_found = line_num
+                line = self._stderr[line_num]
                 if text in line:
-                    return
+                    return line
             time.sleep(0.01)
-        raise Exception(f"Timeout. Not found: {text}")
+        raise TimeoutError(f"Timeout. Not found: {text}")
 
     def start(self) -> "SubProcCollector":
         self._proc = subprocess.Popen(args=self._args, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
