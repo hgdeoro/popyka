@@ -2,7 +2,6 @@ import logging
 import pathlib
 import subprocess
 
-import confluent_kafka
 import mechanize
 import pytest
 
@@ -196,9 +195,9 @@ def test_django_admin_login_with_default_config(
     dc_popyka_default_config.wait_for_change(timeout=5).assert_update().assert_table("auth_user")
     dc_popyka_default_config.wait_for_change(timeout=5).assert_update().assert_table("django_session")
 
-    expected_summaries = sorted([("I", "django_session"), ("U", "auth_user"), ("U", "django_session")])
-    messages: list[confluent_kafka.Message] = consumer.wait_for_count(count=3, timeout=10)
-    assert sorted(KafkaThreadedConsumer.summarize(messages)) == expected_summaries
+    assert sorted(consumer.wait_for_count_summarized(3, timeout=10)) == sorted(
+        [("I", "django_session"), ("U", "auth_user"), ("U", "django_session")]
+    )
 
 
 # ---------- invalid config is directory ----------------------------------------------------------------------
@@ -266,6 +265,4 @@ def test_dc_popyka_valid_custom_config(
 
     dc_popyka_valid_custom_config.wait_for_change(timeout=5).assert_update().assert_table("auth_user")
 
-    expected_summaries = sorted([("U", "auth_user")])
-    messages: list[confluent_kafka.Message] = consumer.wait_for_count(count=1, timeout=10)
-    assert sorted(KafkaThreadedConsumer.summarize(messages)) == expected_summaries
+    assert sorted(consumer.wait_for_count_summarized(1, timeout=10)) == sorted([("U", "auth_user")])

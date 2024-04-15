@@ -79,6 +79,9 @@ class KafkaThreadedConsumer(threading.Thread):
 
         return self._messages
 
+    def wait_for_count_summarized(self, count: int, timeout: float) -> list:
+        return self.summarize(self.wait_for_count(count, timeout))
+
     @classmethod
     def summarize(cls, messages: list):
         changes_dict = [json.loads(_) for _ in messages]
