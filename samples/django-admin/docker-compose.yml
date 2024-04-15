@@ -51,6 +51,7 @@ services:
       POPYKA_KAFKA_BOOTSTRAP_SERVERS: 'demo-kafka:9092'
       POPYKA_DB_SLOT_NAME: "popyka"
       POPYKA_KAFKA_TOPIC: "popyka"
+      LAZYTOSTR_COMPACT: "${LAZYTOSTR_COMPACT:-0}"
     stop_grace_period: 1s
     stop_signal: SIGKILL
 
