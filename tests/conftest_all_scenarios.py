@@ -19,9 +19,23 @@ class AllScenarios:
 
 @pytest.fixture
 def all_scenarios() -> AllScenarios:
-    table_name_no_pk = f"test_table_no_pk_{uuid.uuid4().hex}".upper()
-    table_name_pk = f"test_table_pk_{uuid.uuid4().hex}".upper()
-    table_name_composite_key = f"test_table_composite_key_{uuid.uuid4().hex}".upper()
+    return _all_scenarios(True)
+
+
+@pytest.fixture
+def all_scenarios_predictable() -> AllScenarios:
+    return _all_scenarios(False)
+
+
+def _all_scenarios(random_table_suffix: bool = True) -> AllScenarios:
+    if random_table_suffix:
+        table_name_no_pk = f"test_table_no_pk_{uuid.uuid4().hex}".upper()
+        table_name_pk = f"test_table_pk_{uuid.uuid4().hex}".upper()
+        table_name_composite_key = f"test_table_composite_key_{uuid.uuid4().hex}".upper()
+    else:
+        table_name_no_pk = "test_table_no_pk_1234".upper()
+        table_name_pk = "test_table_pk_1234".upper()
+        table_name_composite_key = "test_table_composite_key_1234".upper()
 
     statements = [
         # --- crud w/o pk

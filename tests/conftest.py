@@ -31,6 +31,7 @@ contract_test = pytest.mark.skipif(
 slow_test = pytest.mark.skipif(os.environ.get("SLOW_TEST", "0") == "0", reason="Slow tests ignored (SLOW_TEST)")
 
 all_scenarios = conftest_all_scenarios.all_scenarios  # imported fixture
+all_scenarios_predictable = conftest_all_scenarios.all_scenarios_predictable  # imported fixture
 
 
 @pytest.fixture

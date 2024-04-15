@@ -9,7 +9,7 @@ DEFAULT_DICT_CONFIG_IGNORE_TX_FILTER = {
 
 DEFAULT_DICT_CONFIG_TABLE_NAME_IGNORE_FILTER = {
     "class": "popyka.builtin.filters.TableNameIgnoreFilter",
-    "config": {"ignore_regex": "xxxxxxxx"},
+    "config": {"ignore_regex": r"^test_table_composite_key_\d+"},
 }
 
 
@@ -47,3 +47,24 @@ class TestTableNameIgnoreFilter:
         filter_instance: Filter = filter_config.instantiate()
         for change in all_scenarios.expected:
             filter_instance.filter(change)
+
+    def test_table_is_ignored(self, all_scenarios_predictable: AllScenarios):
+        actions_before_filter = {_.get("table") for _ in all_scenarios_predictable.expected}
+        assert actions_before_filter == {
+            None,
+            "test_table_pk_1234",
+            "test_table_no_pk_1234",
+            "test_table_composite_key_1234",
+        }
+        filter_config = FilterConfig.from_dict(DEFAULT_DICT_CONFIG_TABLE_NAME_IGNORE_FILTER)
+        flt: Filter = filter_config.instantiate()
+
+        actions_after_filter = {
+            _.get("table") for _ in all_scenarios_predictable.expected if flt.filter(_) != Filter.Result.IGNORE
+        }
+
+        assert actions_after_filter == {
+            None,
+            "test_table_pk_1234",
+            "test_table_no_pk_1234",
+        }
