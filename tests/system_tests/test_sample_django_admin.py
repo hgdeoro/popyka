@@ -98,8 +98,10 @@ def docker_compose_deps(kill_popyka, clean_data) -> SubProcCollector:
 
 
 class PopykaDockerComposeLauncher:
-    def __init__(self):
+    def __init__(self, extra_envs: list[str] | None = None):
         self._collector: SubProcCollector | None = None
+        self._envs = ["LAZYTOSTR_COMPACT=1"] + (extra_envs or [])
+        assert all(["=" in _ for _ in self._envs])
 
     @property
     def collector(self) -> SubProcCollector:
@@ -122,20 +124,22 @@ class PopykaDockerComposeLauncher:
         subprocess.run(args=args, check=True)
 
         # Up
-        args = [
-            "env",
-            "LAZYTOSTR_COMPACT=1",
-            "docker",
-            "compose",
-            "--file",
-            str(dc_file.absolute()),
-            "up",
-            "--no-log-prefix",
-            "demo-popyka",
-        ]
+        args = (
+            ["env"]
+            + self._envs
+            + [
+                "docker",
+                "compose",
+                "--file",
+                str(dc_file.absolute()),
+                "up",
+                "--no-log-prefix",
+                "demo-popyka",
+            ]
+        )
         self._collector = SubProcCollector(args=args).start()
 
-        # Wait until Popyka started
+    def wait_until_popyka_started(self):
         self._collector.wait_for(f"will start_replication() slot={DOCKER_COMPOSE_DB_SLOT_NAME}", timeout=5)
         self._collector.wait_for("will consume_stream() adaptor=", timeout=1)
 
@@ -151,10 +155,11 @@ class PopykaDockerComposeLauncher:
 
 @pytest.fixture
 def dc_popyka_default_config() -> SubProcCollector:
-    runner = PopykaDockerComposeLauncher()
-    runner.start()
-    yield runner.collector
-    runner.stop()
+    launcher = PopykaDockerComposeLauncher()
+    launcher.start()
+    launcher.wait_until_popyka_started()
+    yield launcher.collector
+    launcher.stop()
 
 
 @system_test
@@ -190,39 +195,10 @@ def test_django_admin_login_with_default_config(
 
 @pytest.fixture
 def dc_popyka_invalid_config_is_directory() -> SubProcCollector:
-    dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
-    # Build
-    args = [
-        "docker",
-        "compose",
-        "--file",
-        str(dc_file.absolute()),
-        "build",
-        "--quiet",
-        "demo-popyka",
-    ]
-    subprocess.run(args=args, check=True)
-
-    # Up
-    args = [
-        "env",
-        "LAZYTOSTR_COMPACT=1",
-        "POPYKA_CONFIG=/",  # this is wrong and should make start fail
-        "docker",
-        "compose",
-        "--file",
-        str(dc_file.absolute()),
-        "up",
-        "--no-log-prefix",
-        "demo-popyka",
-    ]
-    collector = SubProcCollector(args=args).start()
-
-    yield collector
-
-    collector.kill()
-    collector.wait(timeout=20)
-    collector.join_threads()
+    launcher = PopykaDockerComposeLauncher(extra_envs=["POPYKA_CONFIG=/"])
+    launcher.start()
+    yield launcher.collector
+    launcher.stop()
 
 
 @system_test
