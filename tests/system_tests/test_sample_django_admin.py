@@ -45,6 +45,7 @@ def docker_compose_deps(kill_popyka, clean_data) -> SubProcCollector:
         "--file",
         str(dc_file.absolute()),
         "build",
+        "--quiet",
         "demo-db",
         "demo-django-admin",
     ]
@@ -91,17 +92,21 @@ def dc_popyka() -> SubProcCollector:
         "--file",
         str(dc_file.absolute()),
         "build",
+        "--quiet",
         "demo-popyka",
     ]
     subprocess.run(args=args, check=True)
 
     # Up
     args = [
+        "env",
+        "LAZYTOSTR_COMPACT=1",
         "docker",
         "compose",
         "--file",
         str(dc_file.absolute()),
         "up",
+        "--no-log-prefix",
         "demo-popyka",
     ]
     collector = SubProcCollector(args=args).start()
