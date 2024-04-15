@@ -9,8 +9,6 @@ from popyka.core import Processor, Wal2JsonV2Change
 from popyka.errors import ConfigError
 from popyka.logging import LazyToStr
 
-logger = logging.getLogger(__name__)
-
 
 class LogChangeProcessor(Processor):
     """
@@ -19,12 +17,14 @@ class LogChangeProcessor(Processor):
     This processor does not accept any configuration.
     """
 
+    logger = logging.getLogger(f"{__name__}.LogChangeProcessor")
+
     def setup(self):
         if self.config_generic:
             raise ConfigError("LogChangeProcessor filter does not accepts any configuration")
 
     def process_change(self, change: Wal2JsonV2Change):
-        logger.info("LogChangeProcessor: change: %s", LazyToStr(change))
+        self.logger.info("LogChangeProcessor: change: %s", LazyToStr(change))
 
 
 class ProduceToKafkaProcessor(Processor):
@@ -46,6 +46,8 @@ class ProduceToKafkaProcessor(Processor):
             - "client.id": client
     ```
     """
+
+    logger = logging.getLogger(f"{__name__}.ProduceToKafkaProcessor")
 
     # FIXME: DOC: document required configuration
 
@@ -71,7 +73,7 @@ class ProduceToKafkaProcessor(Processor):
         assert self._producer is not None
         self._producer.produce(topic=self._topic, value=json.dumps(change))
         self._producer.flush()
-        logger.debug("Message produced to Kafka was flush()'ed")
+        self.logger.debug("Message produced to Kafka was flush()'ed")
 
 
 class DumpToFileProcessor(Processor):
@@ -89,6 +91,8 @@ class DumpToFileProcessor(Processor):
             target_directory: "/tmp"
     ```
     """
+
+    logger = logging.getLogger(f"{__name__}.DumpToFileProcessor")
 
     # FIXME: DOC: document required configuration
 
@@ -113,6 +117,6 @@ class DumpToFileProcessor(Processor):
         assert self._target_directory is not None
         target_file = self._target_directory / f"popyka-dump-{self._run_id}-{self._serial:08d}.json"
         assert not target_file.exists()  # Since each time we have a different `self._run_id`, file shouldn't exist
-        logger.info("Wringing message to %s", target_file)
+        self.logger.info("Wringing message to %s", target_file)
         target_file.write_text(json.dumps(change, indent=4, sort_keys=True))
         self._serial += 1
