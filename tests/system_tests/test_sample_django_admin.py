@@ -143,6 +143,13 @@ class PopykaDockerComposeLauncher:
         self._collector.wait_for(f"will start_replication() slot={DOCKER_COMPOSE_DB_SLOT_NAME}", timeout=5)
         self._collector.wait_for("will consume_stream() adaptor=", timeout=1)
 
+    def wait_custom_config(self, custom_config: str):
+        # Check custom config was loaded
+        self._collector.wait_for(
+            f":popyka.config:Using custom config file. POPYKA_CONFIG={custom_config}",
+            timeout=10,
+        )
+
     def stop(self):
         assert self._collector is not None
         self._collector.kill()
@@ -239,6 +246,8 @@ def test_dc_popyka_invalid_config(
 def dc_popyka_valid_custom_config() -> SubProcCollector:
     launcher = PopykaDockerComposeLauncher(extra_envs=["POPYKA_CONFIG=/popyka-config/popyka-config-ignore-tables.yaml"])
     launcher.start()
+    launcher.wait_custom_config("/popyka-config/popyka-config-ignore-tables.yaml")
+    launcher.wait_until_popyka_started()
     yield launcher.collector
     launcher.stop()
 
@@ -250,16 +259,6 @@ def test_dc_popyka_valid_custom_config(
     consumer: KafkaThreadedConsumer,
 ):
     collector = dc_popyka_valid_custom_config
-
-    # Check custom config was loaded
-    collector.wait_for(
-        ":popyka.config:Using custom config file. POPYKA_CONFIG=/popyka-config/popyka-config-ignore-tables.yaml",
-        timeout=10,
-    )
-
-    # Wait until Popyka started
-    collector.wait_for(f"will start_replication() slot={DOCKER_COMPOSE_DB_SLOT_NAME}", timeout=5)
-    collector.wait_for("will consume_stream() adaptor=", timeout=1)
 
     br = mechanize.Browser()
     br.set_handle_robots(False)
