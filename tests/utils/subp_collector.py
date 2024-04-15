@@ -11,14 +11,16 @@ from popyka.builtin.processors import LogChangeProcessor
 
 logger = logging.getLogger(__name__)
 
+logger_stdout_to_list = logging.getLogger("STDOUT")
 
-def _read_into_list(buffered_reader: io.BufferedReader, target_list: list[str]):
+
+def stdout_to_list(buffered_reader: io.BufferedReader, target_list: list[str]):
     while True:
         line: bytes = buffered_reader.readline()
         if line in ("", b""):
             return
         line: str = line.decode("utf-8", errors="replace").rstrip()
-        logger.debug("> %s", line)
+        logger_stdout_to_list.debug(">>> %s", line)
         target_list.append(line)
 
 
@@ -28,6 +30,7 @@ class SubProcCollector:
         self._proc: subprocess.Popen | None = None
         self._stdout: list[str] = []
         self._thread_stdout: threading.Thread | None = None
+        self._thread_stderr: threading.Thread | None = None
         self._stdout_start_at: int = 0
 
     def poll(self) -> int | None:
@@ -44,7 +47,10 @@ class SubProcCollector:
         return self._stdout
 
     def join_threads(self):
+        assert self._thread_stdout is not None
+        assert self._thread_stderr is not None
         self._thread_stdout.join()
+        self._thread_stderr.join()
 
     def wait_for(self, text: str, timeout=30.0, from_beginning=False):
         assert timeout is not None
@@ -84,7 +90,7 @@ class SubProcCollector:
             for line_num in range(0 if from_beginning else self._stdout_start_at, len(self._stdout)):
                 if not from_beginning:
                     self._stdout_start_at = line_num + 1
-                logger.debug("wait_for_change('%s') - line: '%s'", self._stdout[line_num])
+                logger.debug("wait_for_change() - line: '%s'", self._stdout[line_num])
                 change = self._get_change(self._stdout[line_num])
                 if change is not None:
                     return change
@@ -93,9 +99,13 @@ class SubProcCollector:
         raise TimeoutError("Timeout. Change not found")
 
     def start(self) -> "SubProcCollector":
-        self._proc = subprocess.Popen(args=self._args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+        self._proc = subprocess.Popen(args=self._args, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         self._thread_stdout = threading.Thread(
-            target=_read_into_list, args=[self._proc.stdout, self._stdout], daemon=True
+            target=stdout_to_list, args=[self._proc.stdout, self._stdout], daemon=True
+        )
+        self._thread_stderr = threading.Thread(
+            target=stdout_to_list, args=[self._proc.stderr, self._stdout], daemon=True
         )
         self._thread_stdout.start()
+        self._thread_stderr.start()
         return self
