@@ -111,11 +111,11 @@ local-run:
 		POPYKA_KAFKA_CONF_DICT=$(LOCAL_POPYKA_KAFKA_CONF_DICT) \
 			./venv/bin/python3 -m popyka
 
-test:
+test:  ## Run most important and fast tests
 	$(VENVDIR)/bin/pytest -v
 
-test-all:
-	env EXPLORATION_TEST=1 SLOW_TEST=1 $(VENVDIR)/bin/pytest -v
+test-all:  ## Run all tests (except for system-tests)
+	env EXPLORATION_TEST=1 SLOW_TEST=1 CONTRACT_TEST=1 $(VENVDIR)/bin/pytest -v
 
 coverage:
 	coverage run --branch --source='popyka' $(VENVDIR)/bin/pytest -v
