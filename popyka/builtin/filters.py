@@ -58,7 +58,10 @@ class TableNameIgnoreFilter(Filter):
         self._ignore_regex = re.compile(ignore_regex)
 
     def filter(self, change: Wal2JsonV2Change) -> Filter.Result:
-        table_name = change["table"]
+        table_name = change.get("table")
+        if table_name is None:
+            return Filter.Result.CONTINUE
+
         if self._ignore_regex.fullmatch(table_name):
             return Filter.Result.IGNORE
         return Filter.Result.CONTINUE
