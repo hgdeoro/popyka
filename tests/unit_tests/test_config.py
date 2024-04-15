@@ -31,6 +31,16 @@ class TestDefaultConfig:
 
 
 class TestCustomConfig:
+    def test_default_when_config_file_env_is_empty_string(self, popyka_env_vars):
+        popyka_env_vars["POPYKA_CONFIG"] = ""
+        default_config = PopykaConfig.get_config(environment=popyka_env_vars)
+        assert default_config
+
+    def test_default_when_config_file_env_string_is_space_only(self, popyka_env_vars):
+        popyka_env_vars["POPYKA_CONFIG"] = "  "
+        default_config = PopykaConfig.get_config(environment=popyka_env_vars)
+        assert default_config
+
     def test_fails_file_does_not_exists(self, popyka_env_vars):
         popyka_env_vars["POPYKA_CONFIG"] = "/this/path/does/not/exists.yaml"
         with pytest.raises(ConfigError, match="Invalid config:.*POPYKA_CONFIG.*does not exists"):
@@ -42,7 +52,7 @@ class TestCustomConfig:
             PopykaConfig.get_config(environment=popyka_env_vars)
 
     def test_load_alternative(self, popyka_env_vars):
-        popyka_env_vars["POPYKA_CONFIG"] = (
+        popyka_env_vars["POPYKA_CONFIG"] = str(
             pathlib.Path(__file__).parent.parent / "resources" / "config-alternative.yaml"
         )
         config = PopykaConfig.get_config(environment=popyka_env_vars)

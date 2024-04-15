@@ -130,8 +130,8 @@ class PopykaConfig:
 
     @classmethod
     def get_config_file_path(cls, environment=None) -> pathlib.Path:
-        custom_config = environment.get("POPYKA_CONFIG")
-        if custom_config is None:
+        custom_config = environment.get("POPYKA_CONFIG", "").strip()
+        if not custom_config:
             config_path = pathlib.Path(__file__).parent / "popyka-default.yaml"
             return config_path
         else:
