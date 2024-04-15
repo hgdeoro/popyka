@@ -24,7 +24,7 @@ class LogChangeProcessor(Processor):
             raise ConfigError("LogChangeProcessor filter does not accepts any configuration")
 
     def process_change(self, change: Wal2JsonV2Change):
-        self.logger.info("LogChangeProcessor: change: %s", LazyToStr(change))
+        self.logger.info("Change received: %s", LazyToStr(change))
 
 
 class ProduceToKafkaProcessor(Processor):
