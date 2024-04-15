@@ -20,6 +20,9 @@ DOCKER_COMPOSE_DB_SLOT_NAME = "popyka"
 DOCKER_COMPOSE_KAFKA_TOPIC = "popyka"
 
 
+# FIXME: there is an insane amount of duplication of code here: fixture `dc_popyka_*`
+
+
 @pytest.fixture
 def kill_popyka():
     dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
