@@ -28,3 +28,15 @@ class TestDefaultConfig:
 
         for processor_config in config.processors:
             processor_config.instantiate()
+
+
+class TestCustomConfig:
+    def test_fails_file_does_not_exists(self, popyka_env_vars):
+        popyka_env_vars["POPYKA_CONFIG"] = "/this/path/does/not/exists.yaml"
+        with pytest.raises(ConfigError, match="Invalid config:.*POPYKA_CONFIG.*does not exists"):
+            PopykaConfig.get_config(environment=popyka_env_vars)
+
+    def test_fails_with_directory(self, popyka_env_vars):
+        popyka_env_vars["POPYKA_CONFIG"] = "/"
+        with pytest.raises(ConfigError, match="Invalid config:.*POPYKA_CONFIG.*is a directory"):
+            PopykaConfig.get_config(environment=popyka_env_vars)

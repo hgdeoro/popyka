@@ -1,5 +1,6 @@
 import dataclasses
 import importlib
+import logging
 import pathlib
 
 import yaml
@@ -7,6 +8,8 @@ import yaml
 from popyka.core import Filter, Processor
 from popyka.errors import ConfigError
 from popyka.interpolation import Interpolator
+
+logger = logging.getLogger(__name__)
 
 
 class FactoryMixin:
@@ -127,8 +130,20 @@ class PopykaConfig:
 
     @classmethod
     def get_config_file_path(cls, environment=None) -> pathlib.Path:
-        config_path = pathlib.Path(__file__).parent / "popyka-default.yaml"
-        return config_path
+        custom_config = environment.get("POPYKA_CONFIG")
+        if custom_config is None:
+            config_path = pathlib.Path(__file__).parent / "popyka-default.yaml"
+            return config_path
+        else:
+            logger.info("Using custom config file. POPYKA_CONFIG=%s", custom_config)
+            config_path = pathlib.Path(custom_config).absolute()
+            if not config_path.exists():
+                raise ConfigError(f"Invalid config: {custom_config} (POPYKA_CONFIG) does not exists")
+            if config_path.is_dir():
+                raise ConfigError(f"Invalid config: {custom_config} (POPYKA_CONFIG) is a directory")
+            if not config_path.is_file():
+                logger.warning("POPYKA_CONFIG=%s is not a regular file", custom_config)
+            return config_path
 
     @classmethod
     def get_config(cls, environment=None) -> "PopykaConfig":
