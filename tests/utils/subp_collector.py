@@ -7,9 +7,29 @@ import threading
 import time
 from functools import cached_property
 
+from popyka.core import Wal2JsonV2Change
+
 logger = logging.getLogger(__name__)
 
 logger_stdout_to_list = logging.getLogger("STDOUT")
+
+
+class AssertableChange(Wal2JsonV2Change):
+    def assert_table(self, table: str) -> "AssertableChange":
+        assert self["table"] == "django_session"
+        return self
+
+    def assert_insert(self) -> "AssertableChange":
+        assert self["action"] == "I"
+        return self
+
+    def assert_update(self) -> "AssertableChange":
+        assert self["action"] == "U"
+        return self
+
+    def assert_delete(self) -> "AssertableChange":
+        assert self["action"] == "D"
+        return self
 
 
 def stdout_to_list(buffered_reader: io.BufferedReader, target_list: list[str]):
@@ -92,7 +112,7 @@ class SubProcCollector:
                 logger.debug("wait_for_change() - line: '%s'", self._stdout[line_num])
                 change = self._get_change(self._stdout[line_num])
                 if change is not None:
-                    return change
+                    return AssertableChange(change)
             time.sleep(0.01)
 
         raise TimeoutError("Timeout. Change not found")

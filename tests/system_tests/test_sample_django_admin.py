@@ -139,9 +139,9 @@ def test_e2e(docker_compose_deps: SubProcCollector, dc_popyka: SubProcCollector)
     assert br.response().code == 200
     assert br.title() == "Site administration | Django site admin"
 
-    dc_popyka.wait_for('"table": "django_session"', timeout=5)
-    dc_popyka.wait_for('"table": "auth_user"', timeout=3)
-    dc_popyka.wait_for('"table": "django_session"', timeout=3)
+    dc_popyka.wait_for_change(timeout=5).assert_insert().assert_table("django_session")
+    dc_popyka.wait_for_change(timeout=5).assert_update().assert_table("auth_user")
+    dc_popyka.wait_for_change(timeout=5).assert_update().assert_table("django_session")
 
     consumer = KafkaConsumer(DOCKER_COMPOSE_KAFKA_BOOTSTRAP_SERVERS, DOCKER_COMPOSE_KAFKA_TOPIC)
     messages: list[confluent_kafka.Message] = consumer.wait_for_count(count=3, timeout=10)
