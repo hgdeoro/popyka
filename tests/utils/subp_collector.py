@@ -1,8 +1,13 @@
 import io
+import json
 import logging
+import re
 import subprocess
 import threading
 import time
+from functools import cached_property
+
+from popyka.builtin.processors import LogChangeProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +60,34 @@ class SubProcCollector:
                     return line
             time.sleep(0.01)
         raise TimeoutError(f"Timeout. Not found: {text}")
+
+    @cached_property
+    def _change_regex(self):
+        fqcn = f"{LogChangeProcessor.__module__}.{LogChangeProcessor.__qualname__}"
+        pattern = r"^[a-zA-Z+]+:" + fqcn + r":.*({.*})$"
+        return re.compile(pattern)
+
+    def _get_change(self, line: str) -> dict | None:
+        matched = self._change_regex.fullmatch(line)
+        if matched:
+            return json.loads(matched.group(1))
+
+    def wait_for_change(self, timeout=30.0, from_beginning=False):
+        assert timeout is not None
+        timeout = float(timeout)
+        start_time = time.monotonic()
+        print("Waiting for change...")
+        while time.monotonic() - start_time < timeout:
+            for line_num in range(0 if from_beginning else self._stdout_line_last_found, len(self._stdout)):
+                if not from_beginning:
+                    self._stdout_line_last_found = line_num
+
+                change = self._get_change(self._stdout[line_num])
+                if change is not None:
+                    return change
+
+            time.sleep(0.01)
+        raise TimeoutError("Timeout. Change not found")
 
     def start(self) -> "SubProcCollector":
         self._proc = subprocess.Popen(args=self._args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)

@@ -3,9 +3,20 @@ import time
 
 import pytest
 
-from popyka.builtin.processors import LogChangeProcessor
 from tests.conftest import slow_test
 from tests.utils.subp_collector import SubProcCollector
+
+OUTPUT = """
+line-0
+line-1
+line-2
+line-3
+line-4
+line-5
+line-6
+""".strip()
+
+OUTPUT_LINES = [_.strip() for _ in OUTPUT.splitlines() if _.strip()]
 
 
 @slow_test
@@ -31,23 +42,29 @@ def test_long():
 
 @pytest.fixture()
 def subp_instance() -> SubProcCollector:
-    sp = SubProcCollector(args=["/bin/sh", "-c", f"echo {OUTPUT}"])
+    sp = SubProcCollector(args=["/bin/bash", "-c", f"echo '{OUTPUT}'"])
     sp.start()
-    sp.wait(timeout=1)
+    assert sp.wait(timeout=1) == 0
     return sp
 
 
-OUTPUT = """
-line-0
-line-1
-line-2
-line-3
-line-4
-line-5
-line-6
-""".strip()
+def test_stdout_stderr(tmp_path: pathlib.Path):
+    python_script = tmp_path / "sample.py"
+    python_script.write_text(
+        """
+import sys
+print("this-is-stdout")
+print("this-is-stderr", file=sys.stderr)
+sys.exit(0)
+"""
+    )
 
-OUTPUT_LINES = [_.strip() for _ in OUTPUT.splitlines() if _.strip()]
+    sp = SubProcCollector(args=["python3", str(python_script.absolute())])
+    sp.start()
+    assert sp.wait(timeout=1) == 0
+    print(sp.stdout)
+    sp.wait_for("this-is-stdout", timeout=0.5, from_beginning=True)
+    sp.wait_for("this-is-stderr", timeout=0.5, from_beginning=True)
 
 
 class TestWaitFor:
@@ -59,6 +76,11 @@ class TestWaitFor:
         subp_instance.wait_for(OUTPUT_LINES[2], timeout=0.1)
         subp_instance.wait_for(OUTPUT_LINES[4], timeout=0.1)
         subp_instance.wait_for(OUTPUT_LINES[6], timeout=0.1)
+
+    def test_seek_advances(self, subp_instance: SubProcCollector):
+        subp_instance.wait_for(OUTPUT_LINES[-1], timeout=0.1)
+        with pytest.raises(TimeoutError):
+            subp_instance.wait_for(OUTPUT_LINES[-1], timeout=0.1)
 
     def test_fails_when_reversed_order(self, subp_instance: SubProcCollector):
         subp_instance.wait_for(OUTPUT_LINES[4], timeout=0.1)
@@ -76,65 +98,45 @@ class TestWaitFor:
             subp_instance.wait_for(OUTPUT_LINES[2], timeout=0.1)
 
 
-PYTHON_CODE_HELLO_WORLD = """
+class TestParseLogChangeProcessorOutput:
+    def test_run_python(self, tmp_path: pathlib.Path):
+        python_script = tmp_path / "sample.py"
+        python_script.write_text(
+            """
 print("HELLO")
 print("WORLD")
 """
+        )
 
+        sp = SubProcCollector(args=["python3", str(python_script.absolute())])
+        sp.start()
+        assert sp.wait(timeout=1) == 0
+        print(sp.stdout)
+        sp.wait_for("HELLO", timeout=0.5)
+        sp.wait_for("WORLD", timeout=0.5)
 
-PYTHON_CODE_LOG_CHANGE_PROCESSOR = """
+    PYTHON_CODE_LOG_CHANGE_PROCESSOR = """
 import logging
 logging.basicConfig(level=logging.INFO)
 
 from popyka.builtin.processors import LogChangeProcessor
 lcp = LogChangeProcessor(config_generic={})
-lcp.process_change(change={"key": "value"})
-"""
+lcp.process_change(change={"key": "some-value"})
+    """
 
-
-class TestParseLogChangeProcessorOutput:
-    def test_use_lcp_directly(self):
-        lcp = LogChangeProcessor(config_generic={})
-        lcp.process_change(change={"key": "value"})
-
-    def test_hello_world(self, tmp_path: pathlib.Path):
+    def test_wait_for_change(self, tmp_path: pathlib.Path):
         python_script = tmp_path / "sample.py"
-        python_script.write_text(PYTHON_CODE_HELLO_WORLD)
-
-        sp = SubProcCollector(args=["python3", str(python_script.absolute())])
-        sp.start()
-        sp.wait(timeout=1)
-        print(sp.stdout)
-        sp.wait_for("HELLO", timeout=0.5)
-        sp.wait_for("WORLD", timeout=0.5)
-
-    def test_python_code_lcp_works(self, tmp_path: pathlib.Path):
-        python_script = tmp_path / "sample.py"
-        python_script.write_text(PYTHON_CODE_LOG_CHANGE_PROCESSOR)
+        python_script.write_text(self.PYTHON_CODE_LOG_CHANGE_PROCESSOR)
 
         sp = SubProcCollector(
             args=["env", "PYTHONPATH=.", "LAZYTOSTR_COMPACT=1", "python3", str(python_script.absolute())]
         )
         sp.start()
-        sp.wait(timeout=1)
+        assert sp.wait(timeout=1) == 0
         print(sp.stdout)
-        sp.wait_for("INFO:popyka.builtin.processors.LogChangeProcessor:LogChangeProcessor", timeout=0.5)
 
+        change = sp.wait_for_change(timeout=0.1)
+        assert change == {"key": "some-value"}
 
-PYTHON_CODE_STDOUT_STDERR = """
-import sys
-print("this-is-stdout")
-print("this-is-stderr", file=sys.stderr)
-"""
-
-
-def test_stdout_stderr(tmp_path: pathlib.Path):
-    python_script = tmp_path / "sample.py"
-    python_script.write_text(PYTHON_CODE_STDOUT_STDERR)
-
-    sp = SubProcCollector(args=["python3", str(python_script.absolute())])
-    sp.start()
-    sp.wait(timeout=1)
-    print(sp.stdout)
-    sp.wait_for("this-is-stdout", timeout=0.5, from_beginning=True)
-    sp.wait_for("this-is-stderr", timeout=0.5, from_beginning=True)
+        with pytest.raises(TimeoutError):
+            sp.wait_for_change(timeout=0.1)
