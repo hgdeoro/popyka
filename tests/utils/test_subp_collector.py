@@ -1,7 +1,9 @@
+import pathlib
 import time
 
 import pytest
 
+from popyka.builtin.processors import LogChangeProcessor
 from tests.conftest import slow_test
 from tests.utils.subp_collector import SubProcCollector
 
@@ -74,3 +76,52 @@ class TestWaitFor:
             subp_instance.wait_for("this-line-does-not-exists", timeout=0.1)
         with pytest.raises(TimeoutError):
             subp_instance.wait_for(OUTPUT_LINES[2], timeout=0.1)
+
+
+PYTHON_CODE_HELLO_WORLD = """
+print("HELLO")
+print("WORLD")
+"""
+
+
+PYTHON_CODE_LOG_CHANGE_PROCESSOR = """
+import logging
+logging.basicConfig(level=logging.INFO)
+
+from popyka.builtin.processors import LogChangeProcessor
+lcp = LogChangeProcessor(config_generic={})
+lcp.process_change(change={"key": "value"})
+"""
+
+ROOT_DIR = pathlib.Path(__file__)
+
+
+class TestParseLogChangeProcessorOutput:
+    def test_use_lcp_directly(self):
+        lcp = LogChangeProcessor(config_generic={})
+        lcp.process_change(change={"key": "value"})
+
+    def test_hello_world(self, tmp_path: pathlib.Path):
+        python_script = tmp_path / "sample.py"
+        python_script.write_text(PYTHON_CODE_HELLO_WORLD)
+
+        sp = SubProcCollector(args=["python3", str(python_script.absolute())])
+        sp.start()
+        sp.wait(timeout=1)
+        print(sp.stdout)
+        print(sp.stderr)
+        sp.wait_for("HELLO", timeout=0.5)
+        sp.wait_for("WORLD", timeout=0.5)
+
+    def test_python_code_lcp_works(self, tmp_path: pathlib.Path):
+        python_script = tmp_path / "sample.py"
+        python_script.write_text(PYTHON_CODE_LOG_CHANGE_PROCESSOR)
+
+        sp = SubProcCollector(
+            args=["env", "PYTHONPATH=.", "LAZYTOSTR_COMPACT=1", "python3", str(python_script.absolute())]
+        )
+        sp.start()
+        sp.wait(timeout=1)
+        print(sp.stdout)
+        print(sp.stderr)
+        sp.wait_for("INFO:popyka.builtin.processors.LogChangeProcessor:LogChangeProcessor", timeout=0.5)
