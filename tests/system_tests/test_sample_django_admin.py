@@ -1,5 +1,6 @@
 import logging
 import pathlib
+import subprocess
 
 import confluent_kafka
 import mechanize
@@ -20,9 +21,21 @@ DOCKER_COMPOSE_KAFKA_TOPIC = "popyka"
 
 
 @pytest.fixture
-def dc_deps(drop_slot_fn) -> SubProcCollector:
-    kafka_admin = KafkaAdmin(DOCKER_COMPOSE_KAFKA_BOOTSTRAP_SERVERS)
+def kill_popyka():
+    dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
+    args = ["docker", "compose", "--file", str(dc_file.absolute()), "kill", "demo-popyka"]
+    subprocess.run(args, check=True)
 
+
+@pytest.fixture
+def clean_data(drop_slot_fn):
+    kafka_admin = KafkaAdmin(DOCKER_COMPOSE_KAFKA_BOOTSTRAP_SERVERS)
+    kafka_admin.delete_all_topics()
+    drop_slot_fn(DOCKER_COMPOSE_POSTGRESQL_DSN)
+
+
+@pytest.fixture
+def docker_compose_deps(kill_popyka, clean_data) -> SubProcCollector:
     dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
     args = [
         "docker",
@@ -44,9 +57,6 @@ def dc_deps(drop_slot_fn) -> SubProcCollector:
 
     # TODO: busy wait until all dependencies are up
 
-    kafka_admin.delete_all_topics()
-    drop_slot_fn(DOCKER_COMPOSE_POSTGRESQL_DSN)
-
     # To have a predictable environment, we can create new slot + topic (this was the initial approach): but...
     #   1. there is a limited number of slots that can be created on postgresql... if slots are not dropped,
     #      this cause problems when running tests many times.
@@ -57,12 +67,9 @@ def dc_deps(drop_slot_fn) -> SubProcCollector:
 
     yield collector
 
-    kafka_admin.delete_all_topics()
-    drop_slot_fn(DOCKER_COMPOSE_POSTGRESQL_DSN)
-
 
 @pytest.fixture
-def dc_popyka(monkeypatch) -> SubProcCollector:
+def dc_popyka() -> SubProcCollector:
     dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
     args = [
         "docker",
@@ -87,7 +94,7 @@ def dc_popyka(monkeypatch) -> SubProcCollector:
 
 
 @system_test
-def test_e2e(dc_deps: SubProcCollector, dc_popyka: SubProcCollector):
+def test_e2e(docker_compose_deps: SubProcCollector, dc_popyka: SubProcCollector):
     br = mechanize.Browser()
     br.set_handle_robots(False)
 
