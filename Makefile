@@ -149,17 +149,29 @@ clean-docker:
 	docker container prune -f
 	docker volume prune -af
 
-release-patch:
-	$(VENVDIR)/bin/hatch version $$($(VENVDIR)/bin/hatch version | cut -d. -f1,2,3)
-	git commit popyka/__version__.py -m "Bump version"
-	git tag -a v$$($(VENVDIR)/bin/hatch version) -m "New version: $$($(VENVDIR)/bin/hatch version)"
-	$(VENVDIR)/bin/hatch version dev
-	git commit popyka/__version__.py -m "Bump version"
+version-incr-dev:  ## Increment `.dev` version
+	$(VENVDIR)/bin/hatch version | egrep '\.dev[[:digit:]]+$'   # assert that we're in `.dev` version
+	$(VENVDIR)/bin/hatch version dev                            # increment `.dev`
 
-release-minor:
-	$(VENVDIR)/bin/hatch version $$($(VENVDIR)/bin/hatch version | cut -d. -f1,2,3)
-	$(VENVDIR)/bin/hatch version minor
-	git commit popyka/__version__.py -m "Bump version"
+	git commit popyka/__version__.py -m "Bump version to $$($(VENVDIR)/bin/hatch version)"
+	# git tag -a v$$($(VENVDIR)/bin/hatch version) -m "New version: $$($(VENVDIR)/bin/hatch version)" <<< SHOULD WE?
+
+release-patch:  ## Release new version (using same PATCH) based on current .dev* version
+	$(VENVDIR)/bin/hatch version | egrep '\.dev[[:digit:]]+$' # assert that we're in `.dev` version
+	$(VENVDIR)/bin/hatch version release                      # release: remove `.dev`
+
+	git commit popyka/__version__.py -m "Bump version to $$($(VENVDIR)/bin/hatch version)"
 	git tag -a v$$($(VENVDIR)/bin/hatch version) -m "New version: $$($(VENVDIR)/bin/hatch version)"
-	$(VENVDIR)/bin/hatch version dev
-	git commit popyka/__version__.py -m "Bump version"
+
+	$(VENVDIR)/bin/hatch version patch,dev
+	git commit popyka/__version__.py -m "Bump version to $$($(VENVDIR)/bin/hatch version)"
+
+release-minor:  ## Release new version (incrementing MINOR) based on current .dev* version
+	$(VENVDIR)/bin/hatch version | egrep '\.dev[[:digit:]]+$' # assert that we're in `.dev` version
+	$(VENVDIR)/bin/hatch version release,minor                # release: remove `.dev`, incr `minor`
+
+	git commit popyka/__version__.py -m "Bump version to $$($(VENVDIR)/bin/hatch version)"
+	git tag -a v$$($(VENVDIR)/bin/hatch version) -m "New version: $$($(VENVDIR)/bin/hatch version)"
+
+	$(VENVDIR)/bin/hatch version patch,dev
+	git commit popyka/__version__.py -m "Bump version to $$($(VENVDIR)/bin/hatch version)"
