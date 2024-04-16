@@ -150,7 +150,7 @@ clean-docker:
 	docker volume prune -af
 
 version-incr-dev:  ## Increment `.dev` version
-	$(VENVDIR)/bin/hatch version | egrep '\.dev[[:digit:]]+$'   # assert that we're in `.dev` version
+	$(VENVDIR)/bin/hatch version | egrep '\.dev[[:digit:]]+$$'  # assert that we're in `.dev` version
 	$(VENVDIR)/bin/hatch version dev                            # increment `.dev`
 
 	git commit popyka/__version__.py -m "Bump version to $$($(VENVDIR)/bin/hatch version)"
