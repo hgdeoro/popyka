@@ -41,8 +41,8 @@ TODO (the list is still changing):
 1. create mechanism to allow inclusion of user's Python code (processors)
 1. _dev experience_: generate documentation of public API
 1. _ci/cd_: publish docker image to public repository
-1. _ci/cd_: ~~add coverage &~~ badge
-1. _ci/cd_: ~~build image from release tag~~ **DONE**
+1. ~~_ci/cd_: add coverage &~~ badge
+1. ~~_ci/cd_: build image from release tag~~ **DONE**
 1. ~~_ci/cd_: run unittests~~ **DONE**
 1. ~~add mechanism to overwrite path to configuration file~~ **DONE**
 1. ~~implement e2e test~~ **DONE**
