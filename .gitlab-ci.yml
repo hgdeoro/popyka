@@ -10,19 +10,27 @@ cache:
     - .cache/pip
     - .cache/pre-commit
 
-stages: [lint, release]
+stages: [lint, test, release]
 
 before_script:
   - python --version ; pip --version  # For debugging
-  - pip install virtualenv
-  - virtualenv venv
+  - python -m venv venv
+  - which python
   - source venv/bin/activate
-  - ./venv/bin/pip install pre-commit
+  - pip install pip-tools pre-commit
+  - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
 
 lint:
   stage: lint
   script:
     - pre-commit run -a
+
+test:
+  stage: test
+  script:
+    - coverage run --branch --source='popyka' $(which pytest) -v tests/unit_tests/
+    - coverage report --skip-empty
+    - coverage html --skip-empty
 
 release:
   stage: release
