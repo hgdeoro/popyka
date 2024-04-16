@@ -28,16 +28,45 @@ Tox results:
 ![py312-pg15](https://img.shields.io/badge/py3.12%2Bpg15-passed-green)
 ![py312-pg16](https://img.shields.io/badge/py3.12%2Bpg16-passed-green)
 
-# MVP (v1.0)
+# MVP (work in progress)
 
 * Supported versions of **Python**: ~~3.8~~, ~~3.9~~, `3.10`, `3.11`, `3.12`
 * Supported versions of **PostgreSql**: `12`, `13`, `14`, `15`, `16`
 
-### Status
+## Features
+
+* Default configuration ready to use for trying out locally.
+* Reference sample project.
+* Configuration file accept bash-style environment variable interpolation.
+* Docker image available in GitLab Docker Registry
+
+### Configuration
+
+The path to the configuration file can be specified using the `POPYKA_CONFIG` variable.
+
+### Reference & sample projects
+
+#### Django Admin
+
+```shell
+$ cd samples/django-admin             # cd into sample project
+$ docker compose up -d                # bring all the services up (you might need to repeat this command)
+$ docker compose logs -f demo-popyka  # to see the CDC working
+```
+
+Navigate to [django admin](http://localhost:8081/admin/) and login using `admin`:`admin`.
+
+You can see Kafka contents using [RedPanda console](http://localhost:8082/).
+
+* Code & README: [samples/django-admin](./samples/django-admin/)
+* [docker-compose.yml](./samples/django-admin/docker-compose.yml)
+* Default config: [popyka-default.yaml](./popyka/popyka-default.yaml)
+* Alternative config: [popyka-config-ignore-tables.yaml](./samples/django-admin/popyka-config/popyka-config-ignore-tables.yaml)
+
+## Status
 
 The MVP is under development on the `main` branch.
 
-TODO (the list is still changing):
 1. create mechanism to allow inclusion of user's Python code (processors)
 1. _dev experience_: generate documentation of public API
 1. _ci/cd_: publish docker image to public repository
