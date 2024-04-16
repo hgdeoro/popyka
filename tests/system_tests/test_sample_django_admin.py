@@ -23,14 +23,14 @@ DOCKER_COMPOSE_KAFKA_TOPIC = "popyka"
 
 
 @pytest.fixture
-def kill_popyka():
+def kill_popyka(docker_compose_deps):
     dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
     args = ["docker", "compose", "--file", str(dc_file.absolute()), "kill", "demo-popyka"]
     subprocess.run(args, check=True)
 
 
 @pytest.fixture
-def clean_data(drop_slot_fn, kafka_admin):
+def clean_data(drop_slot_fn, kafka_admin, docker_compose_deps):
     kafka_admin.delete_all_topics()
     drop_slot_fn(DOCKER_COMPOSE_POSTGRESQL_DSN)
 
@@ -49,7 +49,7 @@ def consumer(clean_data, kafka_admin) -> KafkaThreadedConsumer:
 
 
 @pytest.fixture
-def docker_compose_deps(kill_popyka, clean_data) -> SubProcCollector:
+def docker_compose_deps() -> SubProcCollector:
     dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
 
     # Build
@@ -94,6 +94,11 @@ def docker_compose_deps(kill_popyka, clean_data) -> SubProcCollector:
     # and we're testing default configuration... If tests pass, the demo app should work as is.
 
     yield collector
+
+
+@pytest.fixture
+def setup_env(kill_popyka, clean_data, docker_compose_deps):
+    yield
 
 
 def django_admin_login():
@@ -187,7 +192,7 @@ def dc_popyka_default_config() -> SubProcCollector:
 
 @system_test
 def test_django_admin_login_with_default_config(
-    docker_compose_deps: SubProcCollector, dc_popyka_default_config: SubProcCollector, consumer: KafkaThreadedConsumer
+    setup_env, dc_popyka_default_config: SubProcCollector, consumer: KafkaThreadedConsumer
 ):
     django_admin_login()
 
@@ -213,7 +218,7 @@ def dc_popyka_invalid_config_is_directory() -> SubProcCollector:
 
 @system_test
 def test_dc_popyka_invalid_config_is_directory(
-    docker_compose_deps: SubProcCollector,
+    setup_env,
     dc_popyka_invalid_config_is_directory: SubProcCollector,
     consumer: KafkaThreadedConsumer,
 ):
@@ -235,7 +240,7 @@ def dc_popyka_invalid_config() -> SubProcCollector:
 
 @system_test
 def test_dc_popyka_invalid_config(
-    docker_compose_deps: SubProcCollector, dc_popyka_invalid_config: SubProcCollector, consumer: KafkaThreadedConsumer
+    setup_env, dc_popyka_invalid_config: SubProcCollector, consumer: KafkaThreadedConsumer
 ):
     dc_popyka_invalid_config.wait_for(
         "popyka.errors.ConfigError: LogChangeProcessor filter does not accepts any configuration", timeout=10
@@ -257,7 +262,7 @@ def dc_popyka_valid_custom_config() -> SubProcCollector:
 
 @system_test
 def test_dc_popyka_valid_custom_config(
-    docker_compose_deps: SubProcCollector,
+    setup_env,
     dc_popyka_valid_custom_config: SubProcCollector,
     consumer: KafkaThreadedConsumer,
 ):
