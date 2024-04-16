@@ -50,7 +50,10 @@ The path to the configuration file can be specified using the `POPYKA_CONFIG` va
 
 ```shell
 $ cd samples/django-admin             # cd into sample project
-$ docker compose up -d                # bring all the services up (you might need to repeat this command)
+
+$ docker compose up -d                # bring all the services up
+                                      # (you might need to repeat this command)
+
 $ docker compose logs -f demo-popyka  # to see the CDC working
 ```
 
