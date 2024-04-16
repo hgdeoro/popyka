@@ -89,13 +89,15 @@ LOCAL_POPYKA_KAFKA_CONF_DICT = '{"bootstrap.servers": "localhost:9094","client.i
 
 # ----------
 
-# FIXME: test this target! It's intended to let new users easily try Popyka, this needs to work well.
-#docker-popyka-run-gitlab:
-#	# `popyka_default` is the network name created by docker compose # TODO: use predictable network name
-#	docker run --rm -ti --network popyka_default \
-#		-e POPYKA_DB_DSN=$(DOCKER_COMPOSE_POPYKA_DB_DSN_SAMPLE_1) \
-#		-e POPYKA_KAFKA_CONF_DICT=$(DOCKER_COMPOSE_POPYKA_KAFKA_CONF_DICT) \
-#			registry.gitlab.com/hgdeoro/popyka/test
+DOCKER_IMAGE_TAG := registry.gitlab.com/hgdeoro/popyka:v0.2.0
+
+docker-popyka-run-gitlab: docker-compose-up
+	docker pull $(DOCKER_IMAGE_TAG)
+	docker run --rm -ti \
+		--network popyka_default \
+		-e POPYKA_DB_DSN=$(DOCKER_COMPOSE_POPYKA_DB_DSN_SAMPLE_1) \
+		-e POPYKA_KAFKA_BOOTSTRAP_SERVERS=kafka:9092 \
+			$(DOCKER_IMAGE_TAG)
 
 # ----------
 
