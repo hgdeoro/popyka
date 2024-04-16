@@ -6,3 +6,4 @@ dist/
 .tox/
 tox-result.json
 .coverage
+coverage.xml
