@@ -9,3 +9,4 @@ hatch
 pytest-docker
 mechanize
 coverage
+pytest-cov

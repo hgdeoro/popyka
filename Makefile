@@ -127,6 +127,15 @@ coverage:
 	coverage report --skip-empty
 	coverage html --skip-empty
 
+coverage-ci:
+	pytest \
+		--cov=popyka/ \
+		--cov-report term \
+		--cov-report html \
+		--cov-report xml:coverage.xml \
+		--cov-branch \
+		tests/unit_tests/
+
 # ----------
 
 psql: ## connect to default test database

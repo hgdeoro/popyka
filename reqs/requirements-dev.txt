@@ -27,8 +27,10 @@ click==8.1.7
     #   black
     #   hatch
     #   userpath
-coverage==7.4.4
-    # via -r reqs/requirements-dev.in
+coverage[toml]==7.4.4
+    # via
+    #   -r reqs/requirements-dev.in
+    #   pytest-cov
 cryptography==42.0.5
     # via secretstorage
 decorator==5.1.1
@@ -146,7 +148,10 @@ pygments==2.17.2
 pytest==8.1.1
     # via
     #   -r reqs/requirements-dev.in
+    #   pytest-cov
     #   pytest-docker
+pytest-cov==5.0.0
+    # via -r reqs/requirements-dev.in
 pytest-docker==3.1.1
     # via -r reqs/requirements-dev.in
 pyyaml==6.0.1

@@ -28,9 +28,18 @@ lint:
 test:
   stage: test
   script:
-    - coverage run --branch --source='popyka' $(which pytest) -v tests/unit_tests/
-    - coverage report --skip-empty
-    - coverage html --skip-empty
+    - pytest \
+        --cov=popyka/ \
+        --cov-report term \
+        --cov-report html \
+        --cov-report xml:coverage.xml \
+        --cov-branch \
+        tests/unit_tests/
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
 
 release:
   stage: release
