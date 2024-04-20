@@ -128,3 +128,6 @@ class SubProcCollector:
         self._thread_stdout.start()
         self._thread_stderr.start()
         return self
+
+    def __str__(self):
+        return f"SubProcCollector[{' '.join(self._args)}]"

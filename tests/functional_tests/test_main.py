@@ -1,5 +1,6 @@
 import logging
 import pathlib
+import subprocess
 import uuid
 
 import pytest
@@ -11,16 +12,28 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
-def post_kill() -> list[SubProcCollector]:
-    to_kill: list[SubProcCollector] = []
-    yield to_kill
-    for subp in to_kill:
-        subp.kill()
-        subp.wait()
+def subp_coll() -> type[SubProcCollector]:
+    subp_coll_instances: list[SubProcCollector] = []
+
+    def instantiate(*args, **kwargs):
+        instance = SubProcCollector(*args, **kwargs)
+        subp_coll_instances.append(instance)
+        return instance
+
+    yield instantiate
+
+    for _ in subp_coll_instances:
+        _.kill()
+
+    for _ in subp_coll_instances:
+        try:
+            _.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            logger.exception(f"Ignoring TimeoutExpired for {_}")
 
 
 def test_main(
-    dsn: str, conn, drop_slot, table_name: str, popyka_env_vars, monkeypatch, post_kill: list[SubProcCollector]
+    dsn: str, conn, drop_slot, table_name: str, popyka_env_vars, monkeypatch, subp_coll: type[SubProcCollector]
 ):
     config_file = pathlib.Path(__file__).parent.parent / "resources" / "config-test-main.yaml"
     popyka_env_vars["POPYKA_CONFIG"] = str(config_file.absolute())
@@ -30,8 +43,7 @@ def test_main(
         monkeypatch.setenv(key, value)
 
     args = ["python3", "-m", "popyka"]
-    main = SubProcCollector(args=args)
-    post_kill.append(main)
+    main = subp_coll(args=args)
 
     main.start()
     main.wait_for("Using custom config file")
