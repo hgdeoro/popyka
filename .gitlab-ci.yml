@@ -34,8 +34,6 @@ lint:
           - .pre-commit-config.yaml
       paths:
         - .cache/pre-commit
-  rules:  # temporary
-    - when: never
 
 build-ci-pg12:
   stage: build
@@ -141,8 +139,6 @@ unit-test:
           - .pre-commit-config.yaml
       paths:
         - .cache/pre-commit
-  rules:  # temporary
-    - when: never
 
 functional-test-py310-pg12:
   image: python:3.10
