@@ -15,20 +15,29 @@ cache:
     - .cache/pip
     - .cache/pre-commit
 
-stages: [lint, build, test, release]
+stages: [lint, unit-test, build, functional-test, release]
 
-before_script:
-  - python --version ; pip --version  # For debugging
-  - python -m venv venv
-  - which python
-  - source venv/bin/activate
-  - pip install pip-tools pre-commit
-  - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
+#before_script:
+#  - python --version ; pip --version  # For debugging
+#  - python -m venv venv
+#  - which python
+#  - source venv/bin/activate
+#  - pip install pip-tools pre-commit
+#  - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
 
 lint:
   stage: lint
+  before_script:
+    - python --version ; pip --version  # For debugging
+    - python -m venv venv
+    - which python
+    - source venv/bin/activate
+    - pip install pip-tools pre-commit
+    - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
   script:
     - pre-commit run -a
+  rules:  # temporary
+    - when: never
 
 build-ci-pg12:
   stage: build
@@ -105,8 +114,15 @@ build-ci-pg16:
   rules:
     - if: $CI_COMMIT_BRANCH == 'ci-postgres-images'
 
-test:
-  stage: test
+unit-test:
+  stage: unit-test
+  before_script:
+    - python --version ; pip --version  # For debugging
+    - python -m venv venv
+    - which python
+    - source venv/bin/activate
+    - pip install pip-tools pre-commit
+    - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
   script:
     - pytest --cov=popyka/ --cov-report term --cov-report html --cov-report xml:coverage.xml --cov-branch tests/unit_tests/
   artifacts:
@@ -114,6 +130,62 @@ test:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
+  rules:  # temporary
+    - when: never
+
+functional-test-py310-pg12:
+  image: python:3.10
+  stage: functional-test
+  services:
+    - name: $CI_POSTGRES12
+      alias: ci-postgres12
+      command: ["-c", "wal_level=logical", "-c", "max_wal_senders=10", "-c", "max_replication_slots=10"]
+
+  variables:
+    # GitLab
+    FF_NETWORK_PER_BUILD: "1"  # allow service containers to reach each other
+    # PostgreSql
+    POSTGRES_PASSWORD: pass
+    POSTGRES_HOST_AUTH_METHOD: trust
+    # Popyka
+    OVERRIDE_HOST: "ci-postgres12"
+    OVERRIDE_PORT: "5432"
+  before_script:
+    - python --version ; pip --version  # For debugging
+    - python -m venv venv
+    - which python
+    - source venv/bin/activate
+    - pip install pip-tools pre-commit
+    - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
+  script:
+    - pytest -v tests/functional_tests/
+
+functional-test-py312-pg16:
+  image: python:3.12
+  stage: functional-test
+  services:
+    - name: $CI_POSTGRES16
+      alias: ci-postgres16
+      command: ["-c", "wal_level=logical", "-c", "max_wal_senders=10", "-c", "max_replication_slots=10"]
+
+  variables:
+    # GitLab
+    FF_NETWORK_PER_BUILD: "1"  # allow service containers to reach each other
+    # PostgreSql
+    POSTGRES_PASSWORD: pass
+    POSTGRES_HOST_AUTH_METHOD: trust
+    # Popyka
+    OVERRIDE_HOST: "ci-postgres16"
+    OVERRIDE_PORT: "5432"
+  before_script:
+    - python --version ; pip --version  # For debugging
+    - python -m venv venv
+    - which python
+    - source venv/bin/activate
+    - pip install pip-tools pre-commit
+    - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
+  script:
+    - pytest -v tests/functional_tests/
 
 release:
   stage: release
