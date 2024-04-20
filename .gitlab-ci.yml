@@ -33,8 +33,6 @@ lint:
           - .pre-commit-config.yaml
       paths:
         - .cache/pre-commit
-  rules:
-    - when: never
 
 build-ci-pg12:
   stage: build
@@ -134,8 +132,6 @@ unit-test:
           - reqs/requirements-prod.txt
       paths:
         - .cache/pip
-  rules:
-    - when: never
 
 functional-test-py310-pg12:
   image: python:3.10
@@ -169,8 +165,6 @@ functional-test-py310-pg12:
         prefix: py310
       paths:
         - .cache/pip
-  rules:
-    - when: never
 
 functional-test-py312-pg16:
   image: python:3.12
@@ -203,8 +197,6 @@ functional-test-py312-pg16:
           - reqs/requirements-prod.txt
       paths:
         - .cache/pip
-  rules:
-    - when: never
 
 exploration-contract-test-py312-pg16:
   image: python:3.12
@@ -278,4 +270,3 @@ release:
   rules:
     - if: $CI_COMMIT_TAG
     # - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-    - when: never
