@@ -133,13 +133,23 @@ unit-test:
       paths:
         - .cache/pip
 
-functional-test-py310-pg12:
+test-py310-pg12:
   image: python:3.10
   stage: test
   services:
     - name: $CI_POSTGRES12
       alias: ci-postgres12
       command: ["-c", "wal_level=logical", "-c", "max_wal_senders=10", "-c", "max_replication_slots=10"]
+    - name: bitnami/kafka:3.5
+      alias: kafka
+      variables:
+        KAFKA_CFG_NODE_ID: "0"
+        KAFKA_CFG_PROCESS_ROLES: "controller,broker"
+        KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "0@kafka:9093"
+        KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+        KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+        KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+        KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
   variables:
     # GitLab
     FF_NETWORK_PER_BUILD: "1"  # allow service containers to reach each other
@@ -149,6 +159,10 @@ functional-test-py310-pg12:
     # Popyka
     OVERRIDE_HOST: "ci-postgres12"
     OVERRIDE_PORT: "5432"
+    OVERRIDE_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    EXPLORATION_TEST: "1"
+    CONTRACT_TEST: "1"
+    SLOW_TEST: "1"
   before_script:
     - which python ; python --version ; pip --version  # For debugging
     - python -m venv venv
@@ -156,7 +170,7 @@ functional-test-py310-pg12:
     - pip install pip-tools
     - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
   script:
-    - pytest -v tests/functional_tests/
+    - pytest -v tests/functional_tests/ tests/exploration_tests/ tests/contract_tests/
   cache:
     - key:
         files:
@@ -166,39 +180,7 @@ functional-test-py310-pg12:
       paths:
         - .cache/pip
 
-functional-test-py312-pg16:
-  image: python:3.12
-  stage: test
-  services:
-    - name: $CI_POSTGRES16
-      alias: ci-postgres16
-      command: ["-c", "wal_level=logical", "-c", "max_wal_senders=10", "-c", "max_replication_slots=10"]
-  variables:
-    # GitLab
-    FF_NETWORK_PER_BUILD: "1"  # allow service containers to reach each other
-    # PostgreSql
-    POSTGRES_PASSWORD: pass
-    POSTGRES_HOST_AUTH_METHOD: trust
-    # Popyka
-    OVERRIDE_HOST: "ci-postgres16"
-    OVERRIDE_PORT: "5432"
-  before_script:
-    - which python ; python --version ; pip --version  # For debugging
-    - python -m venv venv
-    - source venv/bin/activate
-    - pip install pip-tools
-    - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
-  script:
-    - pytest -v tests/functional_tests/
-  cache:
-    - key:
-        files:
-          - reqs/requirements-dev.txt
-          - reqs/requirements-prod.txt
-      paths:
-        - .cache/pip
-
-exploration-contract-test-py312-pg16:
+test-py312-pg16:
   image: python:3.12
   stage: test
   services:
@@ -235,7 +217,7 @@ exploration-contract-test-py312-pg16:
     - pip install pip-tools
     - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
   script:
-    - pytest -v tests/exploration_tests/ tests/contract_tests/
+    - pytest -v tests/functional_tests/ tests/exploration_tests/ tests/contract_tests/
   cache:
     - key:
         files:
