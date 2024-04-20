@@ -72,7 +72,7 @@ The MVP is under development on the `main` branch.
 
 1. create mechanism to allow inclusion of user's Python code (processors)
 1. _dev experience_: generate documentation of public API
-1. _ci/cd_: run system tests using docker image
+1. ~~_ci/cd_: run system tests~~ **DONE**
 1. ~~_ci/cd_: publish docker image to public repository~~ **DONE**
 1. ~~_ci/cd_: add coverage &~~ badge
 1. ~~_ci/cd_: build image from release tag~~ **DONE**
