@@ -1,4 +1,4 @@
-FROM postgres:16
+FROM docker.io/library/postgres:16
 
 ENV DEBIAN_FRONTEND=noninteractive
 
