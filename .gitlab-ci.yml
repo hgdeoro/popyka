@@ -14,9 +14,8 @@ lint:
   image: python:3.12
   stage: lint
   before_script:
-    - python --version ; pip --version  # For debugging
+    - which python ; python --version ; pip --version  # For debugging
     - python -m venv venv
-    - which python
     - source venv/bin/activate
     - pip install pip-tools pre-commit
     - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
@@ -114,9 +113,8 @@ unit-test:
   image: python:3.12
   stage: unit-test
   before_script:
-    - python --version ; pip --version  # For debugging
+    - which python ; python --version ; pip --version  # For debugging
     - python -m venv venv
-    - which python
     - source venv/bin/activate
     - pip install pip-tools
     - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
@@ -152,10 +150,10 @@ functional-test-py310-pg12:
     OVERRIDE_HOST: "ci-postgres12"
     OVERRIDE_PORT: "5432"
   before_script:
-    - python --version ; pip --version  # For debugging
+    - which python ; python --version ; pip --version  # For debugging
     - python -m venv venv
-    - which python
     - source venv/bin/activate
+    - pip install pip-tools
     - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
   script:
     - pytest -v tests/functional_tests/
@@ -185,10 +183,10 @@ functional-test-py312-pg16:
     OVERRIDE_HOST: "ci-postgres16"
     OVERRIDE_PORT: "5432"
   before_script:
-    - python --version ; pip --version  # For debugging
+    - which python ; python --version ; pip --version  # For debugging
     - python -m venv venv
-    - which python
     - source venv/bin/activate
+    - pip install pip-tools
     - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
   script:
     - pytest -v tests/functional_tests/
