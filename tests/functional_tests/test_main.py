@@ -1,35 +1,11 @@
 import logging
 import pathlib
-import subprocess
 import uuid
-
-import pytest
 
 from tests.utils.db_activity_simulator import DbActivitySimulator
 from tests.utils.subp_collector import SubProcCollector
 
 logger = logging.getLogger(__name__)
-
-
-@pytest.fixture
-def subp_coll() -> type[SubProcCollector]:
-    subp_coll_instances: list[SubProcCollector] = []
-
-    def instantiate(*args, **kwargs):
-        instance = SubProcCollector(*args, **kwargs)
-        subp_coll_instances.append(instance)
-        return instance
-
-    yield instantiate
-
-    for _ in subp_coll_instances:
-        _.kill()
-
-    for _ in subp_coll_instances:
-        try:
-            _.wait(timeout=2)
-        except subprocess.TimeoutExpired:
-            logger.exception(f"Ignoring TimeoutExpired for {_}")
 
 
 def test_main(

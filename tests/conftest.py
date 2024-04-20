@@ -1,5 +1,6 @@
 import logging
 import os
+import subprocess
 import uuid
 from typing import Callable
 
@@ -9,6 +10,7 @@ import pytest
 from psycopg2.extensions import connection as Connection
 
 from tests import conftest_all_scenarios
+from tests.utils.subp_collector import SubProcCollector
 
 logger = logging.getLogger(__name__)
 
@@ -100,3 +102,24 @@ def conn2(dsn: str):
         cn.close()
     except:  # noqa: E722
         logger.exception("Exception detected when trying to close connection")
+
+
+@pytest.fixture
+def subp_coll() -> type[SubProcCollector]:
+    subp_coll_instances: list[SubProcCollector] = []
+
+    def instantiate(*args, **kwargs):
+        instance = SubProcCollector(*args, **kwargs)
+        subp_coll_instances.append(instance)
+        return instance
+
+    yield instantiate
+
+    for _ in subp_coll_instances:
+        _.kill()
+
+    for _ in subp_coll_instances:
+        try:
+            _.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            logger.exception(f"Ignoring TimeoutExpired for {_}")
