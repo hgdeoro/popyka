@@ -1,6 +1,4 @@
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Python.gitlab-ci.yml
-image: python:3.11
-
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   PRE_COMMIT_HOME: "$CI_PROJECT_DIR/.cache/pre-commit"
@@ -10,22 +8,10 @@ variables:
   CI_POSTGRES15: "${CI_REGISTRY_IMAGE}:ci-postgres15-v1"
   CI_POSTGRES16: "${CI_REGISTRY_IMAGE}:ci-postgres16-v1"
 
-cache:
-  paths:
-    - .cache/pip
-    - .cache/pre-commit
-
 stages: [lint, unit-test, build, functional-test, release]
 
-#before_script:
-#  - python --version ; pip --version  # For debugging
-#  - python -m venv venv
-#  - which python
-#  - source venv/bin/activate
-#  - pip install pip-tools pre-commit
-#  - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
-
 lint:
+  image: python:3.12
   stage: lint
   before_script:
     - python --version ; pip --version  # For debugging
@@ -36,6 +22,12 @@ lint:
     - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
   script:
     - pre-commit run -a
+  cache:
+    key:
+      prefix: py312
+    paths:
+      - .cache/pip
+      - .cache/pre-commit
   rules:  # temporary
     - when: never
 
@@ -115,6 +107,7 @@ build-ci-pg16:
     - if: $CI_COMMIT_BRANCH == 'ci-postgres-images'
 
 unit-test:
+  image: python:3.12
   stage: unit-test
   before_script:
     - python --version ; pip --version  # For debugging
@@ -130,6 +123,12 @@ unit-test:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
+  cache:
+    key:
+      prefix: py312
+    paths:
+      - .cache/pip
+      - .cache/pre-commit
   rules:  # temporary
     - when: never
 
@@ -159,6 +158,12 @@ functional-test-py310-pg12:
     - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
   script:
     - pytest -v tests/functional_tests/
+  cache:
+    key:
+      prefix: py310
+    paths:
+      - .cache/pip
+      - .cache/pre-commit
 
 functional-test-py312-pg16:
   image: python:3.12
@@ -186,6 +191,12 @@ functional-test-py312-pg16:
     - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
   script:
     - pytest -v tests/functional_tests/
+  cache:
+    key:
+      prefix: py312
+    paths:
+      - .cache/pip
+      - .cache/pre-commit
 
 release:
   stage: release
