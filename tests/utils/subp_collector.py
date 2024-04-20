@@ -99,7 +99,7 @@ class SubProcCollector:
             logger.debug("_get_change(): matched: '%s'", matched_str)
             return json.loads(matched_str)
 
-    def wait_for_change(self, timeout=30.0, from_beginning=False):
+    def wait_for_change(self, timeout=30.0, from_beginning=False) -> AssertableChange:
         assert timeout is not None
         timeout = float(timeout)
         start_time = time.monotonic()
@@ -116,6 +116,9 @@ class SubProcCollector:
             time.sleep(0.01)
 
         raise TimeoutError("Timeout. Change not found")
+
+    def wait_for_changes(self, count: int, timeout_each=30.0) -> list[AssertableChange]:
+        return [self.wait_for_change(timeout=timeout_each) for _ in range(count)]
 
     def start(self) -> "SubProcCollector":
         self._proc = subprocess.Popen(args=self._args, stderr=subprocess.PIPE, stdout=subprocess.PIPE)

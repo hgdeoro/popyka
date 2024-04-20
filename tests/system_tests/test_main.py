@@ -5,6 +5,7 @@ import uuid
 
 import pytest
 
+from tests.conftest import system_test
 from tests.utils.db_activity_simulator import DbActivitySimulator
 from tests.utils.kafka import KafkaAdmin, KafkaThreadedConsumer
 from tests.utils.subp_collector import SubProcCollector
@@ -40,6 +41,7 @@ def consumer(clean_data, kafka_admin, kafka_bootstrap_servers: str, topic: str) 
     return consumer
 
 
+@system_test
 def test_main(
     dsn: str,
     conn,
@@ -59,23 +61,23 @@ def test_main(
     for key, value in popyka_env_vars.items():
         monkeypatch.setenv(key, value)
 
-    args = ["python3", "-m", "popyka"]
-    main = subp_coll(args=args)
+    uuids = [str(uuid.uuid4()) for _ in range(4)]
 
+    main = subp_coll(args=["python3", "-m", "popyka"])
     main.start()
     main.wait_for("will consume_stream() adaptor=", timeout=5)
 
-    uuids = [str(uuid.uuid4()) for _ in range(4)]
-    statements = [("INSERT INTO {table_name} (NAME) VALUES (%s)", [_]) for _ in uuids]
-    db_activity_simulator = DbActivitySimulator(conn, table_name, statements)
+    # Now popyka is consuming the stream, any activity on the db will be consumed
+
+    db_activity_simulator = DbActivitySimulator(
+        conn, table_name, [f"INSERT INTO __table_name__ (NAME) VALUES ('{_}')" for _ in uuids]
+    )
     db_activity_simulator.start()
     db_activity_simulator.join_or_fail(timeout=2)
 
     # check changes detected in popyka's stdout
-    changes = []
-    for an_uuid in uuids:
-        change = main.wait_for_change(timeout=3)
-        changes.append(change)
+
+    for an_uuid, change in zip(uuids, main.wait_for_changes(count=len(uuids), timeout_each=3)):
         assert change["action"] == "I"
         assert change["columns"][0]["value"] == an_uuid
 
@@ -83,13 +85,10 @@ def test_main(
     main.wait()
     main.join_threads()
 
-    assert len(changes) == 4
-    del change
-    del changes
-
     # check kafka
+
     messages = consumer.wait_for_count(4, timeout=10)
-    assert len(messages) == 4  # `DbActivitySimulator` can generate an extra event that we should ignore
+    assert len(messages) == 4
 
     for an_uuid, change in zip(uuids, messages[:4]):
         change = json.loads(change)
