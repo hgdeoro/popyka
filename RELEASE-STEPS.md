@@ -24,7 +24,6 @@
 
     $ make [release-patch | release-minor]
     # create release in gitlab
-    # update Makefile: `DOCKER_IMAGE_TAG_RELEASE`
 
 
 # Appendix

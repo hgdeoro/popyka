@@ -12,9 +12,10 @@ from tests import conftest_all_scenarios
 
 logger = logging.getLogger(__name__)
 
+OVERRIDE_HOST = os.environ.get("OVERRIDE_HOST", "localhost")
 OVERRIDE_PORT = os.environ.get("OVERRIDE_PORT", "54016")
 
-DSN_POSTGRES_WAL2JSON = f"postgresql://postgres:pass@localhost:{OVERRIDE_PORT}/popyka_test"
+DSN_POSTGRES_WAL2JSON = f"postgresql://postgres:pass@{OVERRIDE_HOST}:{OVERRIDE_PORT}/popyka_test"
 
 KAFKA_BOOTSTRAP_SERVERS = "localhost:9094"
 

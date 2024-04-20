@@ -6,7 +6,8 @@ services:
       args:
         HTTP_PROXY: ${http_proxy}
         HTTPS_PROXY: ${https_proxy}
-      context: tests/docker/postgres12-wal2json
+      context: tests/docker
+      dockerfile: postgres12-wal2json/Dockerfile
     restart: no
     shm_size: 128mb
     environment:
@@ -26,15 +27,14 @@ services:
       #  - -c
       #  - full_page_writes=off
     stop_grace_period: 2s
-    volumes:
-      - "./tests/docker/postgresql-init.sh:/docker-entrypoint-initdb.d/postgresql-init.sh"
 
   pg13:
     build:
       args:
         HTTP_PROXY: ${http_proxy}
         HTTPS_PROXY: ${https_proxy}
-      context: tests/docker/postgres13-wal2json
+      context: tests/docker
+      dockerfile: postgres13-wal2json/Dockerfile
     restart: no
     shm_size: 128mb
     environment:
@@ -54,15 +54,14 @@ services:
       #  - -c
       #  - full_page_writes=off
     stop_grace_period: 2s
-    volumes:
-      - "./tests/docker/postgresql-init.sh:/docker-entrypoint-initdb.d/postgresql-init.sh"
 
   pg14:
     build:
       args:
         HTTP_PROXY: ${http_proxy}
         HTTPS_PROXY: ${https_proxy}
-      context: tests/docker/postgres14-wal2json
+      context: tests/docker
+      dockerfile: postgres14-wal2json/Dockerfile
     restart: no
     shm_size: 128mb
     environment:
@@ -82,15 +81,14 @@ services:
       #  - -c
       #  - full_page_writes=off
     stop_grace_period: 2s
-    volumes:
-      - "./tests/docker/postgresql-init.sh:/docker-entrypoint-initdb.d/postgresql-init.sh"
 
   pg15:
     build:
       args:
         HTTP_PROXY: ${http_proxy}
         HTTPS_PROXY: ${https_proxy}
-      context: tests/docker/postgres15-wal2json
+      context: tests/docker
+      dockerfile: postgres15-wal2json/Dockerfile
     restart: no
     shm_size: 128mb
     environment:
@@ -110,15 +108,14 @@ services:
       #  - -c
       #  - full_page_writes=off
     stop_grace_period: 2s
-    volumes:
-      - "./tests/docker/postgresql-init.sh:/docker-entrypoint-initdb.d/postgresql-init.sh"
 
   pg16:
     build:
       args:
         HTTP_PROXY: ${http_proxy}
         HTTPS_PROXY: ${https_proxy}
-      context: tests/docker/postgres16-wal2json
+      context: tests/docker
+      dockerfile: postgres16-wal2json/Dockerfile
     restart: no
     shm_size: 128mb
     environment:
@@ -137,8 +134,6 @@ services:
       #  - fsync=off
       #  - -c
       #  - full_page_writes=off
-    volumes:
-      - "./tests/docker/postgresql-init.sh:/docker-entrypoint-initdb.d/postgresql-init.sh"
 
     stop_grace_period: 2s
 
