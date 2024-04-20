@@ -17,7 +17,7 @@ OVERRIDE_PORT = os.environ.get("OVERRIDE_PORT", "54016")
 
 DSN_POSTGRES_WAL2JSON = f"postgresql://postgres:pass@{OVERRIDE_HOST}:{OVERRIDE_PORT}/popyka_test"
 
-KAFKA_BOOTSTRAP_SERVERS = "localhost:9094"
+KAFKA_BOOTSTRAP_SERVERS = os.environ.get("OVERRIDE_KAFKA_BOOTSTRAP_SERVERS", "localhost:9094")
 
 exploration_test = pytest.mark.skipif(
     os.environ.get("EXPLORATION_TEST", "0") == "0", reason="Exploration tests ignored (EXPLORATION_TEST)"

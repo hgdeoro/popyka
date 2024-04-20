@@ -8,7 +8,7 @@ variables:
   #CI_POSTGRES15: "${CI_REGISTRY_IMAGE}:ci-postgres15-v1"
   CI_POSTGRES16: "${CI_REGISTRY_IMAGE}:ci-postgres16-v1"
 
-stages: [lint, unit-test, build, functional-test, release]
+stages: [lint, test, build, release]
 
 lint:
   image: python:3.12
@@ -33,6 +33,8 @@ lint:
           - .pre-commit-config.yaml
       paths:
         - .cache/pre-commit
+  rules:
+    - when: never
 
 build-ci-pg12:
   stage: build
@@ -111,7 +113,7 @@ build-ci-pg16:
 
 unit-test:
   image: python:3.12
-  stage: unit-test
+  stage: test
   before_script:
     - which python ; python --version ; pip --version  # For debugging
     - python -m venv venv
@@ -132,10 +134,12 @@ unit-test:
           - reqs/requirements-prod.txt
       paths:
         - .cache/pip
+  rules:
+    - when: never
 
 functional-test-py310-pg12:
   image: python:3.10
-  stage: functional-test
+  stage: test
   services:
     - name: $CI_POSTGRES12
       alias: ci-postgres12
@@ -165,10 +169,12 @@ functional-test-py310-pg12:
         prefix: py310
       paths:
         - .cache/pip
+  rules:
+    - when: never
 
 functional-test-py312-pg16:
   image: python:3.12
-  stage: functional-test
+  stage: test
   services:
     - name: $CI_POSTGRES16
       alias: ci-postgres16
@@ -190,6 +196,54 @@ functional-test-py312-pg16:
     - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
   script:
     - pytest -v tests/functional_tests/
+  cache:
+    - key:
+        files:
+          - reqs/requirements-dev.txt
+          - reqs/requirements-prod.txt
+      paths:
+        - .cache/pip
+  rules:
+    - when: never
+
+exploration-contract-test-py312-pg16:
+  image: python:3.12
+  stage: test
+  services:
+    - name: $CI_POSTGRES16
+      alias: ci-postgres16
+      command: ["-c", "wal_level=logical", "-c", "max_wal_senders=10", "-c", "max_replication_slots=10"]
+    - name: bitnami/kafka:3.5
+      alias: kafka
+      variables:
+        KAFKA_CFG_NODE_ID: "0"
+        KAFKA_CFG_PROCESS_ROLES: "controller,broker"
+        KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "0@kafka:9093"
+        KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+        KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+        KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+        KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+  variables:
+    # GitLab
+    FF_NETWORK_PER_BUILD: "1"  # allow service containers to reach each other
+    # PostgreSql
+    POSTGRES_PASSWORD: pass
+    POSTGRES_HOST_AUTH_METHOD: trust
+    # Popyka
+    OVERRIDE_HOST: "ci-postgres16"
+    OVERRIDE_PORT: "5432"
+    OVERRIDE_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    EXPLORATION_TEST: "1"
+    CONTRACT_TEST: "1"
+    SLOW_TEST: "1"
+  before_script:
+    - which python ; python --version ; pip --version  # For debugging
+    - python -m venv venv
+    - source venv/bin/activate
+    - pip install pip-tools
+    - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
+  script:
+    - pytest -v tests/exploration_tests/ tests/contract_tests/
   cache:
     - key:
         files:
@@ -224,3 +278,4 @@ release:
   rules:
     - if: $CI_COMMIT_TAG
     # - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - when: never
