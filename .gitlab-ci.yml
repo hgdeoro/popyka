@@ -118,6 +118,7 @@ unit-test:
     - python -m venv venv
     - which python
     - source venv/bin/activate
+    - pip install pip-tools
     - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
   script:
     - pytest --cov=popyka/ --cov-report term --cov-report html --cov-report xml:coverage.xml --cov-branch tests/unit_tests/
