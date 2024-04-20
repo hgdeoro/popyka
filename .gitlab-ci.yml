@@ -163,6 +163,7 @@ test-py310-pg12:
     EXPLORATION_TEST: "1"
     CONTRACT_TEST: "1"
     SLOW_TEST: "1"
+    SYSTEM_TEST_FAST: "1"
   before_script:
     - which python ; python --version ; pip --version  # For debugging
     - python -m venv venv
@@ -170,7 +171,7 @@ test-py310-pg12:
     - pip install pip-tools
     - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
   script:
-    - pytest -v tests/functional_tests/ tests/exploration_tests/ tests/contract_tests/
+    - pytest -v tests/functional_tests/ tests/exploration_tests/ tests/contract_tests/ tests/system_tests/
   cache:
     - key:
         files:
@@ -210,6 +211,7 @@ test-py312-pg16:
     EXPLORATION_TEST: "1"
     CONTRACT_TEST: "1"
     SLOW_TEST: "1"
+    SYSTEM_TEST_FAST: "1"
   before_script:
     - which python ; python --version ; pip --version  # For debugging
     - python -m venv venv
@@ -217,7 +219,7 @@ test-py312-pg16:
     - pip install pip-tools
     - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
   script:
-    - pytest -v tests/functional_tests/ tests/exploration_tests/ tests/contract_tests/
+    - pytest -v tests/functional_tests/ tests/exploration_tests/ tests/contract_tests/ tests/system_tests/
   cache:
     - key:
         files:

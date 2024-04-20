@@ -5,7 +5,7 @@ import uuid
 
 import pytest
 
-from tests.conftest import system_test
+from tests.conftest import system_test_fast
 from tests.utils.db_activity_simulator import DbActivitySimulator
 from tests.utils.kafka import KafkaAdmin, KafkaThreadedConsumer
 from tests.utils.subp_collector import SubProcCollector
@@ -41,7 +41,7 @@ def consumer(clean_data, kafka_admin, kafka_bootstrap_servers: str, topic: str) 
     return consumer
 
 
-@system_test
+@system_test_fast
 def test_main(
     dsn: str,
     conn,

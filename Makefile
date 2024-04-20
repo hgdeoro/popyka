@@ -117,7 +117,7 @@ test:  ## Run most important and fast tests
 	$(VENVDIR)/bin/pytest -v
 
 test-all:  ## Run all tests (except for system-tests)
-	env EXPLORATION_TEST=1 SLOW_TEST=1 CONTRACT_TEST=1 $(VENVDIR)/bin/pytest -v
+	env EXPLORATION_TEST=1 SLOW_TEST=1 CONTRACT_TEST=1 SYSTEM_TEST_FAST=1 $(VENVDIR)/bin/pytest -v
 
 coverage-unittest:
 	pytest \

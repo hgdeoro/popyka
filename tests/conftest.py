@@ -27,6 +27,10 @@ exploration_test = pytest.mark.skipif(
 
 system_test = pytest.mark.skipif(os.environ.get("SYSTEM_TEST", "0") == "0", reason="System tests ignored (SYSTEM_TEST)")
 
+system_test_fast = pytest.mark.skipif(
+    os.environ.get("SYSTEM_TEST_FAST", "0") == "0", reason="Fast system tests ignored (SYSTEM_TEST_FAST)"
+)
+
 contract_test = pytest.mark.skipif(
     os.environ.get("CONTRACT_TEST", "0") == "0", reason="Contract tests ignored (CONTRACT_TEST)"
 )
