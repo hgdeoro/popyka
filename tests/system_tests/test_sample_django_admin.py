@@ -200,9 +200,9 @@ def test_django_admin_login_with_default_config(
     dc_popyka_default_config.wait_for_change(timeout=5).assert_update().assert_table("auth_user")
     dc_popyka_default_config.wait_for_change(timeout=5).assert_update().assert_table("django_session")
 
-    assert sorted(consumer.wait_for_count_summarized(3, timeout=10)) == sorted(
-        [("I", "django_session"), ("U", "auth_user"), ("U", "django_session")]
-    )
+    expected_summaries = [("I", "django_session"), ("U", "auth_user"), ("U", "django_session")]
+    actual_summaries = consumer.wait_for_count_summarized(3, timeout=10)
+    assert sorted(actual_summaries) == sorted(expected_summaries)
 
 
 # ---------- invalid config is directory ----------------------------------------------------------------------
