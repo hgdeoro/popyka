@@ -24,9 +24,12 @@
 
     $ make [release-patch | release-minor]
     # create release in gitlab
+    # update Makefile: `DOCKER_IMAGE_TAG_RELEASE`
 
 
-# How hatch works with dev versions
+# Appendix
+
+### How hatch works with dev versions
 
 When work is done, use `release`:
 

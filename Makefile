@@ -6,6 +6,8 @@
 
 SHELL := /bin/bash
 
+DOCKER_IMAGE_TAG_RELEASE := registry.gitlab.com/hgdeoro/popyka:v0.2.0
+
 PYTHON ?= python3.11
 VENVDIR ?= $(abspath ./venv)
 DOCKER_COMPOSE_LOCAL_DEVELOPMENT_SERVICES ?= pg16 kafka kowl
@@ -89,15 +91,13 @@ LOCAL_POPYKA_KAFKA_CONF_DICT = '{"bootstrap.servers": "localhost:9094","client.i
 
 # ----------
 
-DOCKER_IMAGE_TAG := registry.gitlab.com/hgdeoro/popyka:v0.2.0
-
-docker-popyka-run-gitlab: docker-compose-up
-	docker pull $(DOCKER_IMAGE_TAG)
+docker-popyka-run-gitlab: docker-compose-up  # Launch latest released version of Popyka.
+	docker pull $(DOCKER_IMAGE_TAG_RELEASE)
 	docker run --rm -ti \
 		--network popyka_default \
 		-e POPYKA_DB_DSN=$(DOCKER_COMPOSE_POPYKA_DB_DSN_SAMPLE_1) \
 		-e POPYKA_KAFKA_BOOTSTRAP_SERVERS=kafka:9092 \
-			$(DOCKER_IMAGE_TAG)
+			$(DOCKER_IMAGE_TAG_RELEASE)
 
 # ----------
 
