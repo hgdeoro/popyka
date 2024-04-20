@@ -52,8 +52,6 @@ def test_main(
     consumer: KafkaThreadedConsumer,
     topic: str,
 ):
-    # config_file = pathlib.Path(__file__).parent.parent / "resources" / "config-test-main.yaml"
-    # popyka_env_vars["POPYKA_CONFIG"] = str(config_file.absolute())
     popyka_env_vars["LAZYTOSTR_COMPACT"] = "1"
     popyka_env_vars["POPYKA_KAFKA_BOOTSTRAP_SERVERS"] = kafka_bootstrap_servers
     popyka_env_vars["POPYKA_KAFKA_TOPIC"] = topic
@@ -65,7 +63,6 @@ def test_main(
     main = subp_coll(args=args)
 
     main.start()
-    # main.wait_for("Using custom config file", timeout=5)
     main.wait_for("will consume_stream() adaptor=", timeout=5)
 
     uuids = [str(uuid.uuid4()) for _ in range(4)]
@@ -92,7 +89,7 @@ def test_main(
 
     # check kafka
     messages = consumer.wait_for_count(4, timeout=10)
-    assert len(messages) >= 4  # `DbActivitySimulator` can generate an extra event that we should ignore
+    assert len(messages) == 4  # `DbActivitySimulator` can generate an extra event that we should ignore
 
     for an_uuid, change in zip(uuids, messages[:4]):
         change = json.loads(change)

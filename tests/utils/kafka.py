@@ -77,7 +77,7 @@ class KafkaThreadedConsumer(threading.Thread):
         if len(self._messages) < count:
             raise Exception(f"Timeout waiting for {count} messages. Got: only {len(self._messages)}")
 
-        return self._messages
+        return self._messages[:count]  # We don't return more than the requested
 
     def wait_for_count_summarized(self, count: int, timeout: float) -> list:
         return self.summarize(self.wait_for_count(count, timeout))
