@@ -5,10 +5,22 @@
 
 [![Hatch project](https://img.shields.io/badge/Packaging-Hatch-blue)](.)
 [![Apache License](https://img.shields.io/badge/License-Apache-blue)](.)
-[![Python](https://img.shields.io/badge/Python-3.10%2C%203.11%2C%203.12-blue)](.)
-[![PostgreSql](https://img.shields.io/badge/PostgreSql-12%2C%2013%2C%2014%2C%2015%2C%2016-blue)](.)
-[![pipeline status](https://gitlab.com/hgdeoro/popyka/badges/main/pipeline.svg)](https://gitlab.com/hgdeoro/popyka/-/commits/main)
 [![Latest Release](https://gitlab.com/hgdeoro/popyka/-/badges/release.svg)](https://gitlab.com/hgdeoro/popyka/-/releases)
+[![pipeline status](https://gitlab.com/hgdeoro/popyka/badges/main/pipeline.svg)](https://gitlab.com/hgdeoro/popyka/-/commits/main)
+
+Supported versions of **Python**:
+
+![Python](https://img.shields.io/badge/Python-3.10-blue)
+![Python](https://img.shields.io/badge/Python-3.11-blue)
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+
+Supported versions of **PostgreSql**:
+
+![PostgreSql](https://img.shields.io/badge/PostgreSql-12-blue)
+![PostgreSql](https://img.shields.io/badge/PostgreSql-13-blue)
+![PostgreSql](https://img.shields.io/badge/PostgreSql-14-blue)
+![PostgreSql](https://img.shields.io/badge/PostgreSql-15-blue)
+![PostgreSql](https://img.shields.io/badge/PostgreSql-16-blue)
 
 Tox results:
 
@@ -29,9 +41,6 @@ Tox results:
 ![py312-pg16](https://img.shields.io/badge/py3.12%2Bpg16-passed-green)
 
 # MVP (work in progress)
-
-* Supported versions of **Python**: ~~3.8~~, ~~3.9~~, `3.10`, `3.11`, `3.12`
-* Supported versions of **PostgreSql**: `12`, `13`, `14`, `15`, `16`
 
 ## Features
 
