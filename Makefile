@@ -12,13 +12,13 @@ PYTHON310 ?= python3.10
 PYTHON311 ?= python3.11
 PYTHON312 ?= python3.12
 
-PYTHON := $(PYTHON310)
+PYTHON := $(PYTHON312)
 
 VENVDIR_310 ?= $(abspath ./venv-3.10)
 VENVDIR_311 ?= $(abspath ./venv-3.11)
 VENVDIR_312 ?= $(abspath ./venv-3.12)
 
-VENVDIR := $(VENVDIR_310)
+VENVDIR := $(VENVDIR_312)
 
 DOCKER_COMPOSE_LOCAL_DEVELOPMENT_SERVICES ?= pg16 kafka kowl
 DOCKER_COMPOSE_TOX_SERVICES ?= pg12 pg13 pg14 pg15 pg16
