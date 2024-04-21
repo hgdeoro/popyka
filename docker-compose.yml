@@ -166,7 +166,6 @@ services:
     environment:
       POPYKA_CONFIG: "${POPYKA_CONFIG:-}"
       POPYKA_DB_DSN: "postgresql://postgres:pass@pg16:5432/popyka_test"
-      POPYKA_KAFKA_CONF_DICT: '{"bootstrap.servers": "kafka:9092","client.id": "popyka-client"}'
     stop_grace_period: 1s
     stop_signal: SIGKILL
 
