@@ -1,7 +1,5 @@
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Python.gitlab-ci.yml
 variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  PRE_COMMIT_HOME: "$CI_PROJECT_DIR/.cache/pre-commit"
   CI_POSTGRES12: "${CI_REGISTRY_IMAGE}:ci-postgres12-v1"
   #CI_POSTGRES13: "${CI_REGISTRY_IMAGE}:ci-postgres13-v1"
   #CI_POSTGRES14: "${CI_REGISTRY_IMAGE}:ci-postgres14-v1"
@@ -13,26 +11,29 @@ stages: [lint, test, build, release]
 lint:
   image: python:3.12
   stage: lint
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip-3.12"
+    PRE_COMMIT_HOME: "$CI_PROJECT_DIR/.cache/pre-commit-3.12"
   before_script:
     - which python ; python --version ; pip --version  # For debugging
-    - python -m venv venv
-    - source venv/bin/activate
+    - python -m venv venv-3.12
+    - source venv-3.12/bin/activate
     - pip install pip-tools pre-commit
-    - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
+    - pip-sync reqs/requirements-prod-3.12.txt reqs/requirements-dev-3.12.txt
   script:
     - pre-commit run -a
   cache:
     - key:
         files:
-          - reqs/requirements-dev.txt
-          - reqs/requirements-prod.txt
+          - reqs/requirements-prod-3.12.txt
+          - reqs/requirements-dev-3.12.txt
       paths:
-        - .cache/pip
+        - .cache/pip-3.12
     - key:
         files:
           - .pre-commit-config.yaml
       paths:
-        - .cache/pre-commit
+        - .cache/pre-commit-3.12
 
 build-ci-pg12:
   stage: build
@@ -112,12 +113,15 @@ build-ci-pg16:
 unit-test:
   image: python:3.12
   stage: test
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip-3.12"
+    PRE_COMMIT_HOME: "$CI_PROJECT_DIR/.cache/pre-commit-3.12"
   before_script:
     - which python ; python --version ; pip --version  # For debugging
-    - python -m venv venv
-    - source venv/bin/activate
+    - python -m venv venv-3.12
+    - source venv-3.12/bin/activate
     - pip install pip-tools
-    - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
+    - pip-sync reqs/requirements-prod-3.12.txt reqs/requirements-dev-3.12.txt
   script:
     - pytest --cov=popyka/ --cov-report term --cov-report html --cov-report xml:coverage.xml --cov-branch tests/unit_tests/
   artifacts:
@@ -128,10 +132,10 @@ unit-test:
   cache:
     - key:
         files:
-          - reqs/requirements-dev.txt
-          - reqs/requirements-prod.txt
+          - reqs/requirements-dev-3.12.txt
+          - reqs/requirements-prod-3.12.txt
       paths:
-        - .cache/pip
+        - .cache/pip-3.12
 
 test-py310-pg12:
   image: python:3.10
@@ -151,6 +155,8 @@ test-py310-pg12:
         KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
         KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
   variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip-3.10"
+    PRE_COMMIT_HOME: "$CI_PROJECT_DIR/.cache/pre-commit-3.10"
     # GitLab
     FF_NETWORK_PER_BUILD: "1"  # allow service containers to reach each other
     # PostgreSql
@@ -166,20 +172,20 @@ test-py310-pg12:
     SYSTEM_TEST_FAST: "1"
   before_script:
     - which python ; python --version ; pip --version  # For debugging
-    - python -m venv venv
-    - source venv/bin/activate
+    - python -m venv venv-3.10
+    - source venv-3.10/bin/activate
     - pip install pip-tools
-    - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
+    - pip-sync reqs/requirements-prod-3.10.txt reqs/requirements-dev-3.10.txt
   script:
     - pytest -v tests/functional_tests/ tests/exploration_tests/ tests/contract_tests/ tests/system_tests/
   cache:
     - key:
         files:
-          - reqs/requirements-dev.txt
-          - reqs/requirements-prod.txt
+          - reqs/requirements-dev-3.10.txt
+          - reqs/requirements-prod-3.10.txt
         prefix: py310
       paths:
-        - .cache/pip
+        - .cache/pip-3.10
 
 test-py312-pg16:
   image: python:3.12
@@ -199,6 +205,8 @@ test-py312-pg16:
         KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
         KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
   variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip-3.12"
+    PRE_COMMIT_HOME: "$CI_PROJECT_DIR/.cache/pre-commit-3.12"
     # GitLab
     FF_NETWORK_PER_BUILD: "1"  # allow service containers to reach each other
     # PostgreSql
@@ -214,19 +222,19 @@ test-py312-pg16:
     SYSTEM_TEST_FAST: "1"
   before_script:
     - which python ; python --version ; pip --version  # For debugging
-    - python -m venv venv
-    - source venv/bin/activate
+    - python -m venv venv-3.12
+    - source venv-3.12/bin/activate
     - pip install pip-tools
-    - pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
+    - pip-sync reqs/requirements-prod-3.12.txt reqs/requirements-dev-3.12.txt
   script:
     - pytest -v tests/functional_tests/ tests/exploration_tests/ tests/contract_tests/ tests/system_tests/
   cache:
     - key:
         files:
-          - reqs/requirements-dev.txt
-          - reqs/requirements-prod.txt
+          - reqs/requirements-dev-3.12.txt
+          - reqs/requirements-prod-3.12.txt
       paths:
-        - .cache/pip
+        - .cache/pip-3.12
 
 release:
   stage: release

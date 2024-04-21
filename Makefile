@@ -8,8 +8,18 @@ SHELL := /bin/bash
 
 DOCKER_IMAGE_TAG_RELEASE := registry.gitlab.com/hgdeoro/popyka:v0.2.0
 
-PYTHON ?= python3.11
-VENVDIR ?= $(abspath ./venv)
+PYTHON310 ?= python3.10
+PYTHON311 ?= python3.11
+PYTHON312 ?= python3.12
+
+PYTHON := $(PYTHON310)
+
+VENVDIR_310 ?= $(abspath ./venv-3.10)
+VENVDIR_311 ?= $(abspath ./venv-3.11)
+VENVDIR_312 ?= $(abspath ./venv-3.12)
+
+VENVDIR := $(VENVDIR_310)
+
 DOCKER_COMPOSE_LOCAL_DEVELOPMENT_SERVICES ?= pg16 kafka kowl
 DOCKER_COMPOSE_TOX_SERVICES ?= pg12 pg13 pg14 pg15 pg16
 
@@ -19,19 +29,39 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 venv: ## Creates the Python virtualenv for local development
-	$(PYTHON) -m venv venv
-	$(VENVDIR)/bin/pip install pip-tools
+	$(PYTHON310) -m venv $(VENVDIR_310)
+	$(VENVDIR_310)/bin/pip install pip-tools
+
+	$(PYTHON311) -m venv $(VENVDIR_311)
+	$(VENVDIR_311)/bin/pip install pip-tools
+
+	$(PYTHON312) -m venv $(VENVDIR_312)
+	$(VENVDIR_312)/bin/pip install pip-tools
 
 pip-compile: ## Compiles dependencies (pip-tools) into requirements-*.txt
-	$(VENVDIR)/bin/pip-compile -o reqs/requirements-prod.txt reqs/requirements-prod.in
-	$(VENVDIR)/bin/pip-compile -o reqs/requirements-dev.txt  reqs/requirements-dev.in
+	$(VENVDIR_310)/bin/pip-compile -o reqs/requirements-prod-3.10.txt                                    reqs/requirements-prod.in
+	$(VENVDIR_310)/bin/pip-compile -o reqs/requirements-dev-3.10.txt  -c reqs/requirements-prod-3.10.txt reqs/requirements-dev.in
+
+	$(VENVDIR_311)/bin/pip-compile -o reqs/requirements-prod-3.11.txt                                    reqs/requirements-prod.in
+	$(VENVDIR_311)/bin/pip-compile -o reqs/requirements-dev-3.11.txt  -c reqs/requirements-prod-3.11.txt reqs/requirements-dev.in
+
+	$(VENVDIR_312)/bin/pip-compile -o reqs/requirements-prod-3.12.txt                                    reqs/requirements-prod.in
+	$(VENVDIR_312)/bin/pip-compile -o reqs/requirements-dev-3.12.txt  -c reqs/requirements-prod-3.12.txt reqs/requirements-dev.in
 
 pip-compile-upgrade: ## Compiles dependencies (pip-tools) into requirements-*.txt checking for new versions
-	$(VENVDIR)/bin/pip-compile --upgrade -o reqs/requirements-prod.txt reqs/requirements-prod.in
-	$(VENVDIR)/bin/pip-compile --upgrade -o reqs/requirements-dev.txt  reqs/requirements-dev.in
+	$(VENVDIR_310)/bin/pip-compile --upgrade -o reqs/requirements-prod-3.10.txt                                    reqs/requirements-prod.in
+	$(VENVDIR_310)/bin/pip-compile --upgrade -o reqs/requirements-dev-3.10.txt  -c reqs/requirements-prod-3.10.txt reqs/requirements-dev.in
+
+	$(VENVDIR_311)/bin/pip-compile --upgrade -o reqs/requirements-prod-3.11.txt                                    reqs/requirements-prod.in
+	$(VENVDIR_311)/bin/pip-compile --upgrade -o reqs/requirements-dev-3.11.txt  -c reqs/requirements-prod-3.11.txt reqs/requirements-dev.in
+
+	$(VENVDIR_312)/bin/pip-compile --upgrade -o reqs/requirements-prod-3.12.txt                                    reqs/requirements-prod.in
+	$(VENVDIR_312)/bin/pip-compile --upgrade -o reqs/requirements-dev-3.12.txt  -c reqs/requirements-prod-3.12.txt reqs/requirements-dev.in
 
 pip-sync: ## Run pip-sync (pip-tools)
-	$(VENVDIR)/bin/pip-sync reqs/requirements-prod.txt reqs/requirements-dev.txt
+	$(VENVDIR_310)/bin/pip-sync reqs/requirements-prod-3.10.txt reqs/requirements-dev-3.10.txt
+	$(VENVDIR_311)/bin/pip-sync reqs/requirements-prod-3.11.txt reqs/requirements-dev-3.11.txt
+	$(VENVDIR_312)/bin/pip-sync reqs/requirements-prod-3.12.txt reqs/requirements-dev-3.12.txt
 
 docker-compose-up: ## Brings up required service for local development
 	docker compose up --remove-orphans -d $(DOCKER_COMPOSE_LOCAL_DEVELOPMENT_SERVICES)

@@ -1,4 +1,4 @@
-FROM python:3.11-alpine3.19 as python
+FROM python:3.10-alpine3.19 as python
 
 FROM python as python-build-stage
 
@@ -7,11 +7,11 @@ RUN apk add --no-cache librdkafka
 RUN apk add build-base librdkafka-dev
 
 # Requirements are installed here to ensure they will be cached.
-COPY ./reqs/requirements-prod.txt .
+COPY ./reqs/requirements-prod-3.10.txt .
 
 # Create Python Dependency and Sub-Dependency Wheels.
 RUN pip wheel --wheel-dir /usr/src/app/wheels  \
-  -r requirements-prod.txt
+  -r requirements-prod-3.10.txt
 
 FROM python as python-run-stage
 
