@@ -34,6 +34,8 @@ lint:
           - .pre-commit-config.yaml
       paths:
         - .cache/pre-commit-3.12
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 build-ci-pg12:
   stage: build
@@ -136,6 +138,8 @@ unit-test:
           - reqs/requirements-prod-3.12.txt
       paths:
         - .cache/pip-3.12
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 test-py310-pg12:
   image: python:3.10
@@ -186,6 +190,8 @@ test-py310-pg12:
         prefix: py310
       paths:
         - .cache/pip-3.10
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 test-py312-pg16:
   image: python:3.12
@@ -235,6 +241,8 @@ test-py312-pg16:
           - reqs/requirements-prod-3.12.txt
       paths:
         - .cache/pip-3.12
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 release:
   stage: release
@@ -261,4 +269,3 @@ release:
     - buildah push $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
   rules:
     - if: $CI_COMMIT_TAG
-    # - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
