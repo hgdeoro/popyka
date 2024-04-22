@@ -134,6 +134,11 @@ class DbActivitySimulator(threading.Thread):
         self.join(timeout=timeout)
         assert not self.is_alive()
 
+    def execute(self, timeout=5):
+        """Start the DB activity simulator thread, and waits until it finished"""
+        self.start()
+        self.join_or_fail(timeout=timeout)
+
     def run(self) -> None:
         with self._cn.cursor() as cur:
             cur: ReplicationCursor
