@@ -6,8 +6,7 @@ import pprint
 class LazyToStr:
     def __init__(self, instance: object):
         self._instance = instance
-        self._compact = bool(os.environ.get("LAZYTOSTR_COMPACT", "0") == "1")
-        # FIXME: `LAZYTOSTR_COMPACT` should be configurable from Processor
+        self._compact = bool(os.environ.get("POPYKA_COMPACT_DUMP", "0").strip() == "1")
 
     def __str__(self):
         try:

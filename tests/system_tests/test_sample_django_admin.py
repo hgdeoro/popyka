@@ -118,7 +118,7 @@ def django_admin_login():
 class PopykaDockerComposeLauncher:
     def __init__(self, extra_envs: list[str] | None = None):
         self._collector: SubProcCollector | None = None
-        self._envs = ["LAZYTOSTR_COMPACT=1"] + (extra_envs or [])
+        self._envs = ["POPYKA_COMPACT_DUMP=1"] + (extra_envs or [])
         assert all(["=" in _ for _ in self._envs])
 
     @property

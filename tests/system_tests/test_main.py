@@ -54,7 +54,7 @@ def test_main(
     consumer: KafkaThreadedConsumer,
     topic: str,
 ):
-    popyka_env_vars["LAZYTOSTR_COMPACT"] = "1"
+    popyka_env_vars["POPYKA_COMPACT_DUMP"] = "1"
     popyka_env_vars["POPYKA_KAFKA_BOOTSTRAP_SERVERS"] = kafka_bootstrap_servers
     popyka_env_vars["POPYKA_KAFKA_TOPIC"] = topic
 

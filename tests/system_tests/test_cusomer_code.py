@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class PopykaDockerComposeLauncher:
     def __init__(self, slot_name: str, extra_envs: list[str] | None = None):
         self._collector: SubProcCollector | None = None
-        self._envs = ["LAZYTOSTR_COMPACT=1"] + (extra_envs or [])
+        self._envs = ["POPYKA_COMPACT_DUMP=1"] + (extra_envs or [])
         assert all(["=" in _ for _ in self._envs])
         self._slot_name: str = slot_name
 

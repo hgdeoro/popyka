@@ -129,7 +129,7 @@ lcp.process_change(change={"key": "some-value"})
         python_script.write_text(self.PYTHON_CODE_LOG_CHANGE_PROCESSOR)
 
         sp = SubProcCollector(
-            args=["env", "PYTHONPATH=.", "LAZYTOSTR_COMPACT=1", "python3", str(python_script.absolute())]
+            args=["env", "PYTHONPATH=.", "POPYKA_COMPACT_DUMP=1", "python3", str(python_script.absolute())]
         )
         sp.start()
         assert sp.wait(timeout=1) == 0
