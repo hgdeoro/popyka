@@ -1,6 +1,5 @@
 import json
 import logging
-import time
 import uuid
 
 import pytest
@@ -11,12 +10,6 @@ from tests.utils.kafka import KafkaAdmin, KafkaThreadedConsumer
 from tests.utils.subp_collector import SubProcCollector
 
 logger = logging.getLogger(__name__)
-
-
-@pytest.fixture
-def topic():
-    # TODO: Refactor to avoid code duplication: this was copied from system-tests.
-    return f"popyka_{int(time.time())}"
 
 
 @pytest.fixture

@@ -1,6 +1,7 @@
 import logging
 import os
 import subprocess
+import time
 import uuid
 from typing import Callable
 
@@ -127,3 +128,13 @@ def subp_coll() -> type[SubProcCollector]:
             _.wait(timeout=2)
         except subprocess.TimeoutExpired:
             logger.exception(f"Ignoring TimeoutExpired for {_}")
+
+
+@pytest.fixture
+def topic():
+    return f"popyka_{int(time.time())}"
+
+
+@pytest.fixture
+def slot_name():
+    return f"popyka_test_{int(time.time())}"

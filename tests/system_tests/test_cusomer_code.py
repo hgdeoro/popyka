@@ -1,7 +1,6 @@
 import logging
 import pathlib
 import subprocess
-import time
 import uuid
 
 import pytest
@@ -18,9 +17,6 @@ from tests.utils.subp_collector import SubProcCollector
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = pathlib.Path(__file__).parent.parent.parent
-
-
-# FIXME: `PopykaDockerComposeLauncher` was copied from `test_sample_django_admin.py`
 
 
 class PopykaDockerComposeLauncher(PopykaDockerComposeLauncherBase):
@@ -40,18 +36,6 @@ class DepsDockerComposeLauncher(DepsDockerComposeLauncherBase):
 def docker_compose_deps() -> SubProcCollector:
     deps = DepsDockerComposeLauncher().up()
     yield deps.collector
-
-
-@pytest.fixture
-def topic():
-    # TODO: Refactor to avoid code duplication: this was copied from system-tests.
-    return f"popyka_{int(time.time())}"
-
-
-@pytest.fixture
-def slot_name():
-    # TODO: Refactor to avoid code duplication: this was copied from system-tests.
-    return f"popyka_test_{int(time.time())}"
 
 
 @pytest.fixture
