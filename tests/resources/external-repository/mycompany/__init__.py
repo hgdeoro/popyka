@@ -1,7 +1,7 @@
 import json
 import logging
 
-from popyka.core import Processor, Wal2JsonV2Change
+from popyka.api import Processor, Wal2JsonV2Change
 
 
 class MyCompanyCustomProcessor(Processor):

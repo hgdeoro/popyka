@@ -3,12 +3,8 @@ import json
 from collections import defaultdict
 from unittest.mock import MagicMock
 
-from popyka.core import (
-    Filter,
-    Processor,
-    ReplicationConsumerToProcessorAdaptor,
-    Wal2JsonV2Change,
-)
+from popyka.adaptors import ReplicationConsumerToProcessorAdaptor
+from popyka.api import Filter, Processor, Wal2JsonV2Change
 from tests.conftest_all_scenarios import AllScenarios
 
 

@@ -7,7 +7,7 @@ import threading
 import time
 from functools import cached_property
 
-from popyka.core import Wal2JsonV2Change
+from popyka.api import Wal2JsonV2Change
 
 logger = logging.getLogger(__name__)
 

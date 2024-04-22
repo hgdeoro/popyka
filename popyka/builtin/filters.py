@@ -1,7 +1,7 @@
 import logging
 import re
 
-from popyka.core import Filter, Wal2JsonV2Change
+from popyka.api import Filter, Wal2JsonV2Change
 from popyka.errors import ConfigError
 
 logger = logging.getLogger(__name__)

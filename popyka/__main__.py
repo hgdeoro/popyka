@@ -3,7 +3,7 @@ import os
 import sys
 
 from popyka.config import PopykaConfig
-from popyka.core import Server
+from popyka.server import Server
 
 logger = logging.getLogger(__name__)
 

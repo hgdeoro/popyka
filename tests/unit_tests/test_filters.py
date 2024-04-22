@@ -1,5 +1,5 @@
+from popyka.api import Filter
 from popyka.config import FilterConfig
-from popyka.core import Filter
 from tests.conftest_all_scenarios import AllScenarios
 
 DEFAULT_DICT_CONFIG_IGNORE_TX_FILTER = {

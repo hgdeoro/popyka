@@ -5,7 +5,7 @@ import pathlib
 
 import yaml
 
-from popyka.core import Filter, Processor
+from popyka.api import Filter, Processor
 from popyka.errors import ConfigError
 from popyka.interpolation import Interpolator
 

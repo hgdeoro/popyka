@@ -5,7 +5,7 @@ from psycopg2.extensions import connection as Connection
 from psycopg2.extras import ReplicationCursor
 
 from popyka.config import PopykaConfig
-from popyka.core import Server
+from popyka.server import Server
 
 EXPECTED_POSTGRESQL_MAJOR_VERSION = os.environ.get("EXPECTED_POSTGRESQL_MAJOR_VERSION", "16")
 

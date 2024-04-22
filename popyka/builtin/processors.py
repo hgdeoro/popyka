@@ -3,7 +3,7 @@ import logging
 
 from confluent_kafka import Producer
 
-from popyka.core import Processor, Wal2JsonV2Change
+from popyka.api import Processor, Wal2JsonV2Change
 from popyka.errors import ConfigError
 from popyka.logging import LazyToStr
 
