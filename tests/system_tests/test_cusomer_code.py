@@ -11,7 +11,7 @@ from tests.utils.docker_compose import (
     DepsDockerComposeLauncherBase,
     PopykaDockerComposeLauncherBase,
 )
-from tests.utils.kafka import KafkaAdmin, KafkaThreadedConsumer
+from tests.utils.kafka import KafkaThreadedConsumer
 from tests.utils.subp_collector import SubProcCollector
 
 logger = logging.getLogger(__name__)
@@ -43,12 +43,6 @@ def clean_data(drop_slot_fn, kafka_admin, dsn: str):
     # TODO: Refactor to avoid code duplication: this was copied from system-tests.
     kafka_admin.delete_all_topics()
     drop_slot_fn(dsn)
-
-
-@pytest.fixture()
-def kafka_admin(kafka_bootstrap_servers: str) -> KafkaAdmin:
-    # TODO: Refactor to avoid code duplication: this was copied from system-tests.
-    return KafkaAdmin(kafka_bootstrap_servers)
 
 
 @pytest.fixture()

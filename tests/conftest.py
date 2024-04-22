@@ -11,6 +11,7 @@ import pytest
 from psycopg2.extensions import connection as Connection
 
 from tests import conftest_all_scenarios
+from tests.utils.kafka import KafkaAdmin
 from tests.utils.subp_collector import SubProcCollector
 
 logger = logging.getLogger(__name__)
@@ -138,3 +139,8 @@ def topic():
 @pytest.fixture
 def slot_name():
     return f"popyka_test_{int(time.time())}"
+
+
+@pytest.fixture()
+def kafka_admin(kafka_bootstrap_servers: str) -> KafkaAdmin:
+    return KafkaAdmin(kafka_bootstrap_servers)
