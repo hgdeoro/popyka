@@ -166,8 +166,15 @@ services:
     environment:
       POPYKA_CONFIG: "${POPYKA_CONFIG:-}"
       POPYKA_DB_DSN: "postgresql://postgres:pass@pg16:5432/popyka_test"
+      POPYKA_PYTHONPATH: "${POPYKA_PYTHONPATH:-}"
+      POPYKA_DB_SLOT_NAME: "${POPYKA_DB_SLOT_NAME:-}"
+      LAZYTOSTR_COMPACT: "${LAZYTOSTR_COMPACT:-}"
+      POPYKA_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      POPYKA_KAFKA_TOPIC: "${POPYKA_KAFKA_TOPIC:-}"
     stop_grace_period: 1s
     stop_signal: SIGKILL
+    volumes:
+      - ./tests/resources/external-repository:/external-repository
 
   kafka:
     image: 'bitnami/kafka:3.5'

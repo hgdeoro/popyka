@@ -1,0 +1,20 @@
+database:
+    connect_url: "${POPYKA_DB_DSN}"
+    slot_name: "${POPYKA_DB_SLOT_NAME:-popyka}"
+filters:
+    - class: popyka.builtin.filters.IgnoreTxFilter
+      config: {}
+processors:
+    - class: mycompany.MyCompanyCustomProcessor
+      filters: []
+      config: {}
+    - class: popyka.builtin.processors.LogChangeProcessor
+      filters: []
+      config: {}
+    - class: popyka.builtin.processors.ProduceToKafkaProcessor
+      filters: []
+      config:
+        topic: "${POPYKA_KAFKA_TOPIC:-popyka}"
+        producer_config:
+          "bootstrap.servers": "${POPYKA_KAFKA_BOOTSTRAP_SERVERS}"
+          "client.id": "${POPYKA_KAFKA_CLIENT_ID:-popyka-client}"
