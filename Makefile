@@ -170,6 +170,9 @@ psql: ## connect to default test database
 
 # ----------
 
+test-system:
+	env SYSTEM_TEST=1 SYSTEM_TEST_FAST=1 $(VENVDIR)/bin/pytest -vvs tests/system_tests/
+
 test-system-sample-django-admin:
 	docker compose --file samples/django-admin/docker-compose.yml build --quiet
 	env SYSTEM_TEST=1 $(VENVDIR)/bin/pytest -vvs tests/system_tests/test_sample_django_admin.py

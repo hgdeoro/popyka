@@ -69,3 +69,58 @@ class PopykaDockerComposeLauncherBase:
         self._collector.kill()
         self._collector.wait(timeout=20)
         self._collector.join_threads()
+
+
+class DepsDockerComposeLauncherBase:
+    DOCKER_COMPOSE_FILE = None
+    SERVICES: list[str] = None
+    TIMEOUT: int = 20
+
+    def __init__(self, extra_envs: list[str] | None = None):
+        assert self.DOCKER_COMPOSE_FILE is not None, "Subclass must set DOCKER_COMPOSE_FILE"
+        assert self.SERVICES is not None, "Subclass must set SERVICES"
+        self._collector: SubProcCollector | None = None
+        # self._slot_name: str = slot_name
+        self._envs = extra_envs or []
+        assert all(["=" in _ for _ in self._envs])
+
+    @property
+    def collector(self) -> SubProcCollector:
+        assert self._collector is not None
+        return self._collector
+
+    def up(self) -> "DepsDockerComposeLauncherBase":
+        # Build
+        args = [
+            "docker",
+            "compose",
+            "--file",
+            str(self.DOCKER_COMPOSE_FILE.absolute()),
+            "build",
+            "--quiet",
+        ] + self.SERVICES
+
+        subprocess.run(args=args, check=True)
+
+        # Up
+        args = (
+            ["env"]
+            + self._envs
+            + [
+                "docker",
+                "compose",
+                "--file",
+                str(self.DOCKER_COMPOSE_FILE.absolute()),
+                "up",
+                "--wait",
+                "--remove-orphans",
+                "--detach",
+            ]
+            + self.SERVICES
+        )
+
+        self._collector = SubProcCollector(args=args).start()
+        assert self._collector.wait(timeout=self.TIMEOUT) == 0
+        self._collector.join_threads()
+
+        return self

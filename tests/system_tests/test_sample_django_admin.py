@@ -6,7 +6,10 @@ import mechanize
 import pytest
 
 from tests.conftest import system_test
-from tests.utils.docker_compose import PopykaDockerComposeLauncherBase
+from tests.utils.docker_compose import (
+    DepsDockerComposeLauncherBase,
+    PopykaDockerComposeLauncherBase,
+)
 from tests.utils.kafka import KafkaAdmin, KafkaThreadedConsumer
 from tests.utils.subp_collector import SubProcCollector
 
@@ -49,54 +52,6 @@ def consumer(clean_data, kafka_admin) -> KafkaThreadedConsumer:
 
 
 @pytest.fixture
-def docker_compose_deps() -> SubProcCollector:
-    dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
-
-    # Build
-    args = [
-        "docker",
-        "compose",
-        "--file",
-        str(dc_file.absolute()),
-        "build",
-        "--quiet",
-        "demo-db",
-        "demo-django-admin",
-    ]
-    subprocess.run(args=args, check=True)
-
-    # Run
-    args = [
-        "docker",
-        "compose",
-        "--file",
-        str(dc_file.absolute()),
-        "up",
-        "--wait",
-        "--remove-orphans",
-        "--detach",
-        "demo-db",
-        "demo-django-admin",
-        "demo-kafka",
-    ]
-    collector = SubProcCollector(args=args).start()
-    assert collector.wait(timeout=20) == 0
-    collector.join_threads()
-
-    # TODO: busy wait until all dependencies are up
-
-    # To have a predictable environment, we can create new slot + topic (this was the initial approach): but...
-    #   1. there is a limited number of slots that can be created on postgresql... if slots are not dropped,
-    #      this cause problems when running tests many times.
-    #   2. a second test is needed to validate the demo app with the default configuration (default slot & topic)
-    #
-    # It's easier to just delete everything before the test run, this way the environment is predictable,
-    # and we're testing default configuration... If tests pass, the demo app should work as is.
-
-    yield collector
-
-
-@pytest.fixture
 def setup_env(kill_popyka, clean_data, docker_compose_deps):
     yield
 
@@ -118,9 +73,27 @@ def django_admin_login():
     assert br.title() == "Site administration | Django site admin"
 
 
+# ---------- docker compose --------------------------------------------------------------------------------
+
+
 class PopykaDockerComposeLauncher(PopykaDockerComposeLauncherBase):
     DOCKER_COMPOSE_FILE = PROJECT_ROOT / "samples" / "django-admin" / "docker-compose.yml"
     POPYKA_SERVICE = "demo-popyka"
+
+
+class DepsDockerComposeLauncher(DepsDockerComposeLauncherBase):
+    DOCKER_COMPOSE_FILE = PROJECT_ROOT / "samples" / "django-admin" / "docker-compose.yml"
+    SERVICES: list[str] = [
+        "demo-db",
+        "demo-django-admin",
+        "demo-kafka",
+    ]
+
+
+@pytest.fixture
+def docker_compose_deps() -> SubProcCollector:
+    deps = DepsDockerComposeLauncher().up()
+    yield deps.collector
 
 
 # ---------- default config --------------------------------------------------------------------------------
