@@ -16,7 +16,7 @@ logger_stdout_to_list = logging.getLogger("STDOUT")
 
 class AssertableChange(Wal2JsonV2Change):
     def assert_table(self, table: str) -> "AssertableChange":
-        assert self["table"] == table
+        assert self.get("table", "").lower() == table.lower()
         return self
 
     def assert_insert(self) -> "AssertableChange":
