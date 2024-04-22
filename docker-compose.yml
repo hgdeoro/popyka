@@ -1,6 +1,52 @@
-version: '3.9'
-
+# Multi-purpose docker compose
+# - dependencies for local development (db, kafka, redpanda console)
+# - dependencies for running test via tox against different postgres versions
+# - popyka instances to run system tests (configurable via env variables)
 services:
+
+  popyka:
+    build:
+      args:
+        HTTP_PROXY: ${http_proxy}
+        HTTPS_PROXY: ${https_proxy}
+      context: .
+    restart: no
+    shm_size: 128mb
+    environment:
+      # Pass `POPYKA_CONFIG` and other envs to reuse this service for different scenarios
+      POPYKA_CONFIG: "${POPYKA_CONFIG:-}"
+      POPYKA_PYTHONPATH: "${POPYKA_PYTHONPATH:-}"
+      POPYKA_DB_SLOT_NAME: "${POPYKA_DB_SLOT_NAME:-}"
+      POPYKA_COMPACT_DUMP: "${POPYKA_COMPACT_DUMP:-}"
+      POPYKA_KAFKA_TOPIC: "${POPYKA_KAFKA_TOPIC:-}"
+      # Use Kafka & PostgreSql 16
+      POPYKA_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      POPYKA_DB_DSN: "postgresql://postgres:pass@pg16:5432/popyka_test"
+    stop_grace_period: 1s
+    stop_signal: SIGKILL
+    volumes:
+      - ./tests/resources/external-repository:/external-repository
+
+  db-activity-simulator:
+    build:
+      args:
+        HTTP_PROXY: ${http_proxy}
+        HTTPS_PROXY: ${https_proxy}
+      context: tests/docker/db-activity-simulator
+    restart: no
+    shm_size: 128mb
+    environment:
+      DSN_ACTIVITY_SIMULATOR: "postgresql://postgres:pass@pg16:5432/popyka_test"
+    stop_grace_period: 1s
+    stop_signal: SIGKILL
+    # We don't want `pg16` to be stopped
+    #    depends_on:
+    #      - pg16
+
+  # ----------------------------------------------------------------------------------------------------
+  # Databases
+  # ----------------------------------------------------------------------------------------------------
+
   pg12:
     build:
       args:
@@ -137,42 +183,9 @@ services:
 
     stop_grace_period: 2s
 
-  db-activity-simulator:
-    build:
-      args:
-        HTTP_PROXY: ${http_proxy}
-        HTTPS_PROXY: ${https_proxy}
-      context: tests/docker/db-activity-simulator
-    restart: no
-    shm_size: 128mb
-    environment:
-      DSN_ACTIVITY_SIMULATOR: "postgresql://postgres:pass@pg16:5432/popyka_test"
-    stop_grace_period: 1s
-    stop_signal: SIGKILL
-    # We don't want `pg16` to be stopped
-    #    depends_on:
-    #      - pg16
-
-  popyka:
-    build:
-      args:
-        HTTP_PROXY: ${http_proxy}
-        HTTPS_PROXY: ${https_proxy}
-      context: .
-    restart: no
-    shm_size: 128mb
-    environment:
-      POPYKA_CONFIG: "${POPYKA_CONFIG:-}"
-      POPYKA_DB_DSN: "postgresql://postgres:pass@pg16:5432/popyka_test"
-      POPYKA_PYTHONPATH: "${POPYKA_PYTHONPATH:-}"
-      POPYKA_DB_SLOT_NAME: "${POPYKA_DB_SLOT_NAME:-}"
-      POPYKA_COMPACT_DUMP: "${POPYKA_COMPACT_DUMP:-}"
-      POPYKA_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
-      POPYKA_KAFKA_TOPIC: "${POPYKA_KAFKA_TOPIC:-}"
-    stop_grace_period: 1s
-    stop_signal: SIGKILL
-    volumes:
-      - ./tests/resources/external-repository:/external-repository
+  # ----------------------------------------------------------------------------------------------------
+  # Kafka
+  # ----------------------------------------------------------------------------------------------------
 
   kafka:
     image: 'bitnami/kafka:3.5'
