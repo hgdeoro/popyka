@@ -6,10 +6,13 @@ import mechanize
 import pytest
 
 from tests.conftest import system_test
+from tests.utils.docker_compose import PopykaDockerComposeLauncherBase
 from tests.utils.kafka import KafkaAdmin, KafkaThreadedConsumer
 from tests.utils.subp_collector import SubProcCollector
 
 logger = logging.getLogger(__name__)
+
+PROJECT_ROOT = pathlib.Path(__file__).parent.parent.parent
 
 # These values are the one hardcoded in docker compose file, either the same, or the adapted for `localhost` use
 DOCKER_COMPOSE_DJANGO_ADMIN_PORT = 8081
@@ -115,64 +118,9 @@ def django_admin_login():
     assert br.title() == "Site administration | Django site admin"
 
 
-class PopykaDockerComposeLauncher:
-    def __init__(self, extra_envs: list[str] | None = None):
-        self._collector: SubProcCollector | None = None
-        self._envs = ["POPYKA_COMPACT_DUMP=1"] + (extra_envs or [])
-        assert all(["=" in _ for _ in self._envs])
-
-    @property
-    def collector(self) -> SubProcCollector:
-        assert self._collector is not None
-        return self._collector
-
-    def start(self):
-        dc_file = pathlib.Path(__file__).parent.parent.parent / "samples" / "django-admin" / "docker-compose.yml"
-
-        # Build
-        args = [
-            "docker",
-            "compose",
-            "--file",
-            str(dc_file.absolute()),
-            "build",
-            "--quiet",
-            "demo-popyka",
-        ]
-        subprocess.run(args=args, check=True)
-
-        # Up
-        args = (
-            ["env"]
-            + self._envs
-            + [
-                "docker",
-                "compose",
-                "--file",
-                str(dc_file.absolute()),
-                "up",
-                "--no-log-prefix",
-                "demo-popyka",
-            ]
-        )
-        self._collector = SubProcCollector(args=args).start()
-
-    def wait_until_popyka_started(self):
-        self._collector.wait_for(f"will start_replication() slot={DOCKER_COMPOSE_DB_SLOT_NAME}", timeout=5)
-        self._collector.wait_for("will consume_stream() adaptor=", timeout=1)
-
-    def wait_custom_config(self, custom_config: str):
-        # Check custom config was loaded
-        self._collector.wait_for(
-            f":popyka.config:Using custom config file. POPYKA_CONFIG={custom_config}",
-            timeout=10,
-        )
-
-    def stop(self):
-        assert self._collector is not None
-        self._collector.kill()
-        self._collector.wait(timeout=20)
-        self._collector.join_threads()
+class PopykaDockerComposeLauncher(PopykaDockerComposeLauncherBase):
+    DOCKER_COMPOSE_FILE = PROJECT_ROOT / "samples" / "django-admin" / "docker-compose.yml"
+    POPYKA_SERVICE = "demo-popyka"
 
 
 # ---------- default config --------------------------------------------------------------------------------
@@ -180,7 +128,7 @@ class PopykaDockerComposeLauncher:
 
 @pytest.fixture
 def dc_popyka_default_config() -> SubProcCollector:
-    launcher = PopykaDockerComposeLauncher()
+    launcher = PopykaDockerComposeLauncher(slot_name=DOCKER_COMPOSE_DB_SLOT_NAME)
     launcher.start()
     launcher.wait_until_popyka_started()
     yield launcher.collector
@@ -207,7 +155,7 @@ def test_django_admin_login_with_default_config(
 
 @pytest.fixture
 def dc_popyka_invalid_config_is_directory() -> SubProcCollector:
-    launcher = PopykaDockerComposeLauncher(extra_envs=["POPYKA_CONFIG=/"])
+    launcher = PopykaDockerComposeLauncher(slot_name=DOCKER_COMPOSE_DB_SLOT_NAME, extra_envs=["POPYKA_CONFIG=/"])
     launcher.start()
     yield launcher.collector
     launcher.stop()
@@ -229,7 +177,9 @@ def test_dc_popyka_invalid_config_is_directory(
 
 @pytest.fixture
 def dc_popyka_invalid_config() -> SubProcCollector:
-    launcher = PopykaDockerComposeLauncher(extra_envs=["POPYKA_CONFIG=/popyka-config/popyka-invalid-config.yaml"])
+    launcher = PopykaDockerComposeLauncher(
+        slot_name=DOCKER_COMPOSE_DB_SLOT_NAME, extra_envs=["POPYKA_CONFIG=/popyka-config/popyka-invalid-config.yaml"]
+    )
     launcher.start()
     yield launcher.collector
     launcher.stop()
@@ -249,7 +199,10 @@ def test_dc_popyka_invalid_config(
 
 @pytest.fixture
 def dc_popyka_valid_custom_config() -> SubProcCollector:
-    launcher = PopykaDockerComposeLauncher(extra_envs=["POPYKA_CONFIG=/popyka-config/popyka-config-ignore-tables.yaml"])
+    launcher = PopykaDockerComposeLauncher(
+        slot_name=DOCKER_COMPOSE_DB_SLOT_NAME,
+        extra_envs=["POPYKA_CONFIG=/popyka-config/popyka-config-ignore-tables.yaml"],
+    )
     launcher.start()
     launcher.wait_custom_config("/popyka-config/popyka-config-ignore-tables.yaml")
     launcher.wait_until_popyka_started()
