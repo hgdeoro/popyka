@@ -79,7 +79,8 @@ You can see Kafka contents using [RedPanda console](http://localhost:8082/).
 
 The MVP is under development on the `main` branch.
 
-1. create mechanism to allow inclusion of user's Python code (processors)
+1. create mechanism to allow inclusion of user's Python code (docker)
+1. create mechanism to allow inclusion of user's Python code (docker compose)
 1. _dev experience_: generate documentation of public API
 1. ~~_ci/cd_: run system tests~~ **DONE**
 1. ~~_ci/cd_: publish docker image to public repository~~ **DONE**
