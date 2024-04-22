@@ -38,6 +38,9 @@ Tox results:
 ![py312-pg15](https://img.shields.io/badge/py3.12%2Bpg15-passed-green)
 ![py312-pg16](https://img.shields.io/badge/py3.12%2Bpg16-passed-green)
 
+
+
+
 # Popyka
 
 Effortless and extendable data change capture (CDC) with Python.
@@ -46,6 +49,9 @@ Effortless and extendable data change capture (CDC) with Python.
 
 Change data capture (CDC) refers to the process of capturing changes made to the data
 in a database and then delivering those changes in real-time to a downstream system.
+
+
+
 
 ## Why a new CDC system?
 
@@ -81,6 +87,9 @@ Popyka's custom **processors** empower you to write data to various destinations
 including **Redis**, **S3**, **Snowflake**, **Cassandra**, and more. Go beyond **Kafka** and tailor
 your data pipeline to your specific needs.
 
+
+
+
 ## Stages
 
 ![stages.png](docs%2Fstages.png)
@@ -108,6 +117,9 @@ to other systems to keep everyone in sync.
 [//]: # (* `IgnoreTxFilter` to ignore those changes associated to `BEGIN` and `COMMIT`.)
 [//]: # (* `LogChangeProcessor`: to log the received messages.)
 [//]: # (* `ProduceToKafkaProcessor`: to publish a message to Kafka.)
+
+
+
 
 ## Filters
 
@@ -143,6 +155,11 @@ class MyCustomFilter(Filter):
         ...
 ```
 
+The base `Filter` class is defined in [api.py](popyka%2Fapi.py).
+
+
+
+
 ## Processors
 
 [//]: # (After filtering, Popyka sends the data changes through its processors one by one,)
@@ -166,6 +183,11 @@ class MyCustomProcessor(Processor):
     def process_change(self, change):
         ...
 ```
+
+The base `Processor` class is defined in [api.py](popyka%2Fapi.py).
+
+
+
 
 ## Configuration
 
@@ -218,14 +240,17 @@ You might find this files of interest:
 * Default config: [popyka-default.yaml](./popyka/popyka-default.yaml)
 * Alternative config: [popyka-config-ignore-tables.yaml](./samples/django-admin/popyka-config/popyka-config-ignore-tables.yaml)
 
+
+
+
 # Under development
 
 The v1 is under development on the `main` branch.
 
 1. create mechanism to allow inclusion of user's Python code (docker)
-1. create mechanism to allow inclusion of user's Python code (docker compose)
-1. document usage
 1. _dev experience_: generate documentation of public API
+1. ~~create mechanism to allow inclusion of user's Python code (docker compose)~~ **DONE**
+1. ~~document usage~~ **DONE**
 1. ~~_ci/cd_: run system tests~~ **DONE**
 1. ~~_ci/cd_: publish docker image to public repository~~ **DONE**
 1. ~~_ci/cd_: add coverage &~~ badge
@@ -246,6 +271,8 @@ The v1 is under development on the `main` branch.
 * Reference sample project.
 * Configuration file accept bash-style environment variable interpolation.
 * Docker image available in GitLab Docker Registry
+
+
 
 
 # PoC (v0.1)
