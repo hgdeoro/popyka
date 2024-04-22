@@ -161,8 +161,6 @@ services:
       context: .
     restart: no
     shm_size: 128mb
-    depends_on:
-      - db-activity-simulator
     environment:
       POPYKA_CONFIG: "${POPYKA_CONFIG:-}"
       POPYKA_DB_DSN: "postgresql://postgres:pass@pg16:5432/popyka_test"

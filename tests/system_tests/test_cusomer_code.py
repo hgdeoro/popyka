@@ -55,7 +55,7 @@ class PopykaDockerComposeLauncher:
                 str(dc_file.absolute()),
                 "up",
                 "--no-log-prefix",
-                "--no-deps",  # Make sure `db-activity-simulator` is not brought up
+                "--no-deps",  # We brought dependencies up manually
                 "popyka",
             ]
         )
