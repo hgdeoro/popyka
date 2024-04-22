@@ -1,4 +1,5 @@
 import logging
+import pathlib
 import subprocess
 
 from tests.utils.subp_collector import SubProcCollector
@@ -7,9 +8,9 @@ logger = logging.getLogger(__name__)
 
 
 class PopykaDockerComposeLauncherBase:
-    DOCKER_COMPOSE_FILE = None
-    POPYKA_SERVICE = None
-    POPYKA_COMPACT_DUMP = "1"
+    DOCKER_COMPOSE_FILE: pathlib.Path = None
+    POPYKA_SERVICE: str = None
+    POPYKA_COMPACT_DUMP: str = "1"
 
     def __init__(self, slot_name: str, extra_envs: list[str] | None = None):
         assert self.DOCKER_COMPOSE_FILE is not None, "Subclass must set DOCKER_COMPOSE_FILE"
@@ -48,6 +49,7 @@ class PopykaDockerComposeLauncherBase:
                 str(self.DOCKER_COMPOSE_FILE.absolute()),
                 "up",
                 "--no-log-prefix",
+                "--no-deps",  # Not sure if good default, maybe should be configurable?
                 self.POPYKA_SERVICE,
             ]
         )

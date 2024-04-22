@@ -8,122 +8,38 @@ import pytest
 
 from tests.conftest import system_test
 from tests.utils.db_activity_simulator import DbActivitySimulator
+from tests.utils.docker_compose import (
+    DepsDockerComposeLauncherBase,
+    PopykaDockerComposeLauncherBase,
+)
 from tests.utils.kafka import KafkaAdmin, KafkaThreadedConsumer
 from tests.utils.subp_collector import SubProcCollector
 
 logger = logging.getLogger(__name__)
 
+PROJECT_ROOT = pathlib.Path(__file__).parent.parent.parent
+
 
 # FIXME: `PopykaDockerComposeLauncher` was copied from `test_sample_django_admin.py`
 
 
-class PopykaDockerComposeLauncher:
-    def __init__(self, slot_name: str, extra_envs: list[str] | None = None):
-        self._collector: SubProcCollector | None = None
-        self._envs = ["POPYKA_COMPACT_DUMP=1"] + (extra_envs or [])
-        assert all(["=" in _ for _ in self._envs])
-        self._slot_name: str = slot_name
+class PopykaDockerComposeLauncher(PopykaDockerComposeLauncherBase):
+    DOCKER_COMPOSE_FILE = PROJECT_ROOT / "docker-compose.yml"
+    POPYKA_SERVICE = "popyka"
 
-    @property
-    def collector(self) -> SubProcCollector:
-        assert self._collector is not None
-        return self._collector
 
-    def start(self):
-        dc_file = pathlib.Path(__file__).parent.parent.parent / "docker-compose.yml"
-
-        # Build
-        args = [
-            "docker",
-            "compose",
-            "--file",
-            str(dc_file.absolute()),
-            "build",
-            "--quiet",
-            "popyka",
-        ]
-        subprocess.run(args=args, check=True)
-
-        # Up
-        args = (
-            ["env"]
-            + self._envs
-            + [
-                "docker",
-                "compose",
-                "--file",
-                str(dc_file.absolute()),
-                "up",
-                "--no-log-prefix",
-                "--no-deps",  # We brought dependencies up manually
-                "popyka",
-            ]
-        )
-        self._collector = SubProcCollector(args=args).start()
-
-    def wait_until_popyka_started(self):
-        self._collector.wait_for(f"will start_replication() slot={self._slot_name}", timeout=5)
-        self._collector.wait_for("will consume_stream() adaptor=", timeout=1)
-
-    def wait_custom_config(self, custom_config: str):
-        # Check custom config was loaded
-        self._collector.wait_for(
-            f":popyka.config:Using custom config file. POPYKA_CONFIG={custom_config}",
-            timeout=10,
-        )
-
-    def stop(self):
-        assert self._collector is not None
-        self._collector.kill()
-        self._collector.wait(timeout=20)
-        self._collector.join_threads()
+class DepsDockerComposeLauncher(DepsDockerComposeLauncherBase):
+    DOCKER_COMPOSE_FILE = PROJECT_ROOT / "docker-compose.yml"
+    SERVICES = [
+        "pg16",
+        "kafka",
+    ]
 
 
 @pytest.fixture
 def docker_compose_deps() -> SubProcCollector:
-    dc_file = pathlib.Path(__file__).parent.parent.parent / "docker-compose.yml"
-
-    # Build
-    args = [
-        "docker",
-        "compose",
-        "--file",
-        str(dc_file.absolute()),
-        "build",
-        "--quiet",
-        "pg16",
-        "kafka",
-    ]
-    subprocess.run(args=args, check=True)
-
-    # Run
-    args = [
-        "docker",
-        "compose",
-        "--file",
-        str(dc_file.absolute()),
-        "up",
-        "--wait",
-        "--remove-orphans",
-        "--detach",
-        "pg16",
-        "kafka",
-    ]
-    collector = SubProcCollector(args=args).start()
-    assert collector.wait(timeout=20) == 0
-    collector.join_threads()
-
-    # TODO: busy wait until all dependencies are up
-
-    # To have a predictable environment, we can create new slot + topic (this was the initial approach): but...
-    #   1. there is a limited number of slots that can be created on postgresql... if slots are not dropped,
-    #      this cause problems when running tests many times.
-    #   2. a second test is needed to validate the demo app with the default configuration (default slot & topic)
-    #
-    # It's easier to just delete everything before the test run, this way the environment is predictable,
-    # and we're testing default configuration... If tests pass, the demo app should work as is.
-
-    yield collector
+    deps = DepsDockerComposeLauncher().up()
+    yield deps.collector
 
 
 @pytest.fixture
