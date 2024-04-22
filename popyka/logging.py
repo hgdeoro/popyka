@@ -7,6 +7,7 @@ class LazyToStr:
     def __init__(self, instance: object):
         self._instance = instance
         self._compact = bool(os.environ.get("LAZYTOSTR_COMPACT", "0") == "1")
+        # FIXME: `LAZYTOSTR_COMPACT` should be configurable from Processor
 
     def __str__(self):
         try:
