@@ -198,6 +198,7 @@ trove-classifiers==2024.4.10
     # via hatchling
 typing-extensions==4.11.0
     # via
+    #   -c reqs/requirements-prod-3.10.txt
     #   anyio
     #   black
     #   ipython

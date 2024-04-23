@@ -185,7 +185,9 @@ traitlets==5.14.3
 trove-classifiers==2024.4.10
     # via hatchling
 typing-extensions==4.11.0
-    # via ipython
+    # via
+    #   -c reqs/requirements-prod-3.11.txt
+    #   ipython
 userpath==1.9.2
     # via hatch
 virtualenv==20.25.3
