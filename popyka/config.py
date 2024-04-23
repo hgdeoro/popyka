@@ -51,7 +51,7 @@ class FilterConfig(BaseModel, FactoryMixin):
     model_config: ConfigDict = ConfigDict(extra="forbid")
 
     class_fqn: str = Field(alias="class")
-    config_generic: dict = Field(alias="config", default=None)
+    config_generic: dict = Field(alias="config", default_factory=dict)
 
     def instantiate(self) -> Filter:
         """Creates an instance of `Filter` based on configuration"""
@@ -69,8 +69,8 @@ class ProcessorConfig(BaseModel, FactoryMixin):
     model_config: ConfigDict = ConfigDict(extra="forbid")
 
     class_fqn: str = Field(alias="class")
-    config_generic: dict | None = Field(alias="config", default=None)
-    filters: list[FilterConfig] | None = None
+    config_generic: dict = Field(alias="config", default_factory=dict)
+    filters: list[FilterConfig] = Field(default_factory=list)
 
     def instantiate(self) -> Processor:
         """Creates an instance of `Processor` based on configuration"""
@@ -86,8 +86,8 @@ class ProcessorConfig(BaseModel, FactoryMixin):
 
 class PopykaConfig(BaseModel):
     database: DatabaseConfig
-    filters: list[FilterConfig]
-    processors: list[ProcessorConfig]
+    filters: list[FilterConfig]  # `filters` is mandatory on purpose
+    processors: list[ProcessorConfig]  # `processors` is mandatory on purpose
 
     @classmethod
     def from_dict(cls, config: dict, environment: dict[str, str] = None) -> "PopykaConfig":
