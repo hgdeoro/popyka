@@ -94,6 +94,24 @@ class TestConfigFilter:
         assert PopykaConfig.from_dict(min_config)
 
 
+class TestConfigProcessor:
+    def test_empty_processor(self, min_config):
+        assert min_config["processors"]
+        min_config["processors"].append({})
+        with pytest.raises(ValidationError):
+            PopykaConfig.from_dict(min_config)
+
+    def test_processor_with_class(self, min_config):
+        assert min_config["processors"]
+        min_config["processors"].append({"class": "some-text"})
+        assert PopykaConfig.from_dict(min_config)
+
+    def test_processor_with_class_and_config(self, min_config):
+        assert min_config["processors"]
+        min_config["processors"].append({"class": "some-text", "config": {}})
+        assert PopykaConfig.from_dict(min_config)
+
+
 class TestCustomConfig:
     def test_default_when_config_file_env_is_empty_string(self, popyka_env_vars):
         popyka_env_vars["POPYKA_CONFIG"] = ""
