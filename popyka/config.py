@@ -1,9 +1,9 @@
-import dataclasses
 import importlib
 import logging
 import pathlib
 
 import yaml
+from pydantic import BaseModel, ConfigDict, Field
 
 from popyka.api import Filter, Processor
 from popyka.errors import ConfigError
@@ -40,34 +40,18 @@ class FactoryMixin:
         raise NotImplementedError()
 
 
-@dataclasses.dataclass
-class DatabaseConfig:
+class DatabaseConfig(BaseModel):
+    model_config: ConfigDict = ConfigDict(extra="forbid")
+
     connect_url: str
     slot_name: str
 
-    @classmethod
-    def from_dict(cls, config: dict) -> "DatabaseConfig":
-        return DatabaseConfig(
-            connect_url=config["connect_url"],
-            slot_name=config["slot_name"],
-        )
 
+class FilterConfig(BaseModel, FactoryMixin):
+    model_config: ConfigDict = ConfigDict(extra="forbid")
 
-@dataclasses.dataclass
-class FilterConfig(FactoryMixin):
-    class_fqn: str
-    config_generic: dict
-
-    @classmethod
-    def from_dict(cls, config: dict) -> "FilterConfig":
-        class_fqn = config["class"]
-        config_generic = config["config"]
-        assert isinstance(class_fqn, str)
-        assert isinstance(config_generic, dict)
-        return FilterConfig(
-            class_fqn=class_fqn,
-            config_generic=config_generic,
-        )
+    class_fqn: str = Field(alias="class")
+    config_generic: dict = Field(alias="config")
 
     def instantiate(self) -> Filter:
         """Creates an instance of `Filter` based on configuration"""
@@ -76,23 +60,17 @@ class FilterConfig(FactoryMixin):
         instance.setup()
         return instance
 
-
-@dataclasses.dataclass
-class ProcessorConfig(FactoryMixin):
-    class_fqn: str
-    filters: list[FilterConfig]
-    config_generic: dict
-
     @classmethod
-    def from_dict(cls, config: dict) -> "ProcessorConfig":
-        class_fqn = config["class"]
-        filters = [FilterConfig.from_dict(_) for _ in config.get("filters", []) or []]
-        config_generic = config["config"]
-        return ProcessorConfig(
-            class_fqn=class_fqn,
-            filters=filters,
-            config_generic=config_generic,
-        )
+    def from_dict(cls, config: dict) -> "FilterConfig":
+        return FilterConfig(**config)
+
+
+class ProcessorConfig(BaseModel, FactoryMixin):
+    model_config: ConfigDict = ConfigDict(extra="forbid")
+
+    class_fqn: str = Field(alias="class")
+    config_generic: dict = Field(alias="config")
+    filters: list[FilterConfig]
 
     def instantiate(self) -> Processor:
         """Creates an instance of `Processor` based on configuration"""
@@ -101,9 +79,12 @@ class ProcessorConfig(FactoryMixin):
         instance.setup()
         return instance
 
+    @classmethod
+    def from_dict(cls, config: dict) -> "ProcessorConfig":
+        return ProcessorConfig(**config)
 
-@dataclasses.dataclass
-class PopykaConfig:
+
+class PopykaConfig(BaseModel):
     database: DatabaseConfig
     filters: list[FilterConfig]
     processors: list[ProcessorConfig]
@@ -111,22 +92,16 @@ class PopykaConfig:
     @classmethod
     def from_dict(cls, config: dict, environment: dict[str, str] = None) -> "PopykaConfig":
         interpolated = Interpolator(environment=environment or {}).interpolate(config)
-        database_config = DatabaseConfig.from_dict(interpolated.get("database", None))
-        filters = [FilterConfig.from_dict(_) for _ in interpolated.get("filters", []) or []]
-        processors = [ProcessorConfig.from_dict(_) for _ in interpolated.get("processors", []) or []]
 
-        if database_config is None:
-            raise ConfigError("Invalid config: `database` is required")
+        # if database_config is None:
+        #     raise ConfigError("Invalid config: `database` is required")
+        # FIXME: pydantic refactor: ^^^ re-add validation of `database_config` being mandatory
 
-        if not processors:
-            # TODO: is there any situation when running without processors is ok?
-            raise ConfigError("Invalid config: refuse to run without any processor. Check `processors` in config.")
+        # if not processors:
+        #     raise ConfigError("Invalid config: refuse to run without any processor. Check `processors` in config.")
+        # FIXME: pydantic refactor: ^^^ re-add validation of `processors` being mandatory
 
-        return PopykaConfig(
-            database=database_config,
-            filters=filters,
-            processors=processors,
-        )
+        return PopykaConfig(**interpolated)
 
     @classmethod
     def get_config_file_path(cls, environment=None) -> pathlib.Path:
