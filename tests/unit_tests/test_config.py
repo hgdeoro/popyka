@@ -51,7 +51,7 @@ def min_config() -> dict:
     )
 
 
-class TestBaseConfig:
+class TestMinConfig:
     def test_min_config_works(self, min_config: dict):
         assert PopykaConfig.from_dict(min_config)
 
@@ -74,6 +74,24 @@ class TestBaseConfig:
         del min_config["processors"]
         with pytest.raises(ValidationError):
             PopykaConfig.from_dict(min_config)
+
+
+class TestConfigFilter:
+    def test_empty_filter(self, min_config):
+        assert not min_config["filters"]
+        min_config["filters"].append({})
+        with pytest.raises(ValidationError):
+            PopykaConfig.from_dict(min_config)
+
+    def test_filter_with_class(self, min_config):
+        assert not min_config["filters"]
+        min_config["filters"].append({"class": "some-text"})
+        assert PopykaConfig.from_dict(min_config)
+
+    def test_filter_with_class_and_config(self, min_config):
+        assert not min_config["filters"]
+        min_config["filters"].append({"class": "some-text", "config": {}})
+        assert PopykaConfig.from_dict(min_config)
 
 
 class TestCustomConfig:

@@ -51,7 +51,7 @@ class FilterConfig(BaseModel, FactoryMixin):
     model_config: ConfigDict = ConfigDict(extra="forbid")
 
     class_fqn: str = Field(alias="class")
-    config_generic: dict = Field(alias="config")
+    config_generic: dict = Field(alias="config", default=None)
 
     def instantiate(self) -> Filter:
         """Creates an instance of `Filter` based on configuration"""
