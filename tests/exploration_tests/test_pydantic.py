@@ -1,14 +1,17 @@
 import json
+from typing import Optional
 
 from pydantic import BaseModel
 
 
 class SampleFilterConfig(BaseModel):
     class_fqn: str
+    config: Optional[dict] = None
 
 
 class SampleProcessorConfig(BaseModel):
     class_fqn: str
+    config: Optional[dict] = None
 
 
 class SamplePopykaConfig(BaseModel):
