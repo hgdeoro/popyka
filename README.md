@@ -266,10 +266,3 @@ The v1 is under development on the `main` branch.
 1. ~~improve automated testing~~ **DONE**
 1. ~~define supported Python versions and run tests on all supported versions~~ **DONE**
 1. ~~implement semantic versioning~~ **DONE**
-
-## Features
-
-* Default configuration ready to use for trying out locally.
-* Reference sample project.
-* Configuration file accept bash-style environment variable interpolation.
-* Docker image available in GitLab Docker Registry
