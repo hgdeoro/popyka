@@ -3,8 +3,5 @@ database:
     slot_name: "${POPYKA_DB_SLOT_NAME:-popyka}"
 filters:
     - class: popyka.builtin.filters.IgnoreTxFilter
-      config: {}
 processors:
     - class: popyka.builtin.processors.LogChangeProcessor
-      filters: []
-      config: {}

@@ -28,16 +28,12 @@ database:
     slot_name: "${POPYKA_DB_SLOT_NAME:-popyka}"
 filters:
     - class: popyka.builtin.filters.IgnoreTxFilter
-      config: {}
     - class: popyka.builtin.filters.TableNameIgnoreFilter
       config:
         ignore_regex: "^django_.*$"
 processors:
     - class: popyka.builtin.processors.LogChangeProcessor
-      filters: []
-      config: {}
     - class: popyka.builtin.processors.ProduceToKafkaProcessor
-      filters: []
       config:
         topic: "${POPYKA_KAFKA_TOPIC:-popyka}"
         producer_config:
