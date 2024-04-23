@@ -1,7 +1,9 @@
+import copy
 import pathlib
 
 import pytest
 import yaml
+from pydantic import ValidationError
 
 from popyka.config import PopykaConfig
 from popyka.errors import ConfigError
@@ -28,6 +30,46 @@ class TestDefaultConfig:
 
         for processor_config in config.processors:
             processor_config.instantiate()
+
+
+@pytest.fixture
+def min_config() -> dict:
+    """Most basic an minimal valid configuration"""
+    return copy.deepcopy(
+        {
+            "database": {
+                "connect_url": "some-text",
+                "slot_name": "some-text",
+            },
+            "filters": [],
+            "processors": [],
+        }
+    )
+
+
+class TestBaseConfig:
+    def test_min_config_works(self, min_config: dict):
+        assert PopykaConfig.from_dict(min_config)
+
+    def test_fails_without_connect_url(self, min_config: dict):
+        del min_config["database"]["connect_url"]
+        with pytest.raises(ValidationError):
+            PopykaConfig.from_dict(min_config)
+
+    def test_fails_without_slot_name(self, min_config: dict):
+        del min_config["database"]["slot_name"]
+        with pytest.raises(ValidationError):
+            PopykaConfig.from_dict(min_config)
+
+    def test_fails_without_filters(self, min_config: dict):
+        del min_config["filters"]
+        with pytest.raises(ValidationError):
+            PopykaConfig.from_dict(min_config)
+
+    def test_fails_without_processors(self, min_config: dict):
+        del min_config["processors"]
+        with pytest.raises(ValidationError):
+            PopykaConfig.from_dict(min_config)
 
 
 class TestCustomConfig:
