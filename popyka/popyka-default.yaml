@@ -27,5 +27,3 @@ processors:
         producer_config:
           "bootstrap.servers": "${POPYKA_KAFKA_BOOTSTRAP_SERVERS}"
           "client.id": "${POPYKA_KAFKA_CLIENT_ID:-popyka-client}"
-
-# FIXME: relax controls, make possible to not define empty configurations like `config: {}` or `filters: []`
