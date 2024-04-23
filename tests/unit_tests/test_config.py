@@ -1,7 +1,9 @@
+import copy
 import pathlib
 
 import pytest
 import yaml
+from pydantic import ValidationError
 
 from popyka.config import PopykaConfig
 from popyka.errors import ConfigError
@@ -28,6 +30,86 @@ class TestDefaultConfig:
 
         for processor_config in config.processors:
             processor_config.instantiate()
+
+
+@pytest.fixture
+def min_config() -> dict:
+    """Most basic an minimal valid configuration"""
+    return copy.deepcopy(
+        {
+            "database": {
+                "connect_url": "some-text",
+                "slot_name": "some-text",
+            },
+            "filters": [],
+            "processors": [
+                {
+                    "class": "some-text",
+                }
+            ],
+        }
+    )
+
+
+class TestMinConfig:
+    def test_min_config_works(self, min_config: dict):
+        assert PopykaConfig.from_dict(min_config)
+
+    def test_fails_without_connect_url(self, min_config: dict):
+        del min_config["database"]["connect_url"]
+        with pytest.raises(ValidationError):
+            PopykaConfig.from_dict(min_config)
+
+    def test_fails_without_slot_name(self, min_config: dict):
+        del min_config["database"]["slot_name"]
+        with pytest.raises(ValidationError):
+            PopykaConfig.from_dict(min_config)
+
+    def test_fails_without_filters(self, min_config: dict):
+        del min_config["filters"]
+        with pytest.raises(ValidationError):
+            PopykaConfig.from_dict(min_config)
+
+    def test_fails_without_processors(self, min_config: dict):
+        del min_config["processors"]
+        with pytest.raises(ValidationError):
+            PopykaConfig.from_dict(min_config)
+
+
+class TestConfigFilter:
+    def test_empty_filter(self, min_config):
+        assert not min_config["filters"]
+        min_config["filters"].append({})
+        with pytest.raises(ValidationError):
+            PopykaConfig.from_dict(min_config)
+
+    def test_filter_with_class(self, min_config):
+        assert not min_config["filters"]
+        min_config["filters"].append({"class": "some-text"})
+        assert PopykaConfig.from_dict(min_config)
+
+    def test_filter_with_class_and_config(self, min_config):
+        assert not min_config["filters"]
+        min_config["filters"].append({"class": "some-text", "config": {}})
+        assert PopykaConfig.from_dict(min_config)
+
+
+class TestConfigProcessor:
+    def test_empty_processor(self, min_config):
+        assert min_config["processors"]
+        min_config["processors"].append({})
+        with pytest.raises(ValidationError):
+            PopykaConfig.from_dict(min_config)
+
+    def test_processor_with_class(self, min_config):
+        assert min_config["processors"]
+        min_config["processors"].append({"class": "some-text"})
+        assert PopykaConfig.from_dict(min_config)
+
+    def test_processor_with_class_and_config(self, min_config):
+        assert min_config["processors"]
+        min_config["processors"].append({"class": "some-text", "config": {}})
+        assert PopykaConfig.from_dict(min_config)
 
 
 class TestCustomConfig:
