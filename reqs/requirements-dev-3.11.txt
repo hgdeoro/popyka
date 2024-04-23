@@ -10,7 +10,7 @@ asttokens==2.4.1
     # via stack-data
 attrs==23.2.0
     # via pytest-docker
-backports-tarfile==1.1.0
+backports-tarfile==1.1.1
     # via jaraco-context
 black==24.4.0
     # via -r reqs/requirements-dev.in
