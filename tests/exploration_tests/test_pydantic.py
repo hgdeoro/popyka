@@ -1,7 +1,8 @@
 import json
 from typing import Optional
 
-from pydantic import BaseModel
+import pytest
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 
 class SampleFilterConfig(BaseModel):
@@ -20,6 +21,10 @@ class SamplePopykaConfig(BaseModel):
     processors: list[SampleProcessorConfig]
 
 
+class SamplePopykaStrictConfig(SamplePopykaConfig):
+    model_config: ConfigDict = ConfigDict(extra="forbid")
+
+
 def test_serialize():
     config = SamplePopykaConfig(
         dsn="postgresql://...",
@@ -31,22 +36,25 @@ def test_serialize():
 
 
 def test_deserialize():
-    deserialized = json.loads(
-        """
-    {
+    deserialized = {
         "dsn": "postgresql://...",
-        "filters": [
-            {
-                "class_fqn": "some.Filter"
-            }
-        ],
-        "processors": [
-            {
-                "class_fqn": "some.Processor"
-            }
-        ]
+        "filters": [{"class_fqn": "some.Filter"}],
+        "processors": [{"class_fqn": "some.Processor"}],
     }
-    """
-    )
     config = SamplePopykaConfig(**deserialized)
     print(config)
+
+
+def test_deserialize_extra_keys():
+    deserialized = {
+        "dsn": "postgresql://...",
+        "filters": [{"class_fqn": "some.Filter"}],
+        "processors": [{"class_fqn": "some.Processor"}],
+        "extra_key": [],
+    }
+    assert SamplePopykaConfig(**deserialized)
+
+    with pytest.raises(ValidationError) as err:
+        SamplePopykaStrictConfig(**deserialized)
+
+    assert json.loads(err.value.json())[0]["loc"][0] == "extra_key"
