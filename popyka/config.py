@@ -69,8 +69,8 @@ class ProcessorConfig(BaseModel, FactoryMixin):
     model_config: ConfigDict = ConfigDict(extra="forbid")
 
     class_fqn: str = Field(alias="class")
-    config_generic: dict = Field(alias="config")
-    filters: list[FilterConfig]
+    config_generic: dict | None = Field(alias="config", default=None)
+    filters: list[FilterConfig] | None = None
 
     def instantiate(self) -> Processor:
         """Creates an instance of `Processor` based on configuration"""

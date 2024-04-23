@@ -45,8 +45,6 @@ def min_config() -> dict:
             "processors": [
                 {
                     "class": "some-text",
-                    "config": {},
-                    "filters": [],
                 }
             ],
         }
