@@ -44,6 +44,29 @@ services:
     #      - pg16
 
   # ----------------------------------------------------------------------------------------------------
+  # Run latest docker release
+  # ----------------------------------------------------------------------------------------------------
+
+  popyka-release:
+    image: "${DOCKER_IMAGE_TAG_RELEASE:-registry.gitlab.com/hgdeoro/popyka}"
+    restart: no
+    shm_size: 128mb
+    environment:
+      # Pass `POPYKA_CONFIG` and other envs to reuse this service for different scenarios
+      POPYKA_CONFIG: "${POPYKA_CONFIG:-}"
+      POPYKA_PYTHONPATH: "${POPYKA_PYTHONPATH:-}"
+      POPYKA_DB_SLOT_NAME: "${POPYKA_DB_SLOT_NAME:-}"
+      POPYKA_COMPACT_DUMP: "${POPYKA_COMPACT_DUMP:-}"
+      POPYKA_KAFKA_TOPIC: "${POPYKA_KAFKA_TOPIC:-}"
+      # Use Kafka & PostgreSql 16
+      POPYKA_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      POPYKA_DB_DSN: "postgresql://postgres:pass@pg16:5432/popyka_test"
+    stop_grace_period: 1s
+    stop_signal: SIGKILL
+    volumes:
+      - ./tests/resources/external-repository:/external-repository
+
+  # ----------------------------------------------------------------------------------------------------
   # Databases
   # ----------------------------------------------------------------------------------------------------
 

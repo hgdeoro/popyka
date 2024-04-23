@@ -24,6 +24,7 @@ DOCKER_COMPOSE_LOCAL_DEVELOPMENT_SERVICES ?= pg16 kafka kowl
 DOCKER_COMPOSE_TOX_SERVICES ?= pg12 pg13 pg14 pg15 pg16
 
 export PATH := $(VENVDIR)/bin:$(PATH)
+export DOCKER_IMAGE_TAG_RELEASE := $(DOCKER_IMAGE_TAG_RELEASE)
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -120,12 +121,8 @@ LOCAL_POPYKA_DB_DSN_SAMPLE_1 = "postgresql://postgres:pass@localhost:54016/popyk
 # ----------
 
 docker-popyka-run-gitlab: docker-compose-up  # Launch latest released version of Popyka.
-	docker pull $(DOCKER_IMAGE_TAG_RELEASE)
-	docker run --rm -ti \
-		--network popyka_default \
-		-e POPYKA_DB_DSN=$(DOCKER_COMPOSE_POPYKA_DB_DSN_SAMPLE_1) \
-		-e POPYKA_KAFKA_BOOTSTRAP_SERVERS=kafka:9092 \
-			$(DOCKER_IMAGE_TAG_RELEASE)
+	docker compose pull popyka-release
+	docker compose up --build popyka-release db-activity-simulator
 
 # ----------
 
