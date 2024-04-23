@@ -92,16 +92,12 @@ class PopykaConfig(BaseModel):
     @classmethod
     def from_dict(cls, config: dict, environment: dict[str, str] = None) -> "PopykaConfig":
         interpolated = Interpolator(environment=environment or {}).interpolate(config)
+        config = PopykaConfig(**interpolated)
 
-        # if database_config is None:
-        #     raise ConfigError("Invalid config: `database` is required")
-        # FIXME: pydantic refactor: ^^^ re-add validation of `database_config` being mandatory
+        if not config.processors:
+            raise ConfigError("Invalid config: refuse to run without any processor. Check `processors` in config.")
 
-        # if not processors:
-        #     raise ConfigError("Invalid config: refuse to run without any processor. Check `processors` in config.")
-        # FIXME: pydantic refactor: ^^^ re-add validation of `processors` being mandatory
-
-        return PopykaConfig(**interpolated)
+        return config
 
     @classmethod
     def get_config_file_path(cls, environment=None) -> pathlib.Path:

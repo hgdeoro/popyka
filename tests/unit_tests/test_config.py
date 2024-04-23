@@ -42,7 +42,13 @@ def min_config() -> dict:
                 "slot_name": "some-text",
             },
             "filters": [],
-            "processors": [],
+            "processors": [
+                {
+                    "class": "some-text",
+                    "config": {},
+                    "filters": [],
+                }
+            ],
         }
     )
 
