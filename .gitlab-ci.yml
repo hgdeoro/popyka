@@ -1,9 +1,6 @@
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Python.gitlab-ci.yml
 variables:
   CI_POSTGRES12: "${CI_REGISTRY_IMAGE}:ci-postgres12-v1"
-  #CI_POSTGRES13: "${CI_REGISTRY_IMAGE}:ci-postgres13-v1"
-  #CI_POSTGRES14: "${CI_REGISTRY_IMAGE}:ci-postgres14-v1"
-  #CI_POSTGRES15: "${CI_REGISTRY_IMAGE}:ci-postgres15-v1"
   CI_POSTGRES16: "${CI_REGISTRY_IMAGE}:ci-postgres16-v1"
 
 stages: [lint, test, build, release]
@@ -36,81 +33,6 @@ lint:
         - .cache/pre-commit-3.12
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-
-build-ci-pg12:
-  stage: build
-  image: quay.io/buildah/stable
-  variables:
-    STORAGE_DRIVER: vfs
-    BUILDAH_FORMAT: docker
-  before_script:
-    - echo "$CI_REGISTRY_PASSWORD" | buildah login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
-  script:
-    - buildah pull $CI_POSTGRES12 || touch .need-ci-postgres12
-    - test -e .need-ci-postgres12 && buildah build -t $CI_POSTGRES12 -f postgres12-wal2json/Dockerfile tests/docker || true
-    - test -e .need-ci-postgres12 && buildah push     $CI_POSTGRES12                                                || true
-  rules:
-    - if: $CI_COMMIT_BRANCH == 'ci-postgres-images'
-
-#build-ci-pg13:
-#  stage: build
-#  image: quay.io/buildah/stable
-#  variables:
-#    STORAGE_DRIVER: vfs
-#    BUILDAH_FORMAT: docker
-#  before_script:
-#    - echo "$CI_REGISTRY_PASSWORD" | buildah login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
-#  script:
-#    - buildah pull $CI_POSTGRES13 || touch .need-ci-postgres13
-#    - test -e .need-ci-postgres13 && buildah build -t $CI_POSTGRES13 -f postgres13-wal2json/Dockerfile tests/docker || true
-#    - test -e .need-ci-postgres13 && buildah push     $CI_POSTGRES13                                                || true
-#  rules:
-#    - if: $CI_COMMIT_BRANCH == 'ci-postgres-images'
-#
-#build-ci-pg14:
-#  stage: build
-#  image: quay.io/buildah/stable
-#  variables:
-#    STORAGE_DRIVER: vfs
-#    BUILDAH_FORMAT: docker
-#  before_script:
-#    - echo "$CI_REGISTRY_PASSWORD" | buildah login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
-#  script:
-#    - buildah pull $CI_POSTGRES14 || touch .need-ci-postgres14
-#    - test -e .need-ci-postgres14 && buildah build -t $CI_POSTGRES14 -f postgres14-wal2json/Dockerfile tests/docker || true
-#    - test -e .need-ci-postgres14 && buildah push     $CI_POSTGRES14                                                || true
-#  rules:
-#    - if: $CI_COMMIT_BRANCH == 'ci-postgres-images'
-#
-#build-ci-pg15:
-#  stage: build
-#  image: quay.io/buildah/stable
-#  variables:
-#    STORAGE_DRIVER: vfs
-#    BUILDAH_FORMAT: docker
-#  before_script:
-#    - echo "$CI_REGISTRY_PASSWORD" | buildah login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
-#  script:
-#    - buildah pull $CI_POSTGRES15 || touch .need-ci-postgres15
-#    - test -e .need-ci-postgres15 && buildah build -t $CI_POSTGRES15 -f postgres15-wal2json/Dockerfile tests/docker || true
-#    - test -e .need-ci-postgres15 && buildah push     $CI_POSTGRES15                                                || true
-#  rules:
-#    - if: $CI_COMMIT_BRANCH == 'ci-postgres-images'
-
-build-ci-pg16:
-  stage: build
-  image: quay.io/buildah/stable
-  variables:
-    STORAGE_DRIVER: vfs
-    BUILDAH_FORMAT: docker
-  before_script:
-    - echo "$CI_REGISTRY_PASSWORD" | buildah login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
-  script:
-    - buildah pull $CI_POSTGRES16 || touch .need-ci-postgres16
-    - test -e .need-ci-postgres16 && buildah build -t $CI_POSTGRES16 -f postgres16-wal2json/Dockerfile tests/docker || true
-    - test -e .need-ci-postgres16 && buildah push     $CI_POSTGRES16                                                || true
-  rules:
-    - if: $CI_COMMIT_BRANCH == 'ci-postgres-images'
 
 unit-test:
   image: python:3.12
@@ -269,3 +191,39 @@ release:
     - buildah push $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
   rules:
     - if: $CI_COMMIT_TAG
+
+
+# --------------------------------------------------------------------------------------------------------------
+# The next jobs build postgresql images needed to run tests on GitLab CI
+# They are re-built when a change is pushed to the `ci-postgres-images` branch
+# --------------------------------------------------------------------------------------------------------------
+
+build-ci-pg12:
+  stage: build
+  image: quay.io/buildah/stable
+  variables:
+    STORAGE_DRIVER: vfs
+    BUILDAH_FORMAT: docker
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | buildah login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+  script:
+    - buildah pull $CI_POSTGRES12 || touch .need-ci-postgres12
+    - test -e .need-ci-postgres12 && buildah build -t $CI_POSTGRES12 -f postgres12-wal2json/Dockerfile tests/docker || true
+    - test -e .need-ci-postgres12 && buildah push     $CI_POSTGRES12                                                || true
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'ci-postgres-images'
+
+build-ci-pg16:
+  stage: build
+  image: quay.io/buildah/stable
+  variables:
+    STORAGE_DRIVER: vfs
+    BUILDAH_FORMAT: docker
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | buildah login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+  script:
+    - buildah pull $CI_POSTGRES16 || touch .need-ci-postgres16
+    - test -e .need-ci-postgres16 && buildah build -t $CI_POSTGRES16 -f postgres16-wal2json/Dockerfile tests/docker || true
+    - test -e .need-ci-postgres16 && buildah push     $CI_POSTGRES16                                                || true
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'ci-postgres-images'
