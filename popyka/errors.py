@@ -8,3 +8,9 @@ class StopServer(PopykaException):
 
 class ConfigError(PopykaException):
     pass
+
+
+class AbortExecutionException(Exception):
+    """Used by error handlers to signal the immediate exit (with error) of Popyka"""
+
+    pass

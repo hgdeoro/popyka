@@ -53,6 +53,7 @@ class Processor(abc.ABC, Configurable):
     def setup(self):
         """Setup the component (validate configuration, setup clients, etc.)."""
         raise NotImplementedError()
+        # FIXME: probably this method shouldn't be abstract
 
     @abc.abstractmethod
     def process_change(self, change: Wal2JsonV2Change):
@@ -104,7 +105,7 @@ class ErrorHandler(abc.ABC, Configurable):
         NEXT_PROCESSOR = "NEXT_PROCESSOR"
         NEXT_MESSAGE = "NEXT_MESSAGE"
         RETRY_PROCESSOR = "RETRY_PROCESSOR"
-        # ABORT = "ABORT"
+        ABORT = "ABORT"
 
     logger = logging.getLogger(f"{__name__}.ErrorHandler")
 

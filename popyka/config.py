@@ -5,7 +5,7 @@ import pathlib
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
-from popyka.api import Filter, Processor
+from popyka.api import ErrorHandler, Filter, Processor
 from popyka.errors import ConfigError
 from popyka.interpolation import Interpolator
 
@@ -66,10 +66,16 @@ class FilterConfig(BaseModel, FactoryMixin):
         return FilterConfig(**config)
 
 
-class ErrorHandlerConfig(BaseModel):
+class ErrorHandlerConfig(BaseModel, FactoryMixin):
     model_config: ConfigDict = ConfigDict(extra="forbid", use_enum_values=True)
     class_fqn: str = Field(alias="class")
     config_generic: dict = Field(alias="config", default_factory=dict)
+
+    def instantiate(self) -> ErrorHandler:
+        error_handler_class = self.get_class_from_fqn(self.class_fqn, Processor)
+        instance: ErrorHandler = error_handler_class(self.config_generic)
+        # instance.setup()  # FIXME: add `setup()` to `ErrorHandler`
+        return instance
 
 
 class ProcessorConfig(BaseModel, FactoryMixin):
@@ -84,6 +90,7 @@ class ProcessorConfig(BaseModel, FactoryMixin):
         """Creates an instance of `Processor` based on configuration"""
         processor_class = self.get_class_from_fqn(self.class_fqn, Processor)
         instance: Processor = processor_class(self.config_generic)
+        instance._error_handlers = [_.instantiate() for _ in self.error_handlers]  # FIXME: refactor
         instance.setup()
         return instance
 

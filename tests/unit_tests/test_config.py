@@ -1,4 +1,3 @@
-import copy
 import pathlib
 
 import pytest
@@ -30,25 +29,6 @@ class TestDefaultConfig:
 
         for processor_config in config.processors:
             processor_config.instantiate()
-
-
-@pytest.fixture
-def min_config() -> dict:
-    """Most basic an minimal valid configuration"""
-    return copy.deepcopy(
-        {
-            "database": {
-                "connect_url": "some-text",
-                "slot_name": "some-text",
-            },
-            "filters": [],
-            "processors": [
-                {
-                    "class": "some-text",
-                }
-            ],
-        }
-    )
 
 
 class TestMinConfig:
