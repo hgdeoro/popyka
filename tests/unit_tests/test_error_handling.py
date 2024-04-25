@@ -69,31 +69,33 @@ class GenericErrorHandler(ErrorHandler):
     def setup(self):
         self.handled_errors.clear()
 
+    def get_next(self):
+        return ErrorHandler.NextAction.NEXT_ERROR_HANDLER
+
     def handle_error(self, change: Wal2JsonV2Change, exception: Exception) -> ErrorHandler.NextAction:
         assert isinstance(change, (Wal2JsonV2Change, dict)), "handle_error(): 'change' param of invalid type"
         assert isinstance(exception, BaseException), "handle_error(): 'exception' param of invalid type"
 
         self.handled_errors.append(exception)
-        return ErrorHandler.NextAction.NEXT_ERROR_HANDLER
+        return self.get_next()
 
 
 ERR_HANDLER = f"{__name__}.{GenericErrorHandler.__qualname__}"
 
 
-class TestSingleErrorHandlingConfigured:
-    def test_error_handler_is_used(self, min_config, monkeypatch):
-        monkeypatch.setattr(GenericProcessor, "process_change", process_change_key_error)
+def test_single_error_handler_is_used(min_config, monkeypatch):
+    monkeypatch.setattr(GenericProcessor, "process_change", process_change_key_error)
 
-        min_config["processors"] = [{"class": GENERIC, "error_handlers": [{"class": ERR_HANDLER}]}]
-        config = PopykaConfig.from_dict(min_config)
-        processors = [_.instantiate() for _ in config.processors]
+    min_config["processors"] = [{"class": GENERIC, "error_handlers": [{"class": ERR_HANDLER}]}]
+    config = PopykaConfig.from_dict(min_config)
+    processors = [_.instantiate() for _ in config.processors]
 
-        adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
-        repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
-        assert not GenericErrorHandler.handled_errors
+    adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
+    repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
+    assert not GenericErrorHandler.handled_errors
 
-        with pytest.raises(AbortExecutionException):
-            adaptor(repl_message)
+    with pytest.raises(AbortExecutionException):
+        adaptor(repl_message)
 
-        assert len(GenericErrorHandler.handled_errors) == 1
-        assert isinstance(GenericErrorHandler.handled_errors[0], KeyError)
+    assert len(GenericErrorHandler.handled_errors) == 1
+    assert isinstance(GenericErrorHandler.handled_errors[0], KeyError)
