@@ -94,3 +94,36 @@ class Filter(abc.ABC, Configurable):
         * `CONTINUE`: there's no decision regarding this change, other filters WILL be evaluated.
         """
         raise NotImplementedError()
+
+
+# class FallbackErrorHandlerAction(Enum):
+#     """What to do if none of the error handlers handle the error"""
+#     NEXT_PROCESSOR = "NEXT_PROCESSOR"  # Ignore error and run the next processor (cannot be used in last processor)
+#     NEXT_MESSAGE = "NEXT_MESSAGE"  # Ignore error and any other processor
+#     ABORT = "ABORT"  # Abort the execution of Popyka (exit with error)
+
+
+class ErrorHandler(abc.ABC, Configurable):
+    """Base class for error handlers"""
+
+    class NextAction(Enum):
+        NEXT_ERROR_HANDLER = "NEXT_ERROR_HANDLER"
+        NEXT_PROCESSOR = "NEXT_PROCESSOR"
+        NEXT_MESSAGE = "NEXT_MESSAGE"
+        RETRY_PROCESSOR = "RETRY_PROCESSOR"
+        ABORT = "ABORT"
+
+    logger = logging.getLogger(f"{__name__}.ErrorHandler")
+
+    def __init__(self, config_generic: dict):
+        super().__init__(config_generic=config_generic)
+        self.logger.debug("Instantiating error handler with config: %s", LazyToStr(config_generic))
+
+    @abc.abstractmethod
+    def setup(self):
+        """Setup the component (validate configuration, setup clients, etc.)."""
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def handle_error(self, change: Wal2JsonV2Change, exception: Exception) -> NextAction:
+        raise NotImplementedError()

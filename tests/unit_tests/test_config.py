@@ -112,6 +112,55 @@ class TestConfigProcessor:
         assert PopykaConfig.from_dict(min_config)
 
 
+class TestConfigProcessorErrorHandlers:
+    def test_empty_error_handlers(self, min_config):
+        assert "error_handlers" not in min_config["processors"]
+        min_config["processors"][0]["error_handlers"] = []
+        config = PopykaConfig.from_dict(min_config)
+        assert len(config.processors[0].error_handlers) == 0
+
+    def test_one_handler(self, min_config):
+        assert "error_handlers" not in min_config["processors"]
+        min_config["processors"][0]["error_handlers"] = [{"class": "some.ErrorHandler"}]
+        config = PopykaConfig.from_dict(min_config)
+        assert config.processors[0].error_handlers[0].class_fqn == "some.ErrorHandler"
+
+    def test_one_handler_with_config(self, min_config):
+        assert "error_handlers" not in min_config["processors"]
+        min_config["processors"][0]["error_handlers"] = [
+            {
+                "class": "some.ErrorHandler",
+                "config": {
+                    "key": "value",
+                },
+            }
+        ]
+        config = PopykaConfig.from_dict(min_config)
+        assert config.processors[0].error_handlers[0].class_fqn == "some.ErrorHandler"
+        assert config.processors[0].error_handlers[0].config_generic["key"] == "value"
+
+    def test_two_handlers(self, min_config):
+        assert "error_handlers" not in min_config["processors"]
+        min_config["processors"][0]["error_handlers"] = [
+            {
+                "class": "some.ErrorHandler",
+                "config": {
+                    "key": "value",
+                },
+            },
+            {
+                "class": "some.other.ErrorHandler",
+                "config": {
+                    "key": "value",
+                },
+            },
+        ]
+        config = PopykaConfig.from_dict(min_config)
+        assert config.processors[0].error_handlers[0].class_fqn == "some.ErrorHandler"
+        assert config.processors[0].error_handlers[0].config_generic["key"] == "value"
+        assert config.processors[0].error_handlers[1].class_fqn == "some.other.ErrorHandler"
+
+
 class TestCustomConfig:
     def test_default_when_config_file_env_is_empty_string(self, popyka_env_vars):
         popyka_env_vars["POPYKA_CONFIG"] = ""

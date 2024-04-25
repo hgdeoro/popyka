@@ -62,15 +62,40 @@ class FilterConfig(BaseModel, FactoryMixin):
 
     @classmethod
     def from_dict(cls, config: dict) -> "FilterConfig":
+        # FIXME: remove this method
         return FilterConfig(**config)
 
 
+# class ProcessorOnError(enum.Enum):
+#     SILENT = "SILENT"
+#     """Do nothing, continue with next processor / message (depending on `ProcessorOnErrorNextStep`)"""
+#
+#     LOG = "LOG"
+#     """log the error and continue with next processor / message (depending on `ProcessorOnErrorNextStep`)"""
+#
+#     # RETRY = "RETRY"
+#     # """Retry for ever."""  # This is not reliable, but let's keep it simple.
+#     #
+#     # DLQ = "DLQ"
+#     # """Send to DLQ and continue with next processor / message (depending on `ProcessorOnErrorNextStep`)"""
+#     #
+#     # FATAL = "FATAL"
+#     # """raise an exception and exit popyka with error"""
+
+
+class ErrorHandlerConfig(BaseModel):
+    model_config: ConfigDict = ConfigDict(extra="forbid", use_enum_values=True)
+    class_fqn: str = Field(alias="class")
+    config_generic: dict = Field(alias="config", default_factory=dict)
+
+
 class ProcessorConfig(BaseModel, FactoryMixin):
-    model_config: ConfigDict = ConfigDict(extra="forbid")
+    model_config: ConfigDict = ConfigDict(extra="forbid", use_enum_values=True)
 
     class_fqn: str = Field(alias="class")
     config_generic: dict = Field(alias="config", default_factory=dict)
     filters: list[FilterConfig] = Field(default_factory=list)
+    error_handlers: list[ErrorHandlerConfig] = Field(default_factory=list)
 
     def instantiate(self) -> Processor:
         """Creates an instance of `Processor` based on configuration"""
@@ -81,10 +106,13 @@ class ProcessorConfig(BaseModel, FactoryMixin):
 
     @classmethod
     def from_dict(cls, config: dict) -> "ProcessorConfig":
+        # FIXME: remove this method
         return ProcessorConfig(**config)
 
 
 class PopykaConfig(BaseModel):
+    model_config: ConfigDict = ConfigDict(extra="forbid", use_enum_values=True)
+
     database: DatabaseConfig
     filters: list[FilterConfig]  # `filters` is mandatory on purpose
     processors: list[ProcessorConfig]  # `processors` is mandatory on purpose
