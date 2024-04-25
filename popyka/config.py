@@ -72,9 +72,9 @@ class ErrorHandlerConfig(BaseModel, FactoryMixin):
     config_generic: dict = Field(alias="config", default_factory=dict)
 
     def instantiate(self) -> ErrorHandler:
-        error_handler_class = self.get_class_from_fqn(self.class_fqn, Processor)
+        error_handler_class = self.get_class_from_fqn(self.class_fqn, ErrorHandler)
         instance: ErrorHandler = error_handler_class(self.config_generic)
-        # instance.setup()  # FIXME: add `setup()` to `ErrorHandler`
+        instance.setup()
         return instance
 
 
