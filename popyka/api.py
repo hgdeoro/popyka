@@ -96,13 +96,6 @@ class Filter(abc.ABC, Configurable):
         raise NotImplementedError()
 
 
-# class FallbackErrorHandlerAction(Enum):
-#     """What to do if none of the error handlers handle the error"""
-#     NEXT_PROCESSOR = "NEXT_PROCESSOR"  # Ignore error and run the next processor (cannot be used in last processor)
-#     NEXT_MESSAGE = "NEXT_MESSAGE"  # Ignore error and any other processor
-#     ABORT = "ABORT"  # Abort the execution of Popyka (exit with error)
-
-
 class ErrorHandler(abc.ABC, Configurable):
     """Base class for error handlers"""
 
@@ -111,7 +104,7 @@ class ErrorHandler(abc.ABC, Configurable):
         NEXT_PROCESSOR = "NEXT_PROCESSOR"
         NEXT_MESSAGE = "NEXT_MESSAGE"
         RETRY_PROCESSOR = "RETRY_PROCESSOR"
-        ABORT = "ABORT"
+        # ABORT = "ABORT"
 
     logger = logging.getLogger(f"{__name__}.ErrorHandler")
 

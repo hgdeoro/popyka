@@ -66,23 +66,6 @@ class FilterConfig(BaseModel, FactoryMixin):
         return FilterConfig(**config)
 
 
-# class ProcessorOnError(enum.Enum):
-#     SILENT = "SILENT"
-#     """Do nothing, continue with next processor / message (depending on `ProcessorOnErrorNextStep`)"""
-#
-#     LOG = "LOG"
-#     """log the error and continue with next processor / message (depending on `ProcessorOnErrorNextStep`)"""
-#
-#     # RETRY = "RETRY"
-#     # """Retry for ever."""  # This is not reliable, but let's keep it simple.
-#     #
-#     # DLQ = "DLQ"
-#     # """Send to DLQ and continue with next processor / message (depending on `ProcessorOnErrorNextStep`)"""
-#     #
-#     # FATAL = "FATAL"
-#     # """raise an exception and exit popyka with error"""
-
-
 class ErrorHandlerConfig(BaseModel):
     model_config: ConfigDict = ConfigDict(extra="forbid", use_enum_values=True)
     class_fqn: str = Field(alias="class")

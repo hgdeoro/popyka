@@ -1,37 +1,10 @@
-"""
-Some thoughts about error handling:
-
-Most flexible implementation:
-- configure generic 'error handler'
-- add 'context' to message (to be able to implement retries)
-
-With this, we can implement:
-- silent, log
-- retry (keep track of attempts on `context`)
-- dlq
-- fatal
-
-The bad: more complex to implement initially
-The good: simple API, completely decoupled from Processor
-
-SILENT -> popyka.builtin.error.SilentErrorHandler
-LOG    -> popyka.builtin.error.LogErrorHandler
-RETRY  -> popyka.builtin.error.RetryErrorHandler
-DLQ    -> popyka.builtin.error.DlqErrorHandler
-FATAL  -> popyka.builtin.error.FatalErrorHandler
-
-Implementation:
-* function after execution?
-* wrapper?
-* how django handle middlewares?
-* maybe pass message + exception to function would be enough?
-"""
-
 from popyka.api import ErrorHandler, Wal2JsonV2Change
 from popyka.logging import LazyToStr
 
 
 class Abort(ErrorHandler):
+    """Immediately abort the processing, exit Popyka with error."""
+
     def setup(self):
         pass
 
@@ -41,6 +14,8 @@ class Abort(ErrorHandler):
 
 
 class ContinueNextProcessor(ErrorHandler):
+    """Continue processing: pass the change to the next configured processor."""
+
     def setup(self):
         pass
 
@@ -50,6 +25,11 @@ class ContinueNextProcessor(ErrorHandler):
 
 
 class ContinueNextMessage(ErrorHandler):
+    """
+    Continue processing: assume the change being handled is done, continue with the next message
+    (potentially ignoring next processors).
+    """
+
     def setup(self):
         pass
 
