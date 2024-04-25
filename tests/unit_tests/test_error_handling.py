@@ -15,6 +15,10 @@ class GenericProcessor(Processor):
         raise NotImplementedError("This method is intended to be mocked")
 
 
+def process_change_key_error(_self, change: Wal2JsonV2Change, *args, **kwargs):
+    print(change["this-key-does-not-exists"])
+
+
 GENERIC = f"{__name__}.{GenericProcessor.__qualname__}"
 
 VALID_PAYLOAD = {
@@ -30,10 +34,7 @@ VALID_PAYLOAD = {
 
 class TestNoErrorHandlingConfigured:
     def test_abort_without_error_handlers(self, min_config, monkeypatch):
-        def process_change(_self, change: Wal2JsonV2Change, *args, **kwargs):
-            print(change["this-key-does-not-exists"])
-
-        monkeypatch.setattr(GenericProcessor, "process_change", process_change)
+        monkeypatch.setattr(GenericProcessor, "process_change", process_change_key_error)
 
         min_config["processors"] = [{"class": GENERIC}]
         config = PopykaConfig.from_dict(min_config)
@@ -69,8 +70,8 @@ class GenericErrorHandler(ErrorHandler):
         self.handled_errors.clear()
 
     def handle_error(self, change: Wal2JsonV2Change, exception: Exception) -> ErrorHandler.NextAction:
-        assert isinstance(change, (Wal2JsonV2Change, dict))
-        assert isinstance(exception, BaseException)
+        assert isinstance(change, (Wal2JsonV2Change, dict)), "handle_error(): 'change' param of invalid type"
+        assert isinstance(exception, BaseException), "handle_error(): 'exception' param of invalid type"
 
         self.handled_errors.append(exception)
         return ErrorHandler.NextAction.NEXT_ERROR_HANDLER
@@ -81,10 +82,7 @@ ERR_HANDLER = f"{__name__}.{GenericErrorHandler.__qualname__}"
 
 class TestSingleErrorHandlingConfigured:
     def test_error_handler_is_used(self, min_config, monkeypatch):
-        def process_change(_self, change: Wal2JsonV2Change, *args, **kwargs):
-            print(change["this-key-does-not-exists"])
-
-        monkeypatch.setattr(GenericProcessor, "process_change", process_change)
+        monkeypatch.setattr(GenericProcessor, "process_change", process_change_key_error)
 
         min_config["processors"] = [{"class": GENERIC, "error_handlers": [{"class": ERR_HANDLER}]}]
         config = PopykaConfig.from_dict(min_config)
