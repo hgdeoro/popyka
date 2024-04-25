@@ -3,8 +3,12 @@ import logging
 
 import psycopg2.extras
 
-from popyka.api import Filter, Processor, Wal2JsonV2Change
-from popyka.errors import PopykaException
+from popyka.api import ErrorHandler, Filter, Processor, Wal2JsonV2Change
+from popyka.errors import (
+    AbortExecutionException,
+    PopykaException,
+    UnhandledErrorHandlerException,
+)
 from popyka.logging import LazyToStr
 
 
@@ -36,7 +40,77 @@ class ReplicationConsumerToProcessorAdaptor:
         if process_change:
             for processor in self._processors:
                 self.logger.debug("Starting processing with processor: %s", processor)
-                processor.process_change(change)
+                try:
+                    processor.process_change(change)
+                except BaseException as err:
+                    self.logger.exception("Unhandled exception: processor: %s", processor)
+                    result: ErrorHandler.NextAction = self._handle_error(processor, change, err)
+                    if result == ErrorHandler.NextAction.ABORT:
+                        raise AbortExecutionException()
+
+                    # elif result == ErrorHandler.NextAction.NEXT_ERROR_HANDLER:
+
+                    elif result == ErrorHandler.NextAction.NEXT_PROCESSOR:
+                        continue
+
+                    elif result == ErrorHandler.NextAction.RETRY_PROCESSOR:
+                        raise NotImplementedError()
+
+                    elif result == ErrorHandler.NextAction.NEXT_MESSAGE:
+                        return
+
+                    else:
+                        raise PopykaException(f"Unexpected result - type={type(result)} - value={result}")
+
+    def _handle_error(
+        self, processor: Processor, change: Wal2JsonV2Change, exception: BaseException
+    ) -> ErrorHandler.NextAction:
+        """Guarantee to return a valid value of ErrorHandler.NextAction"""
+
+        if not processor.error_handlers:
+            # When there are no error handlers, the default behavior is to abort
+            return ErrorHandler.NextAction.ABORT
+
+        try:
+            for err_handler in processor.error_handlers:
+                result = err_handler.handle_error(change, exception)
+                if not isinstance(result, ErrorHandler.NextAction):
+                    raise PopykaException(
+                        f"Error handler {err_handler} returned an invalid value. "
+                        f"type={type(result)} - value={result}"
+                    )
+
+                if result == ErrorHandler.NextAction.ABORT:
+                    self.logger.debug("NextAction.ABORT")
+                    return result
+
+                elif result == ErrorHandler.NextAction.NEXT_ERROR_HANDLER:
+                    self.logger.debug("NextAction.NEXT_ERROR_HANDLER")
+                    continue
+
+                elif result == ErrorHandler.NextAction.NEXT_PROCESSOR:
+                    self.logger.debug("NextAction.NEXT_PROCESSOR")
+                    return result
+
+                elif result == ErrorHandler.NextAction.RETRY_PROCESSOR:
+                    self.logger.debug("NextAction.RETRY_PROCESSOR")
+                    return result
+
+                elif result == ErrorHandler.NextAction.NEXT_MESSAGE:
+                    self.logger.debug("NextAction.NEXT_MESSAGE")
+                    return result
+
+                else:
+                    raise PopykaException(f"Unexpected value for NextAction - type={type(result)} - value={result}")
+
+        except PopykaException:
+            raise
+
+        except:  # noqa: E722
+            raise UnhandledErrorHandlerException("Error handling failed")
+
+        # When there are no more error handlers to run, let's abort
+        return ErrorHandler.NextAction.ABORT
 
     def __call__(self, msg: psycopg2.extras.ReplicationMessage):
         self.logger.debug("ReplicationConsumerToProcessorAdaptor: received payload: %s", msg)

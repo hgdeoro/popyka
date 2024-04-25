@@ -17,25 +17,25 @@ class SampleProcessor1(Processor):
 
 PROCESSOR_1 = f"{__name__}.{SampleProcessor1.__qualname__}"
 
+VALID_PAYLOAD = {
+    "action": "I",
+    "columns": [
+        {"name": "pk", "type": "integer", "value": 1},
+        {"name": "name", "type": "character varying", "value": "this-is-the-value-1"},
+    ],
+    "schema": "public",
+    "table": "table_name",
+}
+
 
 class TestErrorHandling:
-    def test(self, min_config):
+    def test_abort_by_default(self, min_config):
         min_config["processors"] = [{"class": PROCESSOR_1}]
         config = PopykaConfig.from_dict(min_config)
         processors = [_.instantiate() for _ in config.processors]
 
-        payload = {
-            "action": "I",
-            "columns": [
-                {"name": "pk", "type": "integer", "value": 1},
-                {"name": "name", "type": "character varying", "value": "this-is-the-value-1"},
-            ],
-            "schema": "public",
-            "table": "table_name",
-        }
-
         adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
-        repl_message = ReplicationMessageMock.from_dict(payload)
+        repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
 
         with pytest.raises(AbortExecutionException):
             adaptor(repl_message)

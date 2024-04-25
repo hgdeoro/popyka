@@ -10,7 +10,9 @@ class ConfigError(PopykaException):
     pass
 
 
-class AbortExecutionException(Exception):
+class AbortExecutionException(PopykaException):
     """Used by error handlers to signal the immediate exit (with error) of Popyka"""
 
-    pass
+
+class UnhandledErrorHandlerException(PopykaException):
+    """An error handled failed to handle an error"""
