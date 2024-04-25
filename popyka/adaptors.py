@@ -7,6 +7,7 @@ from popyka.api import ErrorHandler, Filter, Processor, Wal2JsonV2Change
 from popyka.errors import (
     AbortExecutionException,
     PopykaException,
+    StopServer,
     UnhandledErrorHandlerException,
 )
 from popyka.logging import LazyToStr
@@ -42,6 +43,10 @@ class ReplicationConsumerToProcessorAdaptor:
                 self.logger.debug("Starting processing with processor: %s", processor)
                 try:
                     processor.process_change(change)
+
+                except StopServer:
+                    raise  # FIXME: do we still need this exception?
+
                 except BaseException as err:
                     self.logger.exception("Unhandled exception: processor: %s", processor)
                     result: ErrorHandler.NextAction = self._handle_error(processor, change, err)
