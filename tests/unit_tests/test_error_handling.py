@@ -7,24 +7,15 @@ from popyka.errors import AbortExecutionException, StopServer
 from tests.unit_tests.test_replication_consumer_daptor import ReplicationMessageMock
 
 
-class SampleProcessor1(Processor):
+class GenericProcessor(Processor):
     def setup(self):
         pass
 
     def process_change(self, change: Wal2JsonV2Change):
-        print(change["this-key-does-not-exists"])
+        raise NotImplementedError("This method is intended to be mocked")
 
 
-class SampleProcessorStop(Processor):
-    def setup(self):
-        pass
-
-    def process_change(self, change: Wal2JsonV2Change):
-        raise StopServer()
-
-
-PROCESSOR_1 = f"{__name__}.{SampleProcessor1.__qualname__}"
-PROCESSOR_STOP_SERVER = f"{__name__}.{SampleProcessorStop.__qualname__}"
+GENERIC = f"{__name__}.{GenericProcessor.__qualname__}"
 
 VALID_PAYLOAD = {
     "action": "I",
@@ -38,8 +29,13 @@ VALID_PAYLOAD = {
 
 
 class TestErrorHandling:
-    def test_abort_without_error_handlers(self, min_config):
-        min_config["processors"] = [{"class": PROCESSOR_1}]
+    def test_abort_without_error_handlers(self, min_config, monkeypatch):
+        def process_change(change: Wal2JsonV2Change, *args, **kwargs):
+            print(change["this-key-does-not-exists"])
+
+        monkeypatch.setattr(GenericProcessor, "process_change", process_change)
+
+        min_config["processors"] = [{"class": GENERIC}]
         config = PopykaConfig.from_dict(min_config)
         processors = [_.instantiate() for _ in config.processors]
 
@@ -49,8 +45,13 @@ class TestErrorHandling:
         with pytest.raises(AbortExecutionException):
             adaptor(repl_message)
 
-    def test_stop_is_propagated(self, min_config):
-        min_config["processors"] = [{"class": PROCESSOR_STOP_SERVER}]
+    def test_stop_is_propagated(self, min_config, monkeypatch):
+        def process_change(*args, **kwargs):
+            raise StopServer()
+
+        monkeypatch.setattr(GenericProcessor, "process_change", process_change)
+
+        min_config["processors"] = [{"class": GENERIC}]
         config = PopykaConfig.from_dict(min_config)
         processors = [_.instantiate() for _ in config.processors]
 
