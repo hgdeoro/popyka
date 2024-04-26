@@ -24,7 +24,6 @@ class ReplicationConsumerToProcessorAdaptor:
 
     def _handle_payload(self, payload: bytes):
         change = Wal2JsonV2Change(json.loads(payload))
-        process_change = True
 
         for a_filter in self._filters:
             match a_filter.filter(change):
@@ -38,34 +37,33 @@ class ReplicationConsumerToProcessorAdaptor:
                 case _:
                     raise PopykaException("Filter.filter() returned invalid value")
 
-        if process_change:
-            for processor in self._processors:
-                self.logger.debug("Starting processing with processor: %s", processor)
-                try:
-                    processor.process_change(change)
+        for processor in self._processors:
+            self.logger.debug("Starting processing with processor: %s", processor)
+            try:
+                processor.process_change(change)
 
-                except StopServer:
-                    raise  # FIXME: do we still need this exception?
+            except StopServer:
+                raise  # FIXME: do we still need this exception?
 
-                except BaseException as err:
-                    self.logger.exception("Unhandled exception: processor: %s", processor)
-                    result: ErrorHandler.NextAction = self._handle_error(processor, change, err)
-                    if result == ErrorHandler.NextAction.ABORT:
-                        raise AbortExecutionException()
+            except BaseException as err:
+                self.logger.exception("Unhandled exception: processor: %s", processor)
+                result: ErrorHandler.NextAction = self._handle_error(processor, change, err)
+                if result == ErrorHandler.NextAction.ABORT:
+                    raise AbortExecutionException()
 
-                    # elif result == ErrorHandler.NextAction.NEXT_ERROR_HANDLER:
+                # elif result == ErrorHandler.NextAction.NEXT_ERROR_HANDLER:
 
-                    elif result == ErrorHandler.NextAction.NEXT_PROCESSOR:
-                        continue
+                elif result == ErrorHandler.NextAction.NEXT_PROCESSOR:
+                    continue
 
-                    elif result == ErrorHandler.NextAction.RETRY_PROCESSOR:
-                        raise NotImplementedError()
+                elif result == ErrorHandler.NextAction.RETRY_PROCESSOR:
+                    raise NotImplementedError()
 
-                    elif result == ErrorHandler.NextAction.NEXT_MESSAGE:
-                        return
+                elif result == ErrorHandler.NextAction.NEXT_MESSAGE:
+                    return ErrorHandler.NextAction.NEXT_MESSAGE
 
-                    else:
-                        raise PopykaException(f"Unexpected result - type={type(result)} - value={result}")
+                else:
+                    raise PopykaException(f"Unexpected result - type={type(result)} - value={result}")
 
     def _handle_error(
         self, processor: Processor, change: Wal2JsonV2Change, exception: BaseException
