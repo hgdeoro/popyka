@@ -22,14 +22,14 @@ class ReplicationConsumerToProcessorAdaptor:
         self._processors = processors
         self._filters = filters
 
-    def _handle_payload(self, payload: bytes):
+    def _handle_payload(self, payload: bytes) -> ErrorHandler.NextAction | Filter.Result | None:
         change = Wal2JsonV2Change(json.loads(payload))
 
         for a_filter in self._filters:
             match a_filter.filter(change):
                 case Filter.Result.IGNORE:
                     self.logger.debug("Ignoring change for change: %s", LazyToStr(change))
-                    return  # ignore this message
+                    return Filter.Result.IGNORE
                 case Filter.Result.PROCESS:
                     break  # stop filtering
                 case Filter.Result.CONTINUE:
@@ -64,6 +64,8 @@ class ReplicationConsumerToProcessorAdaptor:
 
                 else:
                     raise PopykaException(f"Unexpected result - type={type(result)} - value={result}")
+
+        return None
 
     def _handle_error(
         self, processor: Processor, change: Wal2JsonV2Change, exception: BaseException
@@ -115,12 +117,14 @@ class ReplicationConsumerToProcessorAdaptor:
         # When there are no more error handlers to run, let's abort
         return ErrorHandler.NextAction.ABORT
 
-    def __call__(self, msg: psycopg2.extras.ReplicationMessage):
+    def __call__(self, msg: psycopg2.extras.ReplicationMessage) -> ErrorHandler.NextAction | Filter.Result | None:
         self.logger.debug("ReplicationConsumerToProcessorAdaptor: received payload: %s", msg)
 
         # Handle the payload
-        self._handle_payload(msg.payload)
+        result = self._handle_payload(msg.payload)
 
         # Flush after every message is successfully processed
         self.logger.debug("send_feedback() flush_lsn=%s", msg.data_start)
-        msg.cursor.send_feedback(flush_lsn=msg.data_start)
+        msg.cursor.send_feedback(flush_lsn=msg.data_start)  # FIXME: how to handle errors here?
+
+        return result
