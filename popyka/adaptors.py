@@ -48,22 +48,19 @@ class ReplicationConsumerToProcessorAdaptor:
             except BaseException as err:
                 self.logger.exception("Unhandled exception: processor: %s", processor)
                 result: ErrorHandler.NextAction = self._handle_error(processor, change, err)
-                if result == ErrorHandler.NextAction.ABORT:
-                    raise AbortExecutionException()
-
-                # elif result == ErrorHandler.NextAction.NEXT_ERROR_HANDLER:
-
-                elif result == ErrorHandler.NextAction.NEXT_PROCESSOR:
-                    continue
-
-                elif result == ErrorHandler.NextAction.RETRY_PROCESSOR:
-                    raise NotImplementedError()
-
-                elif result == ErrorHandler.NextAction.NEXT_MESSAGE:
-                    return ErrorHandler.NextAction.NEXT_MESSAGE
-
-                else:
-                    raise PopykaException(f"Unexpected result - type={type(result)} - value={result}")
+                match result:
+                    case ErrorHandler.NextAction.ABORT:
+                        raise AbortExecutionException()
+                    case ErrorHandler.NextAction.NEXT_ERROR_HANDLER:
+                        raise PopykaException(f"Unexpected result - type={type(result)} - value={result}")
+                    case ErrorHandler.NextAction.NEXT_PROCESSOR:
+                        continue
+                    case ErrorHandler.NextAction.RETRY_PROCESSOR:
+                        raise NotImplementedError()
+                    case ErrorHandler.NextAction.NEXT_MESSAGE:
+                        return ErrorHandler.NextAction.NEXT_MESSAGE
+                    case _:
+                        raise PopykaException(f"Unexpected result - type={type(result)} - value={result}")
 
         return None
 
