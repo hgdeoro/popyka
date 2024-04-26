@@ -37,20 +37,7 @@ VALID_PAYLOAD = {
 }
 
 
-class TestNoErrorHandlingConfigured:
-    def test_abort_without_error_handlers(self, min_config, monkeypatch):
-        monkeypatch.setattr(GenericProcessor, "process_change", process_change_key_error)
-
-        min_config["processors"] = [{"class": GENERIC}]
-        config = PopykaConfig.from_dict(min_config)
-        processors = [_.instantiate() for _ in config.processors]
-
-        adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
-        repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
-
-        with pytest.raises(AbortExecutionException):
-            adaptor(repl_message)
-
+class TestStop:
     def test_stop_is_propagated(self, min_config, monkeypatch):
         def process_change(_self, *args, **kwargs):
             raise StopServer()
@@ -112,44 +99,108 @@ class GenericErrorHandler(ErrorHandler):
 ERR_HANDLER = f"{__name__}.{GenericErrorHandler.__qualname__}"
 
 
-def test_single_error_handler_is_used(min_config, monkeypatch):
-    monkeypatch.setattr(GenericProcessor, "process_change", process_change_key_error)
+class TestAbort:
+    def test_abort_by_default(self, min_config, monkeypatch):
+        monkeypatch.setattr(GenericProcessor, "process_change", process_change_key_error)
 
-    min_config["processors"] = [{"class": GENERIC, "error_handlers": [{"class": ERR_HANDLER}]}]
-    config = PopykaConfig.from_dict(min_config)
-    processors = [_.instantiate() for _ in config.processors]
+        min_config["processors"] = [{"class": GENERIC}]
+        config = PopykaConfig.from_dict(min_config)
+        processors = [_.instantiate() for _ in config.processors]
 
-    adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
-    repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
+        adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
+        repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
 
-    with pytest.raises(AbortExecutionException):
+        with pytest.raises(AbortExecutionException):
+            adaptor(repl_message)
+
+    def test_abort_aborts(self, min_config, monkeypatch):
+        monkeypatch.setattr(GenericProcessor, "process_change", process_change_key_error)
+
+        min_config["processors"] = [{"class": GENERIC, "error_handlers": [{"class": ERR_HANDLER}]}]
+        config = PopykaConfig.from_dict(min_config)
+        processors = [_.instantiate() for _ in config.processors]
+
+        adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
+        repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
+
+        with pytest.raises(AbortExecutionException):
+            adaptor(repl_message)
+
+        assert len(processors[0].error_handlers[0].handled_errors) == 1
+        assert isinstance(processors[0].error_handlers[0].handled_errors[0], KeyError)
+
+    def test_no_error_handler_is_used_after_abort(self, min_config, monkeypatch):
+        monkeypatch.setattr(GenericProcessor, "process_change", process_change_key_error)
+
+        min_config["processors"] = [
+            {
+                "class": GENERIC,
+                "error_handlers": [
+                    {"class": ERR_HANDLER, "config": {"action": "ABORT"}},
+                    {"class": ERR_HANDLER, "config": {"action": "ABORT"}},
+                ],
+            }
+        ]
+        config = PopykaConfig.from_dict(min_config)
+        processors = [_.instantiate() for _ in config.processors]
+
+        adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
+        repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
+
+        with pytest.raises(AbortExecutionException):
+            adaptor(repl_message)
+
+        assert len(processors[0].error_handlers[0].handled_errors) == 1
+        assert isinstance(processors[0].error_handlers[0].handled_errors[0], KeyError)
+        assert len(processors[0].error_handlers[1].handled_errors) == 0
+
+
+class TestNextErrorHandler:
+    def test_second_error_handler_is_used(self, min_config, monkeypatch):
+        monkeypatch.setattr(GenericProcessor, "process_change", process_change_key_error)
+
+        min_config["processors"] = [
+            {
+                "class": GENERIC,
+                "error_handlers": [
+                    {"class": ERR_HANDLER, "config": {"action": "NEXT_ERROR_HANDLER"}},
+                    {"class": ERR_HANDLER, "config": {"action": "ABORT"}},
+                ],
+            }
+        ]
+        config = PopykaConfig.from_dict(min_config)
+        processors = [_.instantiate() for _ in config.processors]
+
+        adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
+        repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
+
+        with pytest.raises(AbortExecutionException):
+            adaptor(repl_message)
+
+        assert len(processors[0].error_handlers[0].handled_errors) == 1
+        assert len(processors[0].error_handlers[1].handled_errors) == 1
+
+
+class TestNextMessage:
+    def test(self, min_config, monkeypatch):
+        monkeypatch.setattr(GenericProcessor, "process_change", process_change_key_error)
+
+        min_config["processors"] = [
+            {
+                "class": GENERIC,
+                "error_handlers": [
+                    {"class": ERR_HANDLER, "config": {"action": "NEXT_MESSAGE"}},
+                    {"class": ERR_HANDLER, "config": {"action": "ABORT"}},
+                ],
+            }
+        ]
+        config = PopykaConfig.from_dict(min_config)
+        processors = [_.instantiate() for _ in config.processors]
+
+        adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
+        repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
+
         adaptor(repl_message)
 
-    assert len(processors[0].error_handlers[0].handled_errors) == 1
-    assert isinstance(processors[0].error_handlers[0].handled_errors[0], KeyError)
-
-
-def test_second_error_handler_is_not_used(min_config, monkeypatch):
-    monkeypatch.setattr(GenericProcessor, "process_change", process_change_key_error)
-
-    min_config["processors"] = [
-        {
-            "class": GENERIC,
-            "error_handlers": [
-                {"class": ERR_HANDLER, "config": {"action": "ABORT"}},
-                {"class": ERR_HANDLER, "config": {"action": "ABORT"}},
-            ],
-        }
-    ]
-    config = PopykaConfig.from_dict(min_config)
-    processors = [_.instantiate() for _ in config.processors]
-
-    adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
-    repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
-
-    with pytest.raises(AbortExecutionException):
-        adaptor(repl_message)
-
-    assert len(processors[0].error_handlers[0].handled_errors) == 1
-    assert isinstance(processors[0].error_handlers[0].handled_errors[0], KeyError)
-    assert len(processors[0].error_handlers[1].handled_errors) == 0
+        assert len(processors[0].error_handlers[0].handled_errors) == 1
+        assert len(processors[0].error_handlers[1].handled_errors) == 0
