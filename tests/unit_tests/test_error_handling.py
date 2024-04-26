@@ -200,7 +200,35 @@ class TestNextMessage:
         adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
         repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
 
-        adaptor(repl_message)
+        assert adaptor(repl_message) == ErrorHandler.NextAction.NEXT_MESSAGE
 
         assert len(processors[0].error_handlers[0].handled_errors) == 1
         assert len(processors[0].error_handlers[1].handled_errors) == 0
+
+
+class TestRetry:
+    def test(self, min_config, monkeypatch):
+        monkeypatch.setattr(GenericProcessor, "process_change", process_change_key_error)
+
+        min_config["processors"] = [
+            {
+                "class": GENERIC,
+                "error_handlers": [
+                    {"class": ERR_HANDLER, "config": {"action": "RETRY_PROCESSOR"}},
+                    {"class": ERR_HANDLER, "config": {"action": "RETRY_PROCESSOR"}},
+                    {"class": ERR_HANDLER, "config": {"action": "ABORT"}},
+                ],
+            }
+        ]
+        config = PopykaConfig.from_dict(min_config)
+        processors = [_.instantiate() for _ in config.processors]
+
+        adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
+        repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
+
+        with pytest.raises(AbortExecutionException):
+            adaptor(repl_message)
+
+        assert len(processors[0].error_handlers[0].handled_errors) == 5
+        assert len(processors[0].error_handlers[1].handled_errors) == 1
+        assert len(processors[0].error_handlers[2].handled_errors) == 1

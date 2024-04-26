@@ -57,13 +57,13 @@ class ProduceToKafkaProcessor(Processor):
     def setup(self):
         self._topic = self._get_config(self.config_generic, "topic", str, clean=lambda v: v.strip())
         if not self._topic:
-            raise ConfigError("Invalid config: `topic` is required")
+            raise ConfigError("Invalid config: 'topic' is required")
 
         producer_config = self._get_config(self.config_generic, "producer_config", dict)
         if not producer_config.get("bootstrap.servers"):
-            raise ConfigError("Invalid config: `bootstrap.servers` is required")
+            raise ConfigError("Invalid config: 'bootstrap.servers' is required")
         if not producer_config.get("client.id"):
-            raise ConfigError("Invalid config: `client.id` is required")
+            raise ConfigError("Invalid config: 'client.id' is required")
 
         self._producer = Producer(producer_config)
 

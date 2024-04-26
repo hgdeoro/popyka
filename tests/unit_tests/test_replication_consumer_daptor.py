@@ -73,8 +73,9 @@ class CycleFilterImpl(Filter):
         return result
 
 
-class ReplicationMessageMock:
-    def __init__(self, payload: bytes):
+class ReplicationMessageMock(Wal2JsonV2Change):
+    def __init__(self, payload: bytes, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._payload = payload
 
     @property

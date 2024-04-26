@@ -113,7 +113,7 @@ class PopykaConfig(BaseModel):
         config = PopykaConfig(**interpolated)
 
         if not config.processors:
-            raise ConfigError("Invalid config: refuse to run without any processor. Check `processors` in config.")
+            raise ConfigError("Invalid config: refuse to run without any processor. Check 'processors' in config.")
 
         return config
 

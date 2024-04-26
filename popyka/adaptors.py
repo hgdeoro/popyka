@@ -1,16 +1,48 @@
 import json
 import logging
+import os
 
 import psycopg2.extras
 
 from popyka.api import ErrorHandler, Filter, Processor, Wal2JsonV2Change
 from popyka.errors import (
     AbortExecutionException,
+    ConfigError,
     PopykaException,
     StopServer,
     UnhandledErrorHandlerException,
 )
 from popyka.logging import LazyToStr
+
+
+class ProcessorIter:
+    def __init__(self, processors: list[Processor]):
+        self._attempts_count = 0
+        self._current_processor = 0
+        self._processors = processors
+        try:
+            self._max_attempts = int(os.environ.get("POPYKA_MAX_PROCESSING_ATTEMPTS", "100"))
+        except ValueError:
+            # FIXME: document `POPYKA_MAX_PROCESSING_ATTEMPTS`
+            # FIXME: this error should be reporter in a much earlier stage, not when starting processing changes
+            raise ConfigError(
+                f"Invalid value for env variable 'POPYKA_MAX_PROCESSING_ATTEMPTS': "
+                f"invalid str for integer: '{os.environ.get('POPYKA_MAX_PROCESSING_ATTEMPTS', '')}'"
+            )
+
+    def __bool__(self):
+        return self._current_processor < len(self._processors)
+
+    def start_processing(self) -> Processor:
+        if self._attempts_count >= self._max_attempts:
+            raise PopykaException(f"Aborting processing after {self._attempts_count} attempts")
+
+        self._attempts_count += 1
+        return self._processors[self._current_processor]
+
+    def next(self) -> "ProcessorIter":
+        self._current_processor += 1
+        return self
 
 
 class ReplicationConsumerToProcessorAdaptor:
@@ -37,8 +69,11 @@ class ReplicationConsumerToProcessorAdaptor:
                 case _:
                     raise PopykaException("Filter.filter() returned invalid value")
 
-        for processor in self._processors:
+        proc_iterator = ProcessorIter(processors=self._processors)
+        while proc_iterator:
+            processor = proc_iterator.start_processing()
             self.logger.debug("Starting processing with processor: %s", processor)
+
             try:
                 processor.process_change(change)
 
@@ -46,17 +81,18 @@ class ReplicationConsumerToProcessorAdaptor:
                 raise  # FIXME: do we still need this exception?
 
             except BaseException as err:
-                self.logger.exception("Unhandled exception: processor: %s", processor)
+                self.logger.exception("Handling exception from processor: %s", processor)
                 result: ErrorHandler.NextAction = self._handle_error(processor, change, err)
                 match result:
                     case ErrorHandler.NextAction.ABORT:
                         raise AbortExecutionException()
                     case ErrorHandler.NextAction.NEXT_ERROR_HANDLER:
-                        raise PopykaException(f"Unexpected result - type={type(result)} - value={result}")
+                        raise PopykaException("Unexpected result: NextAction.NEXT_ERROR_HANDLER")
                     case ErrorHandler.NextAction.NEXT_PROCESSOR:
+                        proc_iterator.next()
                         continue
                     case ErrorHandler.NextAction.RETRY_PROCESSOR:
-                        raise NotImplementedError()
+                        continue
                     case ErrorHandler.NextAction.NEXT_MESSAGE:
                         return ErrorHandler.NextAction.NEXT_MESSAGE
                     case _:
@@ -95,8 +131,14 @@ class ReplicationConsumerToProcessorAdaptor:
                     return result
 
                 elif result == ErrorHandler.NextAction.RETRY_PROCESSOR:
-                    self.logger.debug("NextAction.RETRY_PROCESSOR")
-                    return result
+                    change.incr_retry_count()
+                    if change.retry_count >= 5:
+                        # FIXME: take `5` from `processor` config
+                        self.logger.debug("NextAction.RETRY_PROCESSOR ignored (retry_count >= 5)")
+                        continue  # Enough retries, let's continue with next error handler
+                    else:
+                        self.logger.debug("NextAction.RETRY_PROCESSOR")
+                        return result
 
                 elif result == ErrorHandler.NextAction.NEXT_MESSAGE:
                     self.logger.debug("NextAction.NEXT_MESSAGE")
