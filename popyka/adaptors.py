@@ -15,36 +15,6 @@ from popyka.errors import (
 from popyka.logging import LazyToStr
 
 
-class ProcessorIter:
-    def __init__(self, processors: list[Processor]):
-        self._attempts_count = 0
-        self._current_processor = 0
-        self._processors = processors
-        try:
-            self._max_attempts = int(os.environ.get("POPYKA_MAX_PROCESSING_ATTEMPTS", "100"))
-        except ValueError:
-            # FIXME: document `POPYKA_MAX_PROCESSING_ATTEMPTS`
-            # FIXME: this error should be reporter in a much earlier stage, not when starting processing changes
-            raise ConfigError(
-                f"Invalid value for env variable 'POPYKA_MAX_PROCESSING_ATTEMPTS': "
-                f"invalid str for integer: '{os.environ.get('POPYKA_MAX_PROCESSING_ATTEMPTS', '')}'"
-            )
-
-    def __bool__(self):
-        return self._current_processor < len(self._processors)
-
-    def start_processing(self) -> Processor:
-        if self._attempts_count >= self._max_attempts:
-            raise PopykaException(f"Aborting processing after {self._attempts_count} attempts")
-
-        self._attempts_count += 1
-        return self._processors[self._current_processor]
-
-    def next(self) -> "ProcessorIter":
-        self._current_processor += 1
-        return self
-
-
 class ReplicationConsumerToProcessorAdaptor:
     """Psycopg2 replication consumer that runs configured PoPyKa Processors on the received changes"""
 
@@ -55,9 +25,11 @@ class ReplicationConsumerToProcessorAdaptor:
         self._filters = filters
 
     def _handle_payload(self, payload: bytes) -> ErrorHandler.NextAction | Filter.Result | None:
+        # FIXME: by default would be better to return `NEXT_MESSAGE` instead of `None`, makes more sense I think
         change = Wal2JsonV2Change(json.loads(payload))
 
         for a_filter in self._filters:
+            # FIXME: handle exceptions raised by filters
             match a_filter.filter(change):
                 case Filter.Result.IGNORE:
                     self.logger.debug("Ignoring change for change: %s", LazyToStr(change))
@@ -69,13 +41,44 @@ class ReplicationConsumerToProcessorAdaptor:
                 case _:
                     raise PopykaException("Filter.filter() returned invalid value")
 
-        proc_iterator = ProcessorIter(processors=self._processors)
-        while proc_iterator:
-            processor = proc_iterator.start_processing()
+        for processor in self._processors:
             self.logger.debug("Starting processing with processor: %s", processor)
 
+            result: ErrorHandler.NextAction = self._handle_processor(processor, change)
+            match result:
+                case ErrorHandler.NextAction.NEXT_PROCESSOR:
+                    continue
+                case ErrorHandler.NextAction.NEXT_MESSAGE:
+                    return result
+                case _:
+                    raise PopykaException(f"Unexpected result - type={type(result)} - value={result}")
+
+        return None
+
+    def _handle_processor(self, processor: Processor, change: Wal2JsonV2Change) -> ErrorHandler.NextAction:
+        """
+        Runs a single processor, handling any error and retrying, with a limit in the maximum number of attempts.
+
+        :returns: NextAction.NEXT_PROCESSOR or NextAction.NEXT_MESSAGE
+
+        :raises: popyka.errors.StopServer
+        :raises: popyka.errors.PopykaException
+        :raises: popyka.errors.AbortExecutionException
+        """
+        try:
+            max_attempts = int(os.environ.get("POPYKA_MAX_PROCESSING_ATTEMPTS", "50"))
+        except ValueError:
+            # FIXME: document `POPYKA_MAX_PROCESSING_ATTEMPTS`
+            # FIXME: this error should be reporter in a much earlier stage, not when starting processing changes
+            raise ConfigError(
+                f"Invalid value for env variable 'POPYKA_MAX_PROCESSING_ATTEMPTS': "
+                f"invalid str for integer: '{os.environ.get('POPYKA_MAX_PROCESSING_ATTEMPTS', '')}'"
+            )
+
+        for _ in range(max_attempts):
             try:
                 processor.process_change(change)
+                return ErrorHandler.NextAction.NEXT_PROCESSOR
 
             except StopServer:
                 raise  # FIXME: do we still need this exception?
@@ -86,19 +89,21 @@ class ReplicationConsumerToProcessorAdaptor:
                 match result:
                     case ErrorHandler.NextAction.ABORT:
                         raise AbortExecutionException()
-                    case ErrorHandler.NextAction.NEXT_ERROR_HANDLER:
-                        raise PopykaException("Unexpected result: NextAction.NEXT_ERROR_HANDLER")
                     case ErrorHandler.NextAction.NEXT_PROCESSOR:
-                        proc_iterator.next()
-                        continue
+                        return result
+                    case ErrorHandler.NextAction.NEXT_MESSAGE:
+                        return result
+
                     case ErrorHandler.NextAction.RETRY_PROCESSOR:
                         continue
-                    case ErrorHandler.NextAction.NEXT_MESSAGE:
-                        return ErrorHandler.NextAction.NEXT_MESSAGE
+
+                    case ErrorHandler.NextAction.NEXT_ERROR_HANDLER:  # This shouldn't happen!
+                        raise PopykaException("Unexpected result: NextAction.NEXT_ERROR_HANDLER")
+
                     case _:
                         raise PopykaException(f"Unexpected result - type={type(result)} - value={result}")
 
-        return None
+        raise PopykaException(f"Aborting processing after {max_attempts} attempts")
 
     def _handle_error(
         self, processor: Processor, change: Wal2JsonV2Change, exception: BaseException
