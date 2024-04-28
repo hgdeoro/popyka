@@ -170,8 +170,7 @@ The base `Filter` class is defined in [api.py](popyka%2Fapi.py).
 [//]: # (Filtered changes are delivered to all configured processors in the order they are defined.)
 [//]: # (Each processor has the opportunity to manipulate the data as needed and export it to other systems.)
 
-Processors take the filtered changes and manipulate them according to your needs (think of it as data transformation).
-Processors then export the transformed data to external systems.
+Processors take the filtered changes and manipulate them according to your needs, then export the transformed data to external systems.
 
 Popyka simplifies sending data changes to **Kafka**. It includes a [built-in processor](popyka%2Fbuiltin%2Fprocessors.py) `ProduceToKafkaProcessor`
 that lets you easily export the database changes to your **Kafka** cluster, keeping your other systems in sync.
