@@ -120,7 +120,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 from popyka.builtin.processors import LogChangeProcessor
-lcp = LogChangeProcessor(config_generic={})
+lcp = LogChangeProcessor(config_generic={}, error_handlers=[])
 lcp.process_change(change={"key": "some-value"})
     """
 

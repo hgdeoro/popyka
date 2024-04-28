@@ -54,11 +54,10 @@ class Processor(abc.ABC, Configurable):
 
     logger = logging.getLogger(f"{__name__}.Processor")
 
-    def __init__(self, config_generic: dict, error_handlers: list["ErrorHandler"] = None):
+    def __init__(self, config_generic: dict, error_handlers: list["ErrorHandler"]):
         super().__init__(config_generic=config_generic)
         self.logger.debug("Instantiating processor with config: %s", LazyToStr(config_generic))
         self.__error_handlers: list[ErrorHandler] = error_handlers or []
-        # FIXME: remove default `error_handlers=None` from signature and refactor as needed, or improve api
 
     @property
     def error_handlers(self):
