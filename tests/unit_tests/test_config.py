@@ -1,4 +1,3 @@
-import copy
 import pathlib
 
 import pytest
@@ -30,25 +29,6 @@ class TestDefaultConfig:
 
         for processor_config in config.processors:
             processor_config.instantiate()
-
-
-@pytest.fixture
-def min_config() -> dict:
-    """Most basic an minimal valid configuration"""
-    return copy.deepcopy(
-        {
-            "database": {
-                "connect_url": "some-text",
-                "slot_name": "some-text",
-            },
-            "filters": [],
-            "processors": [
-                {
-                    "class": "some-text",
-                }
-            ],
-        }
-    )
 
 
 class TestMinConfig:
@@ -110,6 +90,55 @@ class TestConfigProcessor:
         assert min_config["processors"]
         min_config["processors"].append({"class": "some-text", "config": {}})
         assert PopykaConfig.from_dict(min_config)
+
+
+class TestConfigProcessorErrorHandlers:
+    def test_empty_error_handlers(self, min_config):
+        assert "error_handlers" not in min_config["processors"]
+        min_config["processors"][0]["error_handlers"] = []
+        config = PopykaConfig.from_dict(min_config)
+        assert len(config.processors[0].error_handlers) == 0
+
+    def test_one_handler(self, min_config):
+        assert "error_handlers" not in min_config["processors"]
+        min_config["processors"][0]["error_handlers"] = [{"class": "some.ErrorHandler"}]
+        config = PopykaConfig.from_dict(min_config)
+        assert config.processors[0].error_handlers[0].class_fqn == "some.ErrorHandler"
+
+    def test_one_handler_with_config(self, min_config):
+        assert "error_handlers" not in min_config["processors"]
+        min_config["processors"][0]["error_handlers"] = [
+            {
+                "class": "some.ErrorHandler",
+                "config": {
+                    "key": "value",
+                },
+            }
+        ]
+        config = PopykaConfig.from_dict(min_config)
+        assert config.processors[0].error_handlers[0].class_fqn == "some.ErrorHandler"
+        assert config.processors[0].error_handlers[0].config_generic["key"] == "value"
+
+    def test_two_handlers(self, min_config):
+        assert "error_handlers" not in min_config["processors"]
+        min_config["processors"][0]["error_handlers"] = [
+            {
+                "class": "some.ErrorHandler",
+                "config": {
+                    "key": "value",
+                },
+            },
+            {
+                "class": "some.other.ErrorHandler",
+                "config": {
+                    "key": "value",
+                },
+            },
+        ]
+        config = PopykaConfig.from_dict(min_config)
+        assert config.processors[0].error_handlers[0].class_fqn == "some.ErrorHandler"
+        assert config.processors[0].error_handlers[0].config_generic["key"] == "value"
+        assert config.processors[0].error_handlers[1].class_fqn == "some.other.ErrorHandler"
 
 
 class TestCustomConfig:

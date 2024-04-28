@@ -73,8 +73,9 @@ class CycleFilterImpl(Filter):
         return result
 
 
-class ReplicationMessageMock:
-    def __init__(self, payload: bytes):
+class ReplicationMessageMock(Wal2JsonV2Change):
+    def __init__(self, payload: bytes, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._payload = payload
 
     @property
@@ -97,13 +98,13 @@ class ReplicationMessageMock:
 class TestAllScenarios:
     def test_doesnt_fails(self, all_scenarios: AllScenarios):
         adaptor = ReplicationConsumerToProcessorAdaptor(
-            [MemoryStoreProcessorImpl(config_generic={})], [CycleFilterImpl(config_generic={})]
+            [MemoryStoreProcessorImpl(config_generic={}, error_handlers=[])], [CycleFilterImpl(config_generic={})]
         )
         for a_change in all_scenarios.expected:
             adaptor(ReplicationMessageMock.from_dict(a_change))
 
     def test_dummy_filter_and_processor(self, all_scenarios: AllScenarios):
-        a_processor = MemoryStoreProcessorImpl(config_generic={})
+        a_processor = MemoryStoreProcessorImpl(config_generic={}, error_handlers=[])
         a_filter = CycleFilterImpl(config_generic={})
 
         adaptor = ReplicationConsumerToProcessorAdaptor([a_processor], [a_filter])

@@ -5,7 +5,7 @@ import pathlib
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
-from popyka.api import Filter, Processor
+from popyka.api import ErrorHandler, Filter, Processor
 from popyka.errors import ConfigError
 from popyka.interpolation import Interpolator
 
@@ -60,31 +60,47 @@ class FilterConfig(BaseModel, FactoryMixin):
         instance.setup()
         return instance
 
-    @classmethod
-    def from_dict(cls, config: dict) -> "FilterConfig":
-        return FilterConfig(**config)
+
+class ErrorHandlerConfig(BaseModel, FactoryMixin):
+    model_config: ConfigDict = ConfigDict(extra="forbid", use_enum_values=True)
+    class_fqn: str = Field(alias="class")
+    config_generic: dict = Field(alias="config", default_factory=dict)
+
+    def instantiate(self) -> ErrorHandler:
+        error_handler_class = self.get_class_from_fqn(self.class_fqn, ErrorHandler)
+        instance: ErrorHandler = error_handler_class(self.config_generic)
+        instance.setup()
+        return instance
 
 
 class ProcessorConfig(BaseModel, FactoryMixin):
-    model_config: ConfigDict = ConfigDict(extra="forbid")
+    model_config: ConfigDict = ConfigDict(extra="forbid", use_enum_values=True)
 
     class_fqn: str = Field(alias="class")
     config_generic: dict = Field(alias="config", default_factory=dict)
     filters: list[FilterConfig] = Field(default_factory=list)
+    error_handlers: list[ErrorHandlerConfig] = Field(default_factory=list)
 
     def instantiate(self) -> Processor:
         """Creates an instance of `Processor` based on configuration"""
         processor_class = self.get_class_from_fqn(self.class_fqn, Processor)
-        instance: Processor = processor_class(self.config_generic)
+
+        error_handlers = []
+        for err_handler_config in self.error_handlers:
+            err_handler = err_handler_config.instantiate()
+            error_handlers.append(err_handler)
+
+        for err_handler in error_handlers:
+            err_handler.setup()
+
+        instance: Processor = processor_class(self.config_generic, error_handlers=error_handlers)
         instance.setup()
         return instance
 
-    @classmethod
-    def from_dict(cls, config: dict) -> "ProcessorConfig":
-        return ProcessorConfig(**config)
-
 
 class PopykaConfig(BaseModel):
+    model_config: ConfigDict = ConfigDict(extra="forbid", use_enum_values=True)
+
     database: DatabaseConfig
     filters: list[FilterConfig]  # `filters` is mandatory on purpose
     processors: list[ProcessorConfig]  # `processors` is mandatory on purpose
@@ -95,7 +111,7 @@ class PopykaConfig(BaseModel):
         config = PopykaConfig(**interpolated)
 
         if not config.processors:
-            raise ConfigError("Invalid config: refuse to run without any processor. Check `processors` in config.")
+            raise ConfigError("Invalid config: refuse to run without any processor. Check 'processors' in config.")
 
         return config
 

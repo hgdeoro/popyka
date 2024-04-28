@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 import subprocess
@@ -144,3 +145,22 @@ def slot_name():
 @pytest.fixture()
 def kafka_admin(kafka_bootstrap_servers: str) -> KafkaAdmin:
     return KafkaAdmin(kafka_bootstrap_servers)
+
+
+@pytest.fixture
+def min_config() -> dict:
+    """Most basic and minimal valid configuration (valid in terms of keys, but the values need to be updated)"""
+    return copy.deepcopy(
+        {
+            "database": {
+                "connect_url": "some-text",
+                "slot_name": "some-text",
+            },
+            "filters": [],
+            "processors": [
+                {
+                    "class": "some-text",
+                }
+            ],
+        }
+    )

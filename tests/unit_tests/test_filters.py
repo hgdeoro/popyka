@@ -15,18 +15,18 @@ DEFAULT_DICT_CONFIG_TABLE_NAME_IGNORE_FILTER = {
 
 class TestIgnoreTxFilter:
     def test_instantiate_works(self):
-        filter_config = FilterConfig.from_dict(DEFAULT_DICT_CONFIG_IGNORE_TX_FILTER)
+        filter_config = FilterConfig(**DEFAULT_DICT_CONFIG_IGNORE_TX_FILTER)
         instance = filter_config.instantiate()
         assert str(instance.__class__) == "<class 'popyka.builtin.filters.IgnoreTxFilter'>"
 
     def test_filter_doesnt_fails(self, all_scenarios: AllScenarios):
-        filter_config = FilterConfig.from_dict(DEFAULT_DICT_CONFIG_IGNORE_TX_FILTER)
+        filter_config = FilterConfig(**DEFAULT_DICT_CONFIG_IGNORE_TX_FILTER)
         filter_instance: Filter = filter_config.instantiate()
         for change in all_scenarios.expected:
             filter_instance.filter(change)
 
     def test_tx_are_filtered_out(self, all_scenarios: AllScenarios):
-        filter_config = FilterConfig.from_dict(DEFAULT_DICT_CONFIG_IGNORE_TX_FILTER)
+        filter_config = FilterConfig(**DEFAULT_DICT_CONFIG_IGNORE_TX_FILTER)
         flt: Filter = filter_config.instantiate()
         actions_before_filter = {_["action"] for _ in all_scenarios.expected}
         assert actions_before_filter == {"B", "C", "I", "U", "D", "T", "M"}
@@ -38,12 +38,12 @@ class TestIgnoreTxFilter:
 
 class TestTableNameIgnoreFilter:
     def test_instantiate_works(self):
-        filter_config = FilterConfig.from_dict(DEFAULT_DICT_CONFIG_TABLE_NAME_IGNORE_FILTER)
+        filter_config = FilterConfig(**DEFAULT_DICT_CONFIG_TABLE_NAME_IGNORE_FILTER)
         instance = filter_config.instantiate()
         assert str(instance.__class__) == "<class 'popyka.builtin.filters.TableNameIgnoreFilter'>"
 
     def test_filter_doesnt_fails(self, all_scenarios: AllScenarios):
-        filter_config = FilterConfig.from_dict(DEFAULT_DICT_CONFIG_TABLE_NAME_IGNORE_FILTER)
+        filter_config = FilterConfig(**DEFAULT_DICT_CONFIG_TABLE_NAME_IGNORE_FILTER)
         filter_instance: Filter = filter_config.instantiate()
         for change in all_scenarios.expected:
             filter_instance.filter(change)
@@ -56,7 +56,7 @@ class TestTableNameIgnoreFilter:
             "test_table_no_pk_1234",
             "test_table_composite_key_1234",
         }
-        filter_config = FilterConfig.from_dict(DEFAULT_DICT_CONFIG_TABLE_NAME_IGNORE_FILTER)
+        filter_config = FilterConfig(**DEFAULT_DICT_CONFIG_TABLE_NAME_IGNORE_FILTER)
         flt: Filter = filter_config.instantiate()
 
         actions_after_filter = {

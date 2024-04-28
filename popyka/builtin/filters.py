@@ -53,7 +53,7 @@ class TableNameIgnoreFilter(Filter):
     def setup(self):
         ignore_regex = self._get_config(self.config_generic, "ignore_regex", str, clean=lambda v: v.strip())
         if not ignore_regex:
-            raise ConfigError("Invalid config: `ignore_regex` is required")
+            raise ConfigError("Invalid config: 'ignore_regex' is required")
 
         self._ignore_regex = re.compile(ignore_regex)
 
