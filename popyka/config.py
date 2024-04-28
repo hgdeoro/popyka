@@ -84,7 +84,15 @@ class ProcessorConfig(BaseModel, FactoryMixin):
     def instantiate(self) -> Processor:
         """Creates an instance of `Processor` based on configuration"""
         processor_class = self.get_class_from_fqn(self.class_fqn, Processor)
-        error_handlers = [_.instantiate() for _ in self.error_handlers]  # FIXME: refactor
+
+        error_handlers = []
+        for err_handler_config in self.error_handlers:
+            err_handler = err_handler_config.instantiate()
+            error_handlers.append(err_handler)
+
+        for err_handler in error_handlers:
+            err_handler.setup()
+
         instance: Processor = processor_class(self.config_generic, error_handlers=error_handlers)
         instance.setup()
         return instance
