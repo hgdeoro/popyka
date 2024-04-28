@@ -84,7 +84,7 @@ class ReplicationConsumerToProcessorAdaptor:
                 return ErrorHandler.NextAction.NEXT_PROCESSOR
 
             except StopServer:
-                raise  # FIXME: do we still need this exception?
+                raise
 
             except BaseException as err:
                 self.logger.exception("Handling exception from processor: %s", processor)
@@ -172,6 +172,10 @@ class ReplicationConsumerToProcessorAdaptor:
 
         # Flush after every message is successfully processed
         self.logger.debug("send_feedback() flush_lsn=%s", msg.data_start)
-        msg.cursor.send_feedback(flush_lsn=msg.data_start)  # FIXME: how to handle errors here?
+        try:
+            # TODO: does it makes any sense to retry this? Maybe depending on the type of error? Exponential backoff?
+            msg.cursor.send_feedback(flush_lsn=msg.data_start)
+        except:  # noqa: E722
+            raise PopykaException("cursor.send_feedback() failed")
 
         return result

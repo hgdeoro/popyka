@@ -54,8 +54,6 @@ class Processor(abc.ABC, Configurable):
 
     logger = logging.getLogger(f"{__name__}.Processor")
 
-    # FIXME: Implement error handling, retries, etc.
-
     def __init__(self, config_generic: dict, error_handlers: list["ErrorHandler"] = None):
         super().__init__(config_generic=config_generic)
         self.logger.debug("Instantiating processor with config: %s", LazyToStr(config_generic))
