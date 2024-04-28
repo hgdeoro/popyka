@@ -5,8 +5,8 @@ from popyka.errors import ConfigError
 
 
 def test_instantiate_builtin_processor_log_change_processor_works():
-    processor_config = ProcessorConfig.from_dict(
-        {
+    processor_config = ProcessorConfig(
+        **{
             "class": "popyka.builtin.processors.LogChangeProcessor",
             "filters": [],
             "config": {},
@@ -17,8 +17,8 @@ def test_instantiate_builtin_processor_log_change_processor_works():
 
 
 def test_instantiate_builtin_processor_log_change_processor_with_invalid_config_fails():
-    processor_config = ProcessorConfig.from_dict(
-        {
+    processor_config = ProcessorConfig(
+        **{
             "class": "popyka.builtin.processors.LogChangeProcessor",
             "filters": [],
             "config": {
@@ -31,8 +31,8 @@ def test_instantiate_builtin_processor_log_change_processor_with_invalid_config_
 
 
 def test_instantiate_builtin_processor_produce_to_kafka_processor_works():
-    processor_config = ProcessorConfig.from_dict(
-        {
+    processor_config = ProcessorConfig(
+        **{
             "class": "popyka.builtin.processors.ProduceToKafkaProcessor",
             "filters": [],
             "config": {
@@ -48,8 +48,8 @@ def test_instantiate_builtin_processor_produce_to_kafka_processor_works():
 
 
 def test_instantiate_builtin_processor_produce_to_kafka_processor_without_bootstrap_server_fails():
-    processor_config = ProcessorConfig.from_dict(
-        {
+    processor_config = ProcessorConfig(
+        **{
             "class": "popyka.builtin.processors.ProduceToKafkaProcessor",
             "filters": [],
             "config": {

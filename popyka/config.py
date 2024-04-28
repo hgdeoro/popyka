@@ -60,11 +60,6 @@ class FilterConfig(BaseModel, FactoryMixin):
         instance.setup()
         return instance
 
-    @classmethod
-    def from_dict(cls, config: dict) -> "FilterConfig":
-        # FIXME: remove this method
-        return FilterConfig(**config)
-
 
 class ErrorHandlerConfig(BaseModel, FactoryMixin):
     model_config: ConfigDict = ConfigDict(extra="forbid", use_enum_values=True)
@@ -93,11 +88,6 @@ class ProcessorConfig(BaseModel, FactoryMixin):
         instance: Processor = processor_class(self.config_generic, error_handlers=error_handlers)
         instance.setup()
         return instance
-
-    @classmethod
-    def from_dict(cls, config: dict) -> "ProcessorConfig":
-        # FIXME: remove this method
-        return ProcessorConfig(**config)
 
 
 class PopykaConfig(BaseModel):
