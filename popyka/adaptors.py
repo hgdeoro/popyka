@@ -6,7 +6,7 @@ import psycopg2.extras
 
 from popyka.api import ErrorHandler, Filter, Processor, Wal2JsonV2Change
 from popyka.errors import (
-    AbortExecutionException,
+    AbortExecutionFromErrorHandlerException,
     ConfigError,
     PopykaException,
     StopServer,
@@ -91,7 +91,7 @@ class ReplicationConsumerToProcessorAdaptor:
                 result: ErrorHandler.NextAction = self._handle_error(processor, change, err)
                 match result:
                     case ErrorHandler.NextAction.ABORT:
-                        raise AbortExecutionException()
+                        raise AbortExecutionFromErrorHandlerException()
                     case ErrorHandler.NextAction.NEXT_PROCESSOR:
                         return result
                     case ErrorHandler.NextAction.NEXT_MESSAGE:

@@ -1,5 +1,4 @@
 from popyka.api import ErrorHandler, Wal2JsonV2Change
-from popyka.errors import AbortExecutionException
 from popyka.logging import LazyToStr
 
 
@@ -11,7 +10,7 @@ class Abort(ErrorHandler):
 
     def handle_error(self, change: Wal2JsonV2Change, exception: Exception):
         self.logger.exception("Aborting: error detected while processing message: %s", LazyToStr(change))
-        raise AbortExecutionException("Aborting")
+        return ErrorHandler.NextAction.ABORT
 
 
 class ContinueNextProcessor(ErrorHandler):

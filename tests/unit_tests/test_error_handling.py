@@ -3,7 +3,11 @@ import pytest
 from popyka.adaptors import ReplicationConsumerToProcessorAdaptor
 from popyka.api import ErrorHandler, Filter, Processor, Wal2JsonV2Change
 from popyka.config import PopykaConfig
-from popyka.errors import AbortExecutionException, StopServer, UnhandledFilterException
+from popyka.errors import (
+    AbortExecutionFromErrorHandlerException,
+    StopServer,
+    UnhandledFilterException,
+)
 from tests.unit_tests.test_replication_consumer_daptor import ReplicationMessageMock
 
 
@@ -120,7 +124,7 @@ class TestAbort:
         adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
         repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
 
-        with pytest.raises(AbortExecutionException):
+        with pytest.raises(AbortExecutionFromErrorHandlerException):
             adaptor(repl_message)
 
     def test_abort_aborts(self, min_config, monkeypatch):
@@ -133,7 +137,7 @@ class TestAbort:
         adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
         repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
 
-        with pytest.raises(AbortExecutionException):
+        with pytest.raises(AbortExecutionFromErrorHandlerException):
             adaptor(repl_message)
 
         assert len(processors[0].error_handlers[0].handled_errors) == 1
@@ -157,7 +161,7 @@ class TestAbort:
         adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
         repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
 
-        with pytest.raises(AbortExecutionException):
+        with pytest.raises(AbortExecutionFromErrorHandlerException):
             adaptor(repl_message)
 
         assert len(processors[0].error_handlers[0].handled_errors) == 1
@@ -184,7 +188,7 @@ class TestNextErrorHandler:
         adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
         repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
 
-        with pytest.raises(AbortExecutionException):
+        with pytest.raises(AbortExecutionFromErrorHandlerException):
             adaptor(repl_message)
 
         assert len(processors[0].error_handlers[0].handled_errors) == 1
@@ -236,7 +240,7 @@ class TestRetry:
         adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=[])
         repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
 
-        with pytest.raises(AbortExecutionException):
+        with pytest.raises(AbortExecutionFromErrorHandlerException):
             adaptor(repl_message)
 
         assert len(processors[0].error_handlers[0].handled_errors) == 5
