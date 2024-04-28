@@ -38,6 +38,19 @@ class ContinueNextMessage(ErrorHandler):
         return ErrorHandler.NextAction.NEXT_MESSAGE
 
 
+class RetryProcessor(ErrorHandler):
+    """
+    Retry processing the message (by the same processor that failed).
+    """
+
+    def setup(self):
+        pass
+
+    def handle_error(self, change: Wal2JsonV2Change, exception: Exception) -> ErrorHandler.NextAction:
+        self.logger.debug("RetryProcessor - change: %s", LazyToStr(change))
+        return ErrorHandler.NextAction.RETRY_PROCESSOR
+
+
 # class LogErrorHandler(ErrorHandler):
 #     def setup(self):
 #         pass

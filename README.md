@@ -188,7 +188,53 @@ class MyCustomProcessor(Processor):
 The base `Processor` class is defined in [api.py](popyka%2Fapi.py).
 
 
+### Error handling
 
+Popyka provides built-in error handlers for common scenarios within the `popyka.builtin.error_handlers` module.
+These handlers offer a convenient way to manage errors without writing custom logic.
+
+* `Abort`: This handler terminates execution and causes Popyka to exit with an error. This is the default behavior.
+* `ContinueNextProcessor`: This handler gracefully ignores the error and allows the next processor in the pipeline to process the change.
+* `ContinueNextMessage`: This handler skips any remaining processors configured in the pipeline and continues processing the next message.
+* `RetryProcessor`: This handler attempts to re-process the failed change using the same processor that encountered the error.
+
+By using these built-in handlers, you can implement basic error handling strategies without writing complex custom code.
+
+For example:
+
+```yaml
+processors:
+    - class: popyka.builtin.processors.ProduceToKafkaProcessor
+      error_handlers:
+        - class: popyka.builtin.error_handlers.RetryProcessor
+        - class: popyka.builtin.error_handlers.Abort
+```
+
+If `ProduceToKafkaProcessor` fails, Popyka will automatically retry processing the message according to the number of
+retries configured by the `POPYKA_DEFAULT_RETRIES` environment variable. However, if the processor keeps failing
+after exceeding the configured retries, Popyka will stop retrying and delegate the error to the next configured error handler.
+
+[//]: # (If you want to retry `POPYKA_DEFAULT_RETRIES` times, and then, continue with next processor, you )
+[//]: # (can use this configuration:)
+
+To configure Popyka to retry a failing processor like `ProduceToKafkaProcessor` before continuing
+with the next processor in the pipeline, you can use the following configuration:
+
+```yaml
+processors:
+    - class: popyka.builtin.processors.ProduceToKafkaProcessor
+      error_handlers:
+        - class: popyka.builtin.error_handlers.RetryProcessor
+          config: {}
+        - class: popyka.builtin.error_handlers.ContinueNextProcessor
+          config: {}
+    - class: some.module.SendMessageToDLQ
+```
+
+Unlike the behavior mentioned earlier (where Popyka aborts after exceeding the retry limit),
+if retries are exhausted the error will be handled by the next configured error handler: `SendMessageToDLQ`.
+
+The base `ErrorHandler` class is defined in [api.py](popyka%2Fapi.py).
 
 ## Configuration
 

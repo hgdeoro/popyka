@@ -22,6 +22,9 @@ processors:
       config: {}
     - class: popyka.builtin.processors.ProduceToKafkaProcessor
       filters: []
+      error_handlers:
+        - class: popyka.builtin.error_handlers.RetryProcessor
+          config: {}
       config:
         topic: "${POPYKA_KAFKA_TOPIC:-popyka}"
         producer_config:
