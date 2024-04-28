@@ -268,3 +268,16 @@ The v1 is under development on the `main` branch.
 1. ~~improve automated testing~~ **DONE**
 1. ~~define supported Python versions and run tests on all supported versions~~ **DONE**
 1. ~~implement semantic versioning~~ **DONE**
+
+
+
+
+# Features for future versions
+
+### Copy pre-existing data
+
+At the moment, Popyka stream changes, but doesn't handle pre-existing data.
+Probably there are simple ways to implement this. Some ideas:
+
+  * Can 'copy_data' from `subscription` be used? https://www.postgresql.org/docs/current/sql-createsubscription.html
+  * Use `xmin` and `skip locked` to incrementally copy data before starting consumption?
