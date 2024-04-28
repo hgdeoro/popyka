@@ -18,3 +18,7 @@ class AbortExecutionException(PopykaException):
 
 class UnhandledErrorHandlerException(PopykaException):
     """An error handled failed to handle an error"""
+
+
+class UnhandledFilterException(PopykaException):
+    """A filter raised an execution while being evaluated"""

@@ -103,7 +103,7 @@ class Filter(abc.ABC, Configurable):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def filter(self, change: Wal2JsonV2Change) -> Result:
+    def filter(self, change: Wal2JsonV2Change) -> "Filter.Result":
         """
         Receives a change and returns a `Result`:
 

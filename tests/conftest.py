@@ -149,7 +149,7 @@ def kafka_admin(kafka_bootstrap_servers: str) -> KafkaAdmin:
 
 @pytest.fixture
 def min_config() -> dict:
-    """Most basic an minimal valid configuration"""
+    """Most basic and minimal valid configuration (valid in terms of keys, but the values need to be updated)"""
     return copy.deepcopy(
         {
             "database": {

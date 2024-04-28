@@ -11,6 +11,7 @@ from popyka.errors import (
     PopykaException,
     StopServer,
     UnhandledErrorHandlerException,
+    UnhandledFilterException,
 )
 from popyka.logging import LazyToStr
 
@@ -29,17 +30,20 @@ class ReplicationConsumerToProcessorAdaptor:
         change = Wal2JsonV2Change(json.loads(payload))
 
         for a_filter in self._filters:
-            # FIXME: handle exceptions raised by filters
-            match a_filter.filter(change):
-                case Filter.Result.IGNORE:
-                    self.logger.debug("Ignoring change for change: %s", LazyToStr(change))
-                    return Filter.Result.IGNORE
-                case Filter.Result.PROCESS:
-                    break  # stop filtering
-                case Filter.Result.CONTINUE:
-                    continue  # continue, evaluate other filters
-                case _:
-                    raise PopykaException("Filter.filter() returned invalid value")
+            try:
+                match a_filter.filter(change):
+                    case Filter.Result.IGNORE:
+                        self.logger.debug("Ignoring change for change: %s", LazyToStr(change))
+                        return Filter.Result.IGNORE
+                    case Filter.Result.PROCESS:
+                        break  # stop filtering
+                    case Filter.Result.CONTINUE:
+                        continue  # continue, evaluate other filters
+                    case _:
+                        raise PopykaException("Filter.filter() returned invalid value")
+            except BaseException:
+                # self.logger.exception("Caught exception while evaluating filter: %s", a_filter)
+                raise UnhandledFilterException(f"Error handling filter {a_filter}")
 
         for processor in self._processors:
             self.logger.debug("Starting processing with processor: %s", processor)

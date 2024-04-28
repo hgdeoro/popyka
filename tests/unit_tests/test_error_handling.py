@@ -1,9 +1,9 @@
 import pytest
 
 from popyka.adaptors import ReplicationConsumerToProcessorAdaptor
-from popyka.api import ErrorHandler, Processor, Wal2JsonV2Change
+from popyka.api import ErrorHandler, Filter, Processor, Wal2JsonV2Change
 from popyka.config import PopykaConfig
-from popyka.errors import AbortExecutionException, StopServer
+from popyka.errors import AbortExecutionException, StopServer, UnhandledFilterException
 from tests.unit_tests.test_replication_consumer_daptor import ReplicationMessageMock
 
 
@@ -18,6 +18,16 @@ class GenericProcessor(Processor):
     def process_change(self, change: Wal2JsonV2Change):
         self._count += 1
         raise NotImplementedError("This method is intended to be mocked")
+
+
+class FaultyFilter(Filter):
+    def setup(self):
+        pass
+
+    def filter(self, change: Wal2JsonV2Change) -> Filter.Result:
+        if change["this-key-does-not-exists-will-raise-error"] is None:
+            return Filter.Result.IGNORE
+        return Filter.Result.CONTINUE
 
 
 def process_change_key_error(_self, change: Wal2JsonV2Change, *args, **kwargs):
@@ -232,3 +242,29 @@ class TestRetry:
         assert len(processors[0].error_handlers[0].handled_errors) == 5
         assert len(processors[0].error_handlers[1].handled_errors) == 1
         assert len(processors[0].error_handlers[2].handled_errors) == 1
+
+
+FAULTY_FILTER = f"{__name__}.{FaultyFilter.__qualname__}"
+
+
+class TestFaultyFilter:
+    def test_exception_is_caught(self, min_config, monkeypatch):
+        def process_change(_self, *args, **kwargs):
+            pass
+
+        monkeypatch.setattr(GenericProcessor, "process_change", process_change)
+
+        assert not min_config["filters"]
+        min_config["filters"] = [{"class": FAULTY_FILTER}]
+        min_config["processors"] = [{"class": GENERIC}]
+
+        config = PopykaConfig.from_dict(min_config)
+
+        filters = [_.instantiate() for _ in config.filters]
+        processors = [_.instantiate() for _ in config.processors]
+
+        adaptor = ReplicationConsumerToProcessorAdaptor(processors, filters=filters)
+        repl_message = ReplicationMessageMock.from_dict(VALID_PAYLOAD)
+
+        with pytest.raises(UnhandledFilterException):
+            adaptor(repl_message)
