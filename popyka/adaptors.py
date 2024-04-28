@@ -28,8 +28,18 @@ class ReplicationConsumerToProcessorAdaptor:
         max_attempts_env = os.environ.get("POPYKA_MAX_PROCESSING_ATTEMPTS", "50")
         try:
             self._max_attempts = int(max_attempts_env)
-        except ValueError:
-            raise ConfigError(f"Invalid value for env 'POPYKA_MAX_PROCESSING_ATTEMPTS': {max_attempts_env}")
+            if self._max_attempts <= 0:
+                raise ValueError("POPYKA_MAX_PROCESSING_ATTEMPTS needs to be > 0")
+        except ValueError as err:
+            raise ConfigError(f"Invalid value for env 'POPYKA_MAX_PROCESSING_ATTEMPTS': {max_attempts_env}") from err
+
+        default_retries_env = os.environ.get("POPYKA_DEFAULT_RETRIES", "5")
+        try:
+            self._default_retries = int(default_retries_env)
+            if self._default_retries <= 0:
+                raise ValueError("POPYKA_DEFAULT_RETRIES needs to be > 0")
+        except ValueError as err:
+            raise ConfigError(f"Invalid value for env 'POPYKA_DEFAULT_RETRIES': {default_retries_env}") from err
 
     def _handle_payload(self, payload: bytes) -> ErrorHandler.NextAction | Filter.Result | None:
         """
@@ -140,9 +150,8 @@ class ReplicationConsumerToProcessorAdaptor:
 
                 elif result == ErrorHandler.NextAction.RETRY_PROCESSOR:
                     change.incr_retry_count()
-                    if change.retry_count >= 5:
-                        # FIXME: take `5` from `processor` config
-                        self.logger.debug("NextAction.RETRY_PROCESSOR ignored (retry_count >= 5)")
+                    if change.retry_count >= self._default_retries:
+                        self.logger.debug("NextAction.RETRY_PROCESSOR ignored (retry_count=%s)", change.retry_count)
                         continue  # Enough retries, let's continue with next error handler
                     else:
                         self.logger.debug("NextAction.RETRY_PROCESSOR")

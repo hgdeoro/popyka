@@ -200,6 +200,7 @@ The basic configuration is done using environment variables:
 * `POPYKA_PYTHONPATH`: Directories to add to the python path.
 * `POPYKA_COMPACT_DUMP`.
 * `POPYKA_MAX_PROCESSING_ATTEMPTS`.
+* `POPYKA_DEFAULT_RETRIES`.
 
 #### Default configuration file
 
