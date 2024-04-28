@@ -199,6 +199,7 @@ The basic configuration is done using environment variables:
   * Example: `/etc/popyka/config.yaml`
 * `POPYKA_PYTHONPATH`: Directories to add to the python path.
 * `POPYKA_COMPACT_DUMP`.
+* `POPYKA_MAX_PROCESSING_ATTEMPTS`.
 
 #### Default configuration file
 

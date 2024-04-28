@@ -25,8 +25,16 @@ class ReplicationConsumerToProcessorAdaptor:
         self._processors = processors
         self._filters = filters
 
+        max_attempts_env = os.environ.get("POPYKA_MAX_PROCESSING_ATTEMPTS", "50")
+        try:
+            self._max_attempts = int(max_attempts_env)
+        except ValueError:
+            raise ConfigError(f"Invalid value for env 'POPYKA_MAX_PROCESSING_ATTEMPTS': {max_attempts_env}")
+
     def _handle_payload(self, payload: bytes) -> ErrorHandler.NextAction | Filter.Result | None:
-        # FIXME: by default would be better to return `NEXT_MESSAGE` instead of `None`, makes more sense I think
+        """
+        :return: `None` if the message was processed. Otherwise, `ErrorHandler.NextAction` or `Filter.Result`.
+        """
         change = Wal2JsonV2Change(json.loads(payload))
 
         for a_filter in self._filters:
@@ -69,17 +77,8 @@ class ReplicationConsumerToProcessorAdaptor:
         :raises: popyka.errors.PopykaException
         :raises: popyka.errors.AbortExecutionException
         """
-        try:
-            max_attempts = int(os.environ.get("POPYKA_MAX_PROCESSING_ATTEMPTS", "50"))
-        except ValueError:
-            # FIXME: document `POPYKA_MAX_PROCESSING_ATTEMPTS`
-            # FIXME: this error should be reporter in a much earlier stage, not when starting processing changes
-            raise ConfigError(
-                f"Invalid value for env variable 'POPYKA_MAX_PROCESSING_ATTEMPTS': "
-                f"invalid str for integer: '{os.environ.get('POPYKA_MAX_PROCESSING_ATTEMPTS', '')}'"
-            )
 
-        for _ in range(max_attempts):
+        for _ in range(self._max_attempts):
             try:
                 processor.process_change(change)
                 return ErrorHandler.NextAction.NEXT_PROCESSOR
@@ -107,7 +106,7 @@ class ReplicationConsumerToProcessorAdaptor:
                     case _:
                         raise PopykaException(f"Unexpected result - type={type(result)} - value={result}")
 
-        raise PopykaException(f"Aborting processing after {max_attempts} attempts")
+        raise PopykaException(f"Aborting processing after {self._max_attempts} attempts")
 
     def _handle_error(
         self, processor: Processor, change: Wal2JsonV2Change, exception: BaseException
