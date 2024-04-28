@@ -59,7 +59,7 @@ in a database and then delivering those changes in real-time to a downstream sys
 
 Existing CDC options can be overly complex and resource-intensive, hindering adoption by smaller systems.
 
-> Popyka is a simpler CDC solution that gets you started in minutes.
+:zap: **_Popyka is a simpler CDC solution that gets you started in minutes._**
 
 * Built for agility and ease of use.
 * Simplifies CDC operations.
@@ -74,7 +74,7 @@ Existing CDC options can be overly complex and resource-intensive, hindering ado
 [//]: # (This will usually contain business logic, This can be implemented using any)
 [//]: # (fo the supported Python versions.)
 
-> Streamline Data Delivery with Custom Filters and Processors
+:zap: **_Streamline Data Delivery with Custom Filters and Processors_**
 
 Popyka empowers you to write custom filters and processors in Python to tailor
 data messages for downstream **Kafka** consumers. This functionality seamlessly
@@ -83,7 +83,7 @@ integrates your own business logic, giving you complete control over the data tr
 [//]: # (The system is not limited to **Kafka**: you can implement your own `Processor`)
 [//]: # (to write the data wherever you need &#40;**Redis**, **S3**, **Snowflake**, **Cassandra**, other databases, etc.&#41;.)
 
-> Unleash Data Delivery Flexibility
+:zap: **_Unleash Data Delivery Flexibility_**
 
 Popyka's custom **processors** empower you to write data to various destinations,
 including **Redis**, **S3**, **Snowflake**, **Cassandra**, and more. Go beyond **Kafka** and tailor
