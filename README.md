@@ -244,7 +244,19 @@ You might find this files of interest:
 * Default config: [popyka-default.yaml](./popyka/popyka-default.yaml)
 * Alternative config: [popyka-config-ignore-tables.yaml](./samples/django-admin/popyka-config/popyka-config-ignore-tables.yaml)
 
+# DBA
 
+Popyka leverages PostgreSQL logical replication for data streaming.  This approach is powerful,
+but if you're unfamiliar with streaming replication, consider setting up robust monitoring.
+Managing new replication slots can introduce complexities, and monitoring helps ensure smooth operation.
+
+If Popyka is no longer in use, remember to remove these replication slots to avoid unnecessary resource consumption.
+
+### Required configuration
+
+To enable logical replication for Popyka to function, you might need to adjust your PostgreSQL
+configuration parameter `wal_level` to `logical`. This setting ensures the write-ahead log (WAL)
+captures the necessary information for Popyka to track changes in your database.
 
 
 # Under development
@@ -279,5 +291,11 @@ The v1 is under development on the `main` branch.
 At the moment, Popyka stream changes, but doesn't handle pre-existing data.
 Probably there are simple ways to implement this. Some ideas:
 
-  * Can 'copy_data' from `subscription` be used? https://www.postgresql.org/docs/current/sql-createsubscription.html
+  * Can 'copy_data' from `subscription` be used?
+    * https://www.postgresql.org/docs/current/sql-createsubscription.html
+    * https://www.postgresql.org/docs/current/logical-replication-architecture.html
   * Use `xmin` and `skip locked` to incrementally copy data before starting consumption?
+
+### Add heart beat
+
+See: https://www.morling.dev/blog/insatiable-postgres-replication-slot/

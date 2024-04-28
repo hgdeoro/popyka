@@ -76,10 +76,11 @@ class Server(abc.ABC):
                 self.logger.info("run(): will consume_stream() adaptor=%s", adaptor)
                 cur.consume_stream(adaptor)
             except StopServer:
-                self.logger.info("StopServer received. Slot is still active, this can cause problems in your DB.")
                 return
             except KeyboardInterrupt:
-                self.logger.info("StopServer received. Slot is still active, this can cause problems in your DB.")
                 return
-
-        # FIXME: DOC: document the risks of not consuming the stream (full server disk, etc.)
+            finally:
+                self.logger.info(
+                    "Slot is still active, this can cause problems in your primary db. "
+                    "You might need to drop the replication slot."
+                )
