@@ -6,7 +6,7 @@
 
 SHELL := /bin/bash
 
-DOCKER_IMAGE_TAG_RELEASE := registry.gitlab.com/hgdeoro/popyka:v0.2.2
+DOCKER_IMAGE_TAG_RELEASE := registry.gitlab.com/hgdeoro/popyka:v0.2.3
 
 PYTHON310 ?= python3.10
 PYTHON311 ?= python3.11
@@ -195,7 +195,7 @@ version-incr-dev:  ## Increment `.dev` version
 release-patch:  ## Release new version (using same PATCH) based on current .dev* version
 	$(VENVDIR)/bin/hatch version | egrep '\.dev[[:digit:]]+$$' # assert that we're in `.dev` version
 	$(VENVDIR)/bin/hatch version release                       # release: remove `.dev`
-	sed -i "s#DOCKER_IMAGE_TAG_RELEASE := registry.gitlab.com/hgdeoro/popyka:.*#DOCKER_IMAGE_TAG_RELEASE := registry.gitlab.com/hgdeoro/popyka:v$$($(VENVDIR)/bin/hatch version)#g" Makefile
+	sed -i "s#DOCKER_IMAGE_TAG_RELEASE := registry.gitlab.com/hgdeoro/popyka:v0.2.3
 
 	git commit Makefile popyka/__version__.py -m "Bump version to $$($(VENVDIR)/bin/hatch version)"
 	git tag v$$($(VENVDIR)/bin/hatch version) -m "New version: $$($(VENVDIR)/bin/hatch version)"
@@ -206,7 +206,7 @@ release-patch:  ## Release new version (using same PATCH) based on current .dev*
 release-minor:  ## Release new version (incrementing MINOR) based on current .dev* version
 	$(VENVDIR)/bin/hatch version | egrep '\.dev[[:digit:]]+$$' # assert that we're in `.dev` version
 	$(VENVDIR)/bin/hatch version release,minor                 # release: remove `.dev`, incr `minor`
-	sed -i "s#DOCKER_IMAGE_TAG_RELEASE := registry.gitlab.com/hgdeoro/popyka:.*#DOCKER_IMAGE_TAG_RELEASE := registry.gitlab.com/hgdeoro/popyka:v$$($(VENVDIR)/bin/hatch version)#g" Makefile
+	sed -i "s#DOCKER_IMAGE_TAG_RELEASE := registry.gitlab.com/hgdeoro/popyka:v0.2.3
 
 	git commit Makefile popyka/__version__.py -m "Bump version to $$($(VENVDIR)/bin/hatch version)"
 	git tag v$$($(VENVDIR)/bin/hatch version) -m "New version: $$($(VENVDIR)/bin/hatch version)"
